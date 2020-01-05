@@ -5,7 +5,6 @@
 
 int main(int argc, char ** argv)
 {
-    char buf[100];
-    dir_up(argv[0], buf, sizeof buf, 2);
-
+	char buf[100];
+	dir_up(argv[0], buf, sizeof buf, 2);
 }
