@@ -1,0 +1,9 @@
+.vscode
+Makefile
+bin
+obj 
+*.make
+
+*.exe
+*.so
+*.a
