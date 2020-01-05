@@ -4,6 +4,9 @@ project "crescent"
     kind "ConsoleApp"
     language "C"
     targetdir "bin"
+
+    includedirs { "src" }
+
     files {"src/**.h", "src/**.c"}
 
     filter "configurations:Debug"
@@ -17,6 +20,7 @@ project "crescent"
     filter "system:linux"
 		--linkoptions {"-lvulkan"}
         defines { "PL_LINUX=1", "PL_WINDOWS=0"}
+        buildoptions { "-Wall" }
         linkoptions { "-lm" }
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions

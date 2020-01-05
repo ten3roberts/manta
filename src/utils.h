@@ -1,3 +1,5 @@
+#pragma once
+
 // Contains utility functions used by the engine
 #include <stdlib.h>
 
