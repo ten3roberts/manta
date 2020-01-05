@@ -14,9 +14,9 @@ project "crescent"
       defines { "DEBUG=0", "RELEASE=1" }
       optimize "On"
 
-      filter "system:linux"
+    filter "system:linux"
 		--linkoptions {"-lvulkan"}
-		defines { "PL_LINUX=1", "PL_WINDOWS=0"}
+        defines { "PL_LINUX=1", "PL_WINDOWS=0"}
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions
 	filter "system:windows"
