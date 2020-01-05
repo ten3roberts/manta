@@ -17,6 +17,7 @@ project "crescent"
     filter "system:linux"
 		--linkoptions {"-lvulkan"}
         defines { "PL_LINUX=1", "PL_WINDOWS=0"}
+        linkoptions { "-lm" }
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions
 	filter "system:windows"
