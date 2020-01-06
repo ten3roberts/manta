@@ -1,4 +1,5 @@
 #include "math/mat4.h"
+#include "math/quaternion.h"
 #include "math/vec3.h"
 #include "utils.h"
 #include <stdio.h>
@@ -13,9 +14,12 @@ int main(int argc, char ** argv)
 {
 	char buf[100];
 	dir_up(argv[0], buf, sizeof buf, 2);
-	mat4 a = mat4_translate((vec3){0, 1, 0});
 
-	vec3 v = {1, 1, 1};
-	v = mat4_vec3_mul(&a, v);
-	printf("%f, %f, %f\n", v.x, v.y, v.z);
+	// quaternion q = quat_axis_angle((vec3){1,1,0}, 2);
+	quaternion q = quat_axis_angle((vec3){0, 1, 0}, DEG_90);
+	printf("%f, %f, %f, %f\n", q.x, q.y, q.z, q.w);
+	vec3 v = quat_vec3_mul(q, vec3_forward);
+	printf("%f %f %f,\n", v.x, v.y, v.z);
+	v = quat_vec3_mul(q, vec3_right);
+	printf("%f %f %f,\n", v.x, v.y, v.z);
 }

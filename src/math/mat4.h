@@ -28,7 +28,7 @@ const static mat4 mat4_identity = {{{1, 0, 0, 0},
 
 									{0, 0, 0, 1}}};
 
-// Creates a translation matrix
+// Returns a translation matrix
 mat4 mat4_translate(vec3 v)
 {
 	mat4 result;

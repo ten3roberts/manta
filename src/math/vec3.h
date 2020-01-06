@@ -1,6 +1,9 @@
 #pragma once
 
+#include "vec4.h"
+#include "math_extra.h"
 #include <math.h>
+
 #include <stdlib.h>
 
 typedef struct
@@ -11,7 +14,7 @@ typedef struct
 const static vec3 vec3_one = {1, 1, 1};
 const static vec3 vec3_zero = {0, 0, 0};
 
-const static vec3 vec3_forwards = {0, 0, 1};
+const static vec3 vec3_forward = {0, 0, 1};
 const static vec3 vec3_right = {1, 0, 0};
 const static vec3 vec3_up = {0, 1, 0};
 
@@ -41,7 +44,7 @@ vec3 vec3_scale(vec3 a, float b)
 	return (vec3){a.x * b, a.y * b, a.z * b};
 }
 
-// Returns the normalized vector of a
+// Returns the normalized vector a
 vec3 vec3_norm(vec3 a)
 {
 	float mag = sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
@@ -51,6 +54,23 @@ vec3 vec3_norm(vec3 a)
 float vec3_dot(vec3 a, vec3 b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+vec3 vec3_cross(vec3 a, vec3 b)
+{
+	return (vec3){a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+vec3 vec3_reflect(vec3 ray, vec3 normal)
+{
+	vec3 n = vec3_norm(normal);
+	return vec3_subtract(ray, vec3_scale(vec3_scale(n,2), vec3_dot(ray, n)));
+}
+
+vec3 vec3_lerp(vec3 a, vec3 b, float t)
+{
+	t = clampf(t, 0, 1);
+	return vec3_add(vec3_scale(a, 1-t), vec3_scale(b,t));
 }
 
 // Calculates the magnitude of a vector
@@ -108,4 +128,14 @@ vec3 vec3_random_sphere(float minr, float maxr)
 	result = vec3_scale(result, randomLength * (maxr - minr) + minr);
 
 	return result;
+}
+
+vec3 to_vec3(vec4 a)
+{
+	return (vec3){a.x,a.y,a.z};
+}
+
+vec4 to_vec4(vec3 a, float w)
+{
+	return (vec4){a.x,a.y,a.z, w};
 }
