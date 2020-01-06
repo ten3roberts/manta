@@ -1,13 +1,21 @@
 workspace "crescent"
     configurations { "Debug", "Release" }
+
+-- variable is required for glfw's premake5 file
+outputdir = ""
+
+include "vendor/glfw"
+
 project "crescent"
     kind "ConsoleApp"
     language "C"
     targetdir "bin"
 
-    includedirs { "src" }
+    includedirs { "src", "vendor/glfw/include" }
 
     files {"src/**.h", "src/**.c"}
+
+    links "glfw"
 
     filter "configurations:Debug"
       defines { "DEBUG=1", "RELEASE=0" }
