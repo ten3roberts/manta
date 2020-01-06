@@ -1,3 +1,5 @@
+#pragma once
+
 float clampf(float f, float min, float max)
 {
     return (f < min ? min : f > max ? max : f);

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "limits.h"
 #include "types.h"
 uint randi(uint32 index)
