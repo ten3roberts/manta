@@ -7,7 +7,7 @@ typedef struct
 	int width, height;
 	int in_focus;
 	GLFWwindow * raw_window;
-} Window;
+} _Window;
 
 Window window_create(char* title, int width, int height)
 {

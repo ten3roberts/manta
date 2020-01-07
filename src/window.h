@@ -10,7 +10,7 @@ typedef enum
 		WS_FULLSCREEN
 }WindowStyle;
 
-typedef void Window;
+typedef struct _Window* Window;
 
 Window window_create(char* title, int width, int height);
 

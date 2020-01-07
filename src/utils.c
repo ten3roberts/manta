@@ -1,50 +1,51 @@
 #include "utils.h"
-#include <dirent.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+
 
 #if PL_LINUX
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #elif PL_WINDOWS
 #include <Windows.h>
-#include <pathect.h>
 #include <shlobj_core.h>
 #include <stdio.h>
 #include <sys/types.h>
 #endif
 
-int is_regular_file(const char * path)
+int is_regular_file(const char* path)
 {
-	struct stat path_stat;
+	/*struct stat path_stat;
 	stat(path, &path_stat);
-	return S_ISREG(path_stat.st_mode);
+	return S_ISREG(path_stat.st_mode);*/
 }
 
-int is_dir(const char * path)
+int is_dir(const char* path)
 {
-	struct stat path_stat;
+	/*struct stat path_stat;
 	stat(path, &path_stat);
-	return S_ISDIR(path_stat.st_mode);
+	return S_ISDIR(path_stat.st_mode);*/
 }
 
-size_t listdir(const char * dir, char ** result, size_t size, size_t depth)
+#if PL_LINUX
+size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 {
-	DIR * dp = opendir(dir);
+	DIR* dp = opendir(dir);
 
-	struct dirent * ep;
-	size_t file_count = 0;
+	struct dirent* ep;
 	if (dp != NULL)
 	{
 		while ((ep = readdir(dp)))
 		{
 			char full_path[PATH_MAX];
 			strcpy(full_path, dir);
-			strcpy(full_path, dir);
 			if (dir[strlen(dir) - 1] != '/')
-				strcat(full_path, ep->d_name);
+				strcat(full_path, "/");
+			strcat(full_path, ep->d_name);
 
 			if (!strcmp(ep->d_name, "..") || !strcmp(ep->d_name, "."))
 				continue;
@@ -54,15 +55,19 @@ size_t listdir(const char * dir, char ** result, size_t size, size_t depth)
 				if (depth == 1)
 					continue;
 				size_t tmp = listdir(full_path, result, size, depth - 1);
-				result += tmp;
-				size -= tmp;
+				result += size - tmp;
+				size = tmp;
 			}
-			if (result && size)
+			else if (result && size)
 			{
 				strcpy(*result, full_path);
 				result++;
 				size--;
 				file_count++;
+			}
+			else
+			{
+				return 0;
 			}
 		}
 		(void)closedir(dp);
@@ -72,14 +77,14 @@ size_t listdir(const char * dir, char ** result, size_t size, size_t depth)
 		printf("Unable to open directory %s\n", dir);
 		return 0;
 	}
-	return file_count;
+	return size;
 }
 
-int find_file(const char * dir, char * result, size_t size, const char * filename)
+int find_file(const char* dir, char* result, size_t size, const char* filename)
 {
-	DIR * dp = opendir(dir);
+	DIR* dp = opendir(dir);
 
-	struct dirent * ep;
+	struct dirent* ep;
 	if (dp != NULL)
 	{
 		while ((ep = readdir(dp)))
@@ -114,8 +119,95 @@ int find_file(const char * dir, char * result, size_t size, const char * filenam
 	}
 	return EXIT_FAILURE;
 }
+#elif PL_WINDOWS
+size_t listdir(const char* dir, char** result, size_t size, size_t depth)
+{
+	char pattern[2048];
+	snprintf(pattern, 2048, "%s\\*", dir);
 
-void get_filename(const char * path, char * result, size_t size)
+	WIN32_FIND_DATA data;
+	HANDLE hFind;
+
+	char fname[2048];
+	if ((hFind = FindFirstFileA(pattern, &data)) != INVALID_HANDLE_VALUE) {
+		do {
+			sprintf(fname, "%ws", data.cFileName);
+			if (!strcmp(fname, ".") || !strcmp(fname, ".."))
+				continue;
+
+			char full_path[2048];
+			strcpy(full_path, dir);
+			if (dir[strlen(dir) - 1] != '/')
+				strcat(full_path, "/");
+			strcat(full_path, fname);
+
+			if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (depth == 1)
+					continue;
+				size_t tmp = listdir(full_path, result, size, depth - 1);
+				result += size - tmp;
+				size = tmp;
+			}
+			else if (result && size)
+			{
+				posix_path(full_path, full_path, strlen(full_path));
+				strcpy(*result, full_path);
+				result++;
+				size--;
+			}
+			else
+			{
+				return 0;
+			}
+		} while (FindNextFile(hFind, &data) != 0);
+		FindClose(hFind);
+	}
+	return size;
+}
+int find_file(const char* dir, char* result, size_t size, const char* filename)
+{
+	char pattern[2048];
+	snprintf(pattern, 2048, "%s\\*", dir);
+
+	WIN32_FIND_DATA data;
+	HANDLE hFind;
+
+	char fname[2048];
+	if ((hFind = FindFirstFileA(pattern, &data)) != INVALID_HANDLE_VALUE) {
+		do {
+			sprintf(fname, "%ws", data.cFileName);
+			if (!strcmp(fname, ".") || !strcmp(fname, ".."))
+				continue;
+
+			char full_path[2048];
+			strcpy(full_path, dir);
+			if (dir[strlen(dir) - 1] != '/')
+				strcat(full_path, "/");
+			strcat(full_path, fname);
+
+			if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				if (find_file(full_path, result, size, filename) == EXIT_SUCCESS)
+					return EXIT_SUCCESS;
+			}
+			else if (strcmp(fname, filename) == 0)
+			{
+				posix_path(full_path, full_path, strlen(full_path));
+				strncpy(result, full_path, size);
+				return EXIT_SUCCESS;
+			}
+			else
+			{
+			}
+		} while (FindNextFile(hFind, &data) != 0);
+		FindClose(hFind);
+	}
+	return EXIT_FAILURE;
+}
+#endif
+
+void get_filename(const char* path, char* result, size_t size)
 {
 	for (size_t i = strlen(path); i != 0; i--)
 	{
@@ -129,7 +221,7 @@ void get_filename(const char * path, char * result, size_t size)
 	}
 }
 
-void get_dir(const char * path, char * result, size_t size)
+void get_dir(const char* path, char* result, size_t size)
 {
 	for (size_t i = strlen(path); i != 0; i--)
 	{
@@ -144,7 +236,7 @@ void get_dir(const char * path, char * result, size_t size)
 }
 
 #if PL_LINUX
-void set_workingdir(const char * dir)
+void set_workingdir(const char* dir)
 {
 	if (chdir(dir))
 	{
@@ -152,13 +244,13 @@ void set_workingdir(const char * dir)
 	}
 }
 #elif PL_WINDOWS
-void set_workingdir(const char * dir)
+void set_workingdir(const char* dir)
 {
 	_chdir(dir);
 }
 #endif
 
-void dir_up(const char * path, char * result, size_t size, size_t steps)
+void dir_up(const char* path, char* result, size_t size, size_t steps)
 {
 	for (size_t i = strlen(path); i != 0; i--)
 	{
@@ -177,7 +269,7 @@ void dir_up(const char * path, char * result, size_t size, size_t steps)
 	}
 }
 
-void posix_path(const char * path, char * result, size_t size)
+void posix_path(const char* path, char* result, size_t size)
 {
 	if (path != result)
 	{
@@ -185,14 +277,14 @@ void posix_path(const char * path, char * result, size_t size)
 		result[min(strlen(path), size)] = '\0';
 	}
 
-	for (char * p = result; *p != '\0'; p++)
+	for (char* p = result; *p != '\0'; p++)
 	{
 		if (*p == '\\')
 			*p = '/';
 	}
 }
 
-void replace_string(const char * src, char * result, size_t size, char find, char replace)
+void replace_string(const char* src, char* result, size_t size, char find, char replace)
 {
 	if (src != result)
 	{
@@ -200,7 +292,7 @@ void replace_string(const char * src, char * result, size_t size, char find, cha
 		result[min(strlen(src), size)] = '\0';
 	}
 
-	for (char * p = result; *p != '\0'; p++)
+	for (char* p = result; *p != '\0'; p++)
 	{
 		if (*p == find)
 			*p = replace;

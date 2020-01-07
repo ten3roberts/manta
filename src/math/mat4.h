@@ -1,5 +1,5 @@
 #pragma once
-
+#define _USE_MATH_DEFINES
 #include "types.h"
 #include "vec3.h"
 #include "vec4.h"

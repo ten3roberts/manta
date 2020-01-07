@@ -7,3 +7,12 @@ obj
 *.exe
 *.so
 *.a
+.filters
+*.swp
+
+# Visual Studio files
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.vs

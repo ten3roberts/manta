@@ -1,5 +1,6 @@
 workspace "crescent"
     configurations { "Debug", "Release" }
+    startproject "crescent"
 
 -- variable is required for glfw's premake5 file
 outputdir = ""
