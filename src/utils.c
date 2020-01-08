@@ -17,21 +17,21 @@
 #include <sys/types.h>
 #endif
 
+#if PL_LINUX
 int is_regular_file(const char* path)
 {
-	/*struct stat path_stat;
+	struct stat path_stat;
 	stat(path, &path_stat);
-	return S_ISREG(path_stat.st_mode);*/
+	return S_ISREG(path_stat.st_mode);
 }
 
 int is_dir(const char* path)
 {
-	/*struct stat path_stat;
+	struct stat path_stat;
 	stat(path, &path_stat);
-	return S_ISDIR(path_stat.st_mode);*/
+	return S_ISDIR(path_stat.st_mode);
 }
 
-#if PL_LINUX
 size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 {
 	DIR* dp = opendir(dir);
@@ -63,7 +63,6 @@ size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 				strcpy(*result, full_path);
 				result++;
 				size--;
-				file_count++;
 			}
 			else
 			{
@@ -120,6 +119,22 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 	return EXIT_FAILURE;
 }
 #elif PL_WINDOWS
+int is_regular_file(const char* path)
+{
+	DWORD dwAttrib = GetFileAttributesA(path);
+
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+		!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+int is_dir(const char* path)
+{
+	DWORD dwAttrib = GetFileAttributesA(path);
+
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
 size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 {
 	char pattern[2048];
@@ -252,7 +267,8 @@ void set_workingdir(const char* dir)
 
 void dir_up(const char* path, char* result, size_t size, size_t steps)
 {
-	for (size_t i = strlen(path); i != 0; i--)
+	size_t len = strlen(path)-1;
+	for (size_t i = len; i != 0; i--)
 	{
 		if (steps == 0)
 		{
@@ -262,7 +278,7 @@ void dir_up(const char* path, char* result, size_t size, size_t steps)
 		}
 
 		// If it is at a path delimeter
-		if (path[i] == '\\' || path[i] == '/')
+		if ((path[i] == '\\' || path[i] == '/') && i != len)
 		{
 			steps--;
 		}
