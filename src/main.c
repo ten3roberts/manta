@@ -13,10 +13,13 @@ void mat4_print(mat4* a)
 
 int main(int argc, char** argv)
 {
-	char buf[128];
-	dir_up(argv[0], buf, sizeof buf, 2);
-	puts(buf);
-	dir_up("./a/b/", buf, sizeof buf, 1);
-	puts(buf);
+	// Changes the working directory to be consistent no matter how the application is started
+	{
+		char buf[2048];
+		dir_up(argv[0], buf, sizeof buf, 2);
+	}
+
+	quaternion q = quat_axis_angle((vec3) { 1, 0, 0 }, 1);
+	q = quat_ang_scale(q, 2);
 	while (1);
 }

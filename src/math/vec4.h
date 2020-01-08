@@ -15,12 +15,14 @@ const static vec4 vec4_red = {1, 0, 0, 1};
 const static vec4 vec4_green = {0, 1, 0, 1};
 const static vec4 vec4_blue = {0, 0, 1, 1};
 
+// Adds two vectors together component wise
 vec4 vec4_add(vec4 a, vec4 b)
 {
 	return (vec4){a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w};
 }
 
-vec4 vec4_subtract(vec4 a, vec4 b)
+// Subtracts two vectors component wise
+vec4 vec4_sub(vec4 a, vec4 b)
 {
 	return (vec4){a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w};
 }
@@ -40,10 +42,11 @@ vec4 vec4_scale(vec4 a, float b)
 // Returns the normalized vector of a
 vec4 vec4_norm(vec4 a)
 {
-	float mag = sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
+	float mag = sqrtf(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
 	return (vec4){a.x / mag, a.y / mag, a.z / mag};
 }
 
+// Calculates the dot product between two vectors
 float vec4_dot(vec4 a, vec4 b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
@@ -52,7 +55,7 @@ float vec4_dot(vec4 a, vec4 b)
 // Calculates the magnitude of a vector
 float vec4_mag(vec4 a)
 {
-	return sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
+	return sqrtf(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
 }
 
 // Calculates the squared magnitude of a vector
