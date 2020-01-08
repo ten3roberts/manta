@@ -195,7 +195,7 @@ quaternion quat_slerp(quaternion a, quaternion b, float t)
 		//  If the inputs are too close, linearly interpolate
 		//  and Normalize the result.
 
-		quaternion result = quat_add(a, quat_scale(quat_subtract(b, a), t));
+		quaternion result = quat_add(a, quat_scale(quat_sub(b, a), t));
 		result = quat_norm(result);
 		return result;
 	}
@@ -219,7 +219,7 @@ quaternion quat_lerp(quaternion a, quaternion b, float t)
 	//  If the inputs are too close, linearly interpolate
 	//  and Normalize the result.
 	t = clampf(t, 0, 1);
-	quaternion result = quat_add(a, quat_scale(quat_subtract(b, a), t));
+	quaternion result = quat_add(a, quat_scale(quat_sub(b, a), t));
 	result = quat_norm(result);
 	return result;
 }

@@ -10,10 +10,15 @@ typedef enum
 		WS_FULLSCREEN
 }WindowStyle;
 
-typedef struct _Window* Window;
+typedef void Window;
 
-Window window_create(char* title, int width, int height);
+extern Window* window_create(char* title, int width, int height);
 
-/*void window_destroy(Window window);
+// Destroys a window and frees all resources
+extern void window_destroy(Window* window);
 
-void window_update(Window window);*/
+extern void window_update(Window* window);
+
+// Returns true if the window should close
+extern bool window_get_close(Window* window);
+

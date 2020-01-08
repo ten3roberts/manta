@@ -1,4 +1,5 @@
 #pragma once
+#include <stdbool.h>
 
 float clampf(float f, float min, float max)
 {
