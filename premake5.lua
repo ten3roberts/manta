@@ -1,4 +1,6 @@
 workspace "crescent"
+    -- Only x64 architecture is supported
+    architecture "x64"
     configurations { "Debug", "Release" }
     startproject "crescent"
 
@@ -10,6 +12,7 @@ include "vendor/glfw"
 
 project "crescent"
     kind "ConsoleApp"
+
     language "C"
     targetdir "bin"
 
@@ -19,7 +22,7 @@ project "crescent"
     files {"src/**.h", "src/**.c"}
 
 	-- links glfw with crescent
-    links "glfw"
+    links {"GLFW"}
 
 	-- specifies configuration specific options
     filter "configurations:Debug"
@@ -32,11 +35,12 @@ project "crescent"
 
 	-- sets platform specific includes
     filter "system:linux"
-		--linkoptions {"-lvulkan"}
-        defines { "PL_LINUX=1", "PL_WINDOWS=0"}
-        buildoptions { "-Wall" }
-        linkoptions { "-lm" }
+    --linkoptions {"-lvulkan"}
+        defines { "PL_LINUX=1"}
+        buildoptions { "-pthread" }
+
+        links { "dl", "pthread", "X11", "GL", "vulkan" }
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions
 	filter "system:windows"
-		defines { "PL_LINUX=0", "PL_WINDOWS=1"}
+		defines {"PL_WINDOWS=1"}

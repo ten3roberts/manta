@@ -1,7 +1,9 @@
 #include "string.h"
 #include <GLFW/glfw3.h>
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct
 {
@@ -15,11 +17,12 @@ typedef struct
 bool glfw_initialized = false;
 size_t window_count = 0;
 
-Window* window_create(char* title, int width, int height)
+Window * window_create(char * title, int width, int height)
 {
-	glfwInit();
+	if (!glfw_initialized)
+		glfwInit();
 	printf("Creating window\n");
-	Window* window = malloc(sizeof (Window));
+	Window * window = malloc(sizeof(Window));
 
 	window->width = width;
 	window->height = height;
@@ -27,13 +30,12 @@ Window* window_create(char* title, int width, int height)
 	window->should_close = false;
 	strcpy(window->title, title);
 
-
 	window->raw_window = glfwCreateWindow(width, height, title, NULL, NULL);
 	window_count++;
 	return window;
 }
 
-void window_destroy(Window* window)
+void window_destroy(Window * window)
 {
 	glfwDestroyWindow(window->raw_window);
 	window_count--;
@@ -41,14 +43,13 @@ void window_destroy(Window* window)
 		glfwTerminate();
 }
 
-
-void window_update(Window* window)
+void window_update(Window * window)
 {
-	glfwPollEvents(window);
+	glfwPollEvents();
 	window->should_close = glfwWindowShouldClose(window->raw_window);
 }
 
-bool window_get_close(Window* window)
+bool window_get_close(Window * window)
 {
 	return window->should_close;
 }
