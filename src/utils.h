@@ -18,6 +18,9 @@ size_t listdir(const char * dir, char ** result, size_t size, size_t depth);
 // If result is NULL, the function only returns the existence of the file
 int find_file(const char * dir, char * result, size_t size, const char * filename);
 
+// Will create all dirs in path
+void create_dirs(const char* path);
+
 // Gets the file name from a path and copies it to result
 void get_filename(const char * path, char * result, size_t size);
 

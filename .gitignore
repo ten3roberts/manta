@@ -16,3 +16,7 @@ obj
 *.vcxproj.filters
 *.vcxproj.user
 *.vs
+
+
+*.log
+logs/

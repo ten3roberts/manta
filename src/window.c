@@ -19,11 +19,17 @@ size_t window_count = 0;
 
 Window * window_create(char * title, int width, int height)
 {
-	if (!glfw_initialized)
+	// Make sure to initialize glfw once
+	if (!glfw_initialized && glfwInit())
+		glfw_initialized = 1;
+
 		glfwInit();
 	printf("Creating window\n");
 	Window * window = malloc(sizeof(Window));
-
+	if (window == NULL)
+	{
+		return NULL;
+	}
 	window->width = width;
 	window->height = height;
 	window->in_focus = 1;
@@ -41,6 +47,7 @@ void window_destroy(Window * window)
 	window_count--;
 	if (window_count == 0)
 		glfwTerminate();
+	free(window);
 }
 
 void window_update(Window * window)

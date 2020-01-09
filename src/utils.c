@@ -118,6 +118,21 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 	}
 	return EXIT_FAILURE;
 }
+void create_dirs(const char* path)
+{
+	char buf[2048];
+	for (size_t i = 0; i < strlen(path); i++)
+	{
+		if (path[i] == '/' || path[i] == '\\')
+		{
+			strncpy(buf, path, i);
+			buf[i] = '\0';
+			if (!strcmp(buf, ".") || !strcmp(buf, "") || !strcmp(buf + 1, ":"))
+				continue;
+			mkdir(buf, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)
+		}
+	}
+}
 #elif PL_WINDOWS
 int is_regular_file(const char* path)
 {
@@ -220,6 +235,23 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 	}
 	return EXIT_FAILURE;
 }
+void create_dirs(const char* path)
+{
+	char buf[2048];
+	size_t len = strlen(path);
+	for (size_t i = 0; i < len; i++)
+	{
+		if (path[i] == '/' || path[i] == '\\' || i == len-1)
+		{
+			strncpy(buf, path, i+1);
+			buf[i+1] = '\0';
+			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "")
+				|| !strcmp(buf + 1, ":") || !strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
+				continue;
+			CreateDirectoryA(buf, NULL);
+		}
+	}
+}
 #endif
 
 void get_filename(const char* path, char* result, size_t size)
@@ -267,7 +299,7 @@ void set_workingdir(const char* dir)
 
 void dir_up(const char* path, char* result, size_t size, size_t steps)
 {
-	size_t len = strlen(path)-1;
+	size_t len = strlen(path) - 1;
 	for (size_t i = len; i != 0; i--)
 	{
 		if (steps == 0)
