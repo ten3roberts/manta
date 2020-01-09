@@ -39,7 +39,7 @@ project "crescent"
         defines { "PL_LINUX=1"}
         buildoptions { "-pthread" }
 
-        links { "dl", "pthread", "X11", "GL", "vulkan" }
+        links { "m", "dl", "pthread", "X11", "GL", "vulkan" }
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions
 	filter "system:windows"

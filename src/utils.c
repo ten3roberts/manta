@@ -129,7 +129,7 @@ void create_dirs(const char* path)
 			buf[i] = '\0';
 			if (!strcmp(buf, ".") || !strcmp(buf, "") || !strcmp(buf + 1, ":"))
 				continue;
-			mkdir(buf, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)
+			mkdir(buf, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		}
 	}
 }

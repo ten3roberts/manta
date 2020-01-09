@@ -7,9 +7,12 @@
 
 static void ftoa_fixed(char* buffer, double value);
 static void ftoa_sci(char* buffer, double value);
-
+void itoa(int a, char* buf, int base)
+{
+	strcpy(buf, "TODO : imp itoa");
+}
 #if PL_LINUX
-void set_print_color(int color) { printf("\u001b[%dm", color); }
+void set_print_color(int color) { printf("", color); }
 #elif PL_WINDOWS
 #include <windows.h>
 void set_print_color(int color)
@@ -181,7 +184,7 @@ int log_call(int color, const char* name, const char* fmt, ...)
 	// Write the header
 	char buffer[512];
 	{
-		strcpy(buffer, "[ ", sizeof buffer);
+		strcpy(buffer, "[ ");
 		strcat(buffer, name);
 		strcat(buffer, " @ ");
 
@@ -215,7 +218,7 @@ int log_call(int color, const char* name, const char* fmt, ...)
 				// %c character
 			case 'c':
 				char_tmp = va_arg(arg, int);
-				WRITE(char_tmp);
+				WRITECH(char_tmp);
 				length++;
 				break;
 
