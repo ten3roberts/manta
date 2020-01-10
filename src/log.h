@@ -1,3 +1,5 @@
+#include <string.h>
+
 #if PL_LINUX
 #define CONSOLE_WHITE 37
 #define CONSOLE_GREEN 32

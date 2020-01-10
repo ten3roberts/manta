@@ -2,6 +2,14 @@
 #include <stdbool.h>
 #include <math.h>
 
+#define GIGABYTE 1073741824
+#define MEGABYTE 1048576
+#define KILOBYTE 1048576
+
+#define GIGA 1000000000
+#define MEGA 1000000
+#define KILO 1000
+
 inline float clampf(float f, float min, float max)
 {
     return (f < min ? min : f > max ? max : f);
@@ -22,4 +30,4 @@ static void itoa(int a, char* buf, int base)
 {
 	strcpy(buf, "TODO : imp itoa");
 }
-#endif;
+#endif
