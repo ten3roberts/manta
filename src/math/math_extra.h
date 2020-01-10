@@ -1,12 +1,13 @@
 #pragma once
 #include <stdbool.h>
+#include <math.h>
 
-float clampf(float f, float min, float max)
+inline float clampf(float f, float min, float max)
 {
     return (f < min ? min : f > max ? max : f);
 }
 
-int clampi(int f, int min, int max)
+inline int clampi(int f, int min, int max)
 {
 	return (f < min ? min : f > max ? max : f);
 }
@@ -15,3 +16,10 @@ int clampi(int f, int min, int max)
 #define DEG_180 (M_PI)
 #define DEG_90 (M_PI/2)
 #define DEG_45 (M_PI/4)
+
+#if PL_LINUX
+static void itoa(int a, char* buf, int base)
+{
+	strcpy(buf, "TODO : imp itoa");
+}
+#endif;

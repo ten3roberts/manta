@@ -1,5 +1,6 @@
 #include "log.h"
 #include "utils.h"
+#include "math/math_extra.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -7,10 +8,7 @@
 
 static void ftoa_fixed(char* buffer, double value);
 static void ftoa_sci(char* buffer, double value);
-void itoa(int a, char* buf, int base)
-{
-	strcpy(buf, "TODO : imp itoa");
-}
+
 #if PL_LINUX
 void set_print_color(int color) { printf("", color); }
 #elif PL_WINDOWS

@@ -121,13 +121,15 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 void create_dirs(const char* path)
 {
 	char buf[2048];
-	for (size_t i = 0; i < strlen(path); i++)
+	size_t len = strlen(path);
+	for (size_t i = 0; i < len; i++)
 	{
-		if (path[i] == '/' || path[i] == '\\')
+		if (path[i] == '/' || path[i] == '\\' || i == len - 1)
 		{
-			strncpy(buf, path, i);
-			buf[i] = '\0';
-			if (!strcmp(buf, ".") || !strcmp(buf, "") || !strcmp(buf + 1, ":"))
+			strncpy(buf, path, i + 1);
+			buf[i + 1] = '\0';
+			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "")
+				|| !strcmp(buf + 1, ":") || !strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
 				continue;
 			mkdir(buf, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		}
