@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "log.h"
 #include <string.h>
+#include "cr_time.h"
 void mat4_print(mat4* a)
 {
 	for (uint8 i = 0; i < 4; i++)
@@ -21,6 +22,7 @@ struct my_struct
 int main(int argc, char** argv)
 {
 	log_init();
+	time_init();
 	// Changes the working directory to be consistent no matter how the application is started
 	{
 		char buf[2048];
@@ -36,6 +38,9 @@ int main(int argc, char** argv)
 	while (!window_get_close(window))
 	{
 		window_update(window);
+		time_update();
+		LOG("Elapsed time %f", time_delta());
+		SLEEP(0.1f);
 	}
 	window_destroy(window);
 	log_terminate();
