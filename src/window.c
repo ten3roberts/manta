@@ -10,11 +10,11 @@ typedef struct
 	char title[256];
 	int width, height;
 	int in_focus;
-	bool should_close;
+	int should_close;
 	GLFWwindow * raw_window;
 } Window;
 
-bool glfw_initialized = false;
+int glfw_initialized = 0;
 size_t window_count = 0;
 
 Window * window_create(char * title, int width, int height)
@@ -33,7 +33,7 @@ Window * window_create(char * title, int width, int height)
 	window->width = width;
 	window->height = height;
 	window->in_focus = 1;
-	window->should_close = false;
+	window->should_close = 0;
 	strcpy(window->title, title);
 
 	window->raw_window = glfwCreateWindow(width, height, title, NULL, NULL);
