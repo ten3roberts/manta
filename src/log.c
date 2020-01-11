@@ -1,16 +1,21 @@
 #include "log.h"
-#include "utils.h"
 #include "math/math_extra.h"
+#include "utils.h"
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
-static void ftoa_fixed(char* buffer, double value);
-static void ftoa_sci(char* buffer, double value);
-
+static void ftoa_fixed(char * buffer, double value);
+static void ftoa_sci(char * buffer, double value);
+void itoa(int i, char * buf, int base)
+{
+}
 #if PL_LINUX
-void set_print_color(int color) { printf("", color); }
+void set_print_color(int color)
+{
+	printf("", color);
+}
 #elif PL_WINDOWS
 #include <windows.h>
 void set_print_color(int color)
@@ -22,16 +27,19 @@ void set_print_color(int color)
 }
 #endif
 
-int normalize(double* val) {
+int normalize(double * val)
+{
 	int exponent = 0;
 	double value = *val;
 
-	while (value >= 1.0) {
+	while (value >= 1.0)
+	{
 		value /= 10.0;
 		++exponent;
 	}
 
-	while (value < 0.1) {
+	while (value < 0.1)
+	{
 		value *= 10.0;
 		--exponent;
 	}
@@ -39,7 +47,8 @@ int normalize(double* val) {
 	return exponent;
 }
 
-static void ftoa_fixed(char* buffer, double value) {
+static void ftoa_fixed(char * buffer, double value)
+{
 	/* carry out a fixed conversion of a double value to a string, with a precision of 5 decimal digits.
 	 * Values with absolute values less than 0.000001 are rounded to 0.0
 	 * Note: this blindly assumes that the buffer will be large enough to hold the largest possible result.
@@ -52,20 +61,23 @@ static void ftoa_fixed(char* buffer, double value) {
 	int places = 0;
 	static const int width = 4;
 
-	if (value == 0.0) {
+	if (value == 0.0)
+	{
 		buffer[0] = '0';
 		buffer[1] = '\0';
 		return;
 	}
 
-	if (value < 0.0) {
+	if (value < 0.0)
+	{
 		*buffer++ = '-';
 		value = -value;
 	}
 
 	exponent = normalize(&value);
 
-	while (exponent > 0) {
+	while (exponent > 0)
+	{
 		int digit = value * 10;
 		*buffer++ = digit + '0';
 		value = value * 10 - digit;
@@ -78,13 +90,15 @@ static void ftoa_fixed(char* buffer, double value) {
 
 	*buffer++ = '.';
 
-	while (exponent < 0 && places < width) {
+	while (exponent < 0 && places < width)
+	{
 		*buffer++ = '0';
 		--exponent;
 		++places;
 	}
 
-	while (places < width) {
+	while (places < width)
+	{
 		int digit = value * 10.0;
 		*buffer++ = digit + '0';
 		value = value * 10.0 - digit;
@@ -94,19 +108,22 @@ static void ftoa_fixed(char* buffer, double value) {
 }
 
 // Converts a float to scientific notation
-void ftoa_sci(char* buffer, double value) {
+void ftoa_sci(char * buffer, double value)
+{
 	int exponent = 0;
 	int places = 0;
 	static const int width = 4;
 
-	// If value is 0, 
-	if (value == 0.0) {
+	// If value is 0,
+	if (value == 0.0)
+	{
 		buffer[0] = '0';
 		buffer[1] = '\0';
 		return;
 	}
 
-	if (value < 0.0) {
+	if (value < 0.0)
+	{
 		*buffer++ = '-';
 		value = -value;
 	}
@@ -120,7 +137,8 @@ void ftoa_sci(char* buffer, double value) {
 
 	*buffer++ = '.';
 
-	for (int i = 0; i < width; i++) {
+	for (int i = 0; i < width; i++)
+	{
 		int digit = value * 10.0;
 		*buffer++ = digit + '0';
 		value = value * 10.0 - digit;
@@ -130,15 +148,25 @@ void ftoa_sci(char* buffer, double value) {
 	itoa(exponent, buffer, 10);
 }
 
-
-FILE* log_file = NULL;
+FILE * log_file = NULL;
 #if DEBUG
-#define WRITE(s) fputs(s, stdout), fputs(s, log_file); fflush(log_file);
+#define WRITE(s)                                                                                                       \
+	fputs(s, stdout), fputs(s, log_file);                                                                              \
+	fflush(log_file);
 #else
 #define WRITE(s) fputs(s, stdout), fputs(s, log_file);
 #endif
-#define FLUSH_BUFCH buffer[buffer_index] = '\0'; WRITE(buffer); buffer_index = 0;
-#define WRITECH(c)  buffer[buffer_index] = c; buffer_index++ ; if(buffer_index == 510){ FLUSH_BUFCH } ;
+#define FLUSH_BUFCH                                                                                                    \
+	buffer[buffer_index] = '\0';                                                                                       \
+	WRITE(buffer);                                                                                                     \
+	buffer_index = 0;
+#define WRITECH(c)                                                                                                     \
+	buffer[buffer_index] = c;                                                                                          \
+	buffer_index++;                                                                                                    \
+	if (buffer_index == 510)                                                                                           \
+	{                                                                                                                  \
+		FLUSH_BUFCH                                                                                                    \
+	};
 
 void log_init()
 {
@@ -147,7 +175,7 @@ void log_init()
 
 	char fname[256];
 	time_t rawtime;
-	struct tm* timeinfo;
+	struct tm * timeinfo;
 
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
@@ -165,15 +193,15 @@ void log_terminate()
 	log_file = NULL;
 }
 
-int log_call(int color, const char* name, const char* fmt, ...) 
+int log_call(int color, const char * name, const char * fmt, ...)
 {
 	va_list arg;
 
 	va_start(arg, fmt);
 
-	int int_tmp;
+	long long int_tmp;
 	char char_tmp;
-	char* string_tmp;
+	char * string_tmp;
 	double double_tmp;
 	set_print_color(color);
 	// When chars in format are written they are saved to buf
@@ -187,7 +215,7 @@ int log_call(int color, const char* name, const char* fmt, ...)
 		strcat(buffer, " @ ");
 
 		time_t rawtime;
-		struct tm* timeinfo;
+		struct tm * timeinfo;
 
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
@@ -200,45 +228,77 @@ int log_call(int color, const char* name, const char* fmt, ...)
 	char ch;
 	int length = 0;
 	int is_long = 0;
-	while (ch = *fmt++) 
+	while (ch = *fmt++)
 	{
 		if ('%' == ch)
 		{
 			FLUSH_BUFCH;
-			switch (ch = *fmt++) 
+			switch (ch = *fmt++)
 			{
-				// %% precent sign
+			// %% precent sign
 			case '%':
 				WRITECH('%');
 				length++;
 				break;
 
-				// %c character
+			// %c character
 			case 'c':
 				char_tmp = va_arg(arg, int);
 				WRITECH(char_tmp);
 				length++;
 				break;
 
-				// %s string
+			// %s string
 			case 's':
-				string_tmp = va_arg(arg, char*);
+				string_tmp = va_arg(arg, char *);
 				WRITE(string_tmp);
 				length += strlen(string_tmp);
 				break;
 
-				// %d int
-			case 'd':
+			// %o int
+			case 'b':
 				int_tmp = va_arg(arg, int);
-				itoa(int_tmp, buffer, 10);
+				utos(int_tmp, buffer, 2, 0);
 				WRITE(buffer);
 				length += strlen(buffer);
 				break;
 
-				// %x int hex
+			// %o int
+			case 'o':
+				int_tmp = va_arg(arg, int);
+				utos(int_tmp, buffer, 8, 0);
+				WRITE(buffer);
+				length += strlen(buffer);
+				break;
+
+			// %d int
+			case 'd':
+				int_tmp = va_arg(arg, int);
+				itos(int_tmp, buffer, 10, 0);
+				WRITE(buffer);
+				length += strlen(buffer);
+				break;
+
+			// %u int
+			case 'u':
+				int_tmp = va_arg(arg, int);
+				utos(int_tmp, buffer, 16, 0);
+				WRITE(buffer);
+				length += strlen(buffer);
+				break;
+
+			// %x int hex
 			case 'x':
 				int_tmp = va_arg(arg, int);
-				itoa(int_tmp, buffer, 16);
+				utos(int_tmp, buffer, 16, 0);
+				WRITE(buffer);
+				length += strlen(buffer);
+				break;
+
+			// %x int hex
+			case 'X':
+				int_tmp = va_arg(arg, int);
+				utos(int_tmp, buffer, 16, 1);
 				WRITE(buffer);
 				length += strlen(buffer);
 				break;
@@ -246,7 +306,7 @@ int log_call(int color, const char* name, const char* fmt, ...)
 			// %f float
 			case 'f':
 				double_tmp = va_arg(arg, double);
-				ftoa_fixed(buffer, double_tmp);
+				ftos(double_tmp, buffer, 3);
 				WRITE(buffer);
 				length += strlen(buffer);
 				break;
@@ -257,9 +317,18 @@ int log_call(int color, const char* name, const char* fmt, ...)
 				WRITE(buffer);
 				length += strlen(buffer);
 				break;
+
+			case 'p':
+				int_tmp = (size_t)va_arg(arg, void*);
+				utos(int_tmp, buffer, 16, 0);
+				WRITE("b");
+				WRITE(buffer);
+				length += strlen(buffer);
+				break;
 			}
 		}
-		else {
+		else
+		{
 			WRITECH(ch);
 			length++;
 		}
@@ -271,12 +340,19 @@ int log_call(int color, const char* name, const char* fmt, ...)
 	return length;
 }
 
-#define BUF_WRITE(s) if(buf){ strcpy(buf, s); buf+=strlen(s); } length+=strlen(s);
-int vformat(char* buf, size_t size, char const* fmt, va_list arg) {
+#define BUF_WRITE(s)                                                                                                   \
+	if (buf)                                                                                                           \
+	{                                                                                                                  \
+		strcpy(buf, s);                                                                                                \
+		buf += strlen(s);                                                                                              \
+	}                                                                                                                  \
+	length += strlen(s);
+int vformat(char * buf, size_t size, char const * fmt, va_list arg)
+{
 
 	int int_tmp;
 	char char_tmp;
-	char* string_tmp;
+	char * string_tmp;
 	double double_tmp;
 
 	char buf_tmp[512];
@@ -284,10 +360,13 @@ int vformat(char* buf, size_t size, char const* fmt, va_list arg) {
 	char ch;
 	int length = 0;
 	int is_long = 0;
-	while (ch = *fmt++) {
+	while (ch = *fmt++)
+	{
 		is_long = 0;
-		if (ch == '%') {
-			switch (ch = *fmt++) {
+		if (ch == '%')
+		{
+			switch (ch = *fmt++)
+			{
 				/* %% - print out a single %    */
 			case '%':
 				if (buf)
@@ -310,17 +389,17 @@ int vformat(char* buf, size_t size, char const* fmt, va_list arg) {
 
 				/* %s: print out a string       */
 			case 's':
-				string_tmp = va_arg(arg, char*);
+				string_tmp = va_arg(arg, char *);
 				BUF_WRITE(string_tmp)
 
-					break;
+				break;
 
 				/* %d: print out an int         */
 			case 'd':
 				int_tmp = va_arg(arg, int);
 				itoa(int_tmp, buf_tmp, 10);
 				BUF_WRITE(buf_tmp)
-					break;
+				break;
 
 				/* %x: print out an int in hex  */
 			case 'x':
@@ -328,21 +407,21 @@ int vformat(char* buf, size_t size, char const* fmt, va_list arg) {
 				itoa(int_tmp, buf_tmp, 16);
 				BUF_WRITE(buf_tmp)
 
-					break;
+				break;
 
 			case 'f':
 				double_tmp = va_arg(arg, double);
 				ftoa_fixed(buf_tmp, double_tmp);
 				BUF_WRITE(buf_tmp)
 
-					break;
+				break;
 
 			case 'e':
 				double_tmp = va_arg(arg, double);
 				ftoa_sci(buf_tmp, double_tmp);
 				BUF_WRITE(buf_tmp)
 
-					break;
+				break;
 			}
 		}
 		else if (ch == 'l')
