@@ -22,7 +22,7 @@ int application_start()
 	vec4 v = {0.3497,2,3,4};
 	LOG("%4v", v);
 	LOG("%f", 0.01);
-	LOG_OK("TEST", 4);
+	LOG_OK("TEST");
 	
 	while (1)
 	{

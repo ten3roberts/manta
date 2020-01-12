@@ -30,16 +30,16 @@ void log_call(int color, const char* name, const char * fmt, ...);
  
 // Issues a formated log call that prints to stdout and a log file
 // Prints in white color and indicates a normal message
-#define LOG(fmt, ...) log_call(CONSOLE_WHITE, __FILENAME__, fmt, __VA_ARGS__)
+#define LOG(fmt, ...) log_call(CONSOLE_WHITE, __FILENAME__, fmt, ##__VA_ARGS__)
 
 // Issues a formated log call that prints to stdout and a log file
 // Prints in green color and indicates an ok or successful status message
-#define LOG_OK(fmt, ...) log_call(CONSOLE_GREEN, __FILENAME__, fmt, __VA_ARGS__)
+#define LOG_OK(fmt, ...) log_call(CONSOLE_GREEN, __FILENAME__, fmt, ##__VA_ARGS__)
 
 // Issues a formated log call that prints to stdout and a log file
 // Prints in yellow color and indicates a warning or non-significant message
-#define LOG_W(fmt, ...) log_call(CONSOLE_YELLOW, __FILENAME__, fmt, __VA_ARGS__)
+#define LOG_W(fmt, ...) log_call(CONSOLE_YELLOW, __FILENAME__, fmt, ##__VA_ARGS__)
 
 // Issues a formated log call that prints to stdout and a log file
 // Prints in red color and indicates and error message
-#define LOG_E(fmt, ...) log_call(CONSOLE_RED, __FILENAME__, fmt, __VA_ARGS__)
+#define LOG_E(fmt, ...) log_call(CONSOLE_RED, __FILENAME__, fmt, ##__VA_ARGS__)
