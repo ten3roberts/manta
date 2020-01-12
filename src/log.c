@@ -6,6 +6,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "math/vec.h"
+
 static void ftoa_fixed(char * buffer, double value);
 static void ftoa_sci(char * buffer, double value);
 void itoa(int i, char * buf, int base)
@@ -14,7 +16,7 @@ void itoa(int i, char * buf, int base)
 #if PL_LINUX
 void set_print_color(int color)
 {
-	printf("", color);
+	printf("\x1b[%dm", color);
 }
 #elif PL_WINDOWS
 #include <windows.h>
@@ -154,7 +156,9 @@ FILE * log_file = NULL;
 	fputs(s, stdout), fputs(s, log_file);                                                                              \
 	fflush(log_file);
 #else
-#define WRITE(s) fputs(s, stdout), fputs(s, log_file);
+#define WRITE(s)                                                                                                       \
+	fputs(s, stdout);                                                                                                  \
+	fputs(s, log_file);
 #endif
 #define FLUSH_BUFCH                                                                                                    \
 	buffer[buffer_index] = '\0';                                                                                       \
@@ -193,16 +197,12 @@ void log_terminate()
 	log_file = NULL;
 }
 
-int log_call(int color, const char * name, const char * fmt, ...)
+void log_call(int color, const char * name, const char * fmt, ...)
 {
 	va_list arg;
 
 	va_start(arg, fmt);
 
-	long long int_tmp;
-	char char_tmp;
-	char * string_tmp;
-	double double_tmp;
 	set_print_color(color);
 	// When chars in format are written they are saved to buf
 	// After 512 chars or a flag is hit, buffer is flushed
@@ -226,11 +226,17 @@ int log_call(int color, const char * name, const char * fmt, ...)
 	}
 
 	char ch;
-	int length = 0;
-	int is_long = 0;
-	while (ch = *fmt++)
+	long long int_tmp;
+	char char_tmp;
+	char * string_tmp;
+	double double_tmp;
+
+	// Some specifiers require a length before them, e.g; vectors %v
+	unsigned int length = 0;
+	int precision = 3;
+	while ((ch = *fmt++))
 	{
-		if ('%' == ch)
+		if (ch == '%' || length)
 		{
 			FLUSH_BUFCH;
 			switch (ch = *fmt++)
@@ -238,21 +244,24 @@ int log_call(int color, const char * name, const char * fmt, ...)
 			// %% precent sign
 			case '%':
 				WRITECH('%');
-				length++;
+				length = 0;
+
 				break;
 
 			// %c character
 			case 'c':
 				char_tmp = va_arg(arg, int);
 				WRITECH(char_tmp);
-				length++;
+				length = 0;
+
 				break;
 
 			// %s string
 			case 's':
 				string_tmp = va_arg(arg, char *);
 				WRITE(string_tmp);
-				length += strlen(string_tmp);
+				length = 0;
+
 				break;
 
 			// %o int
@@ -260,7 +269,8 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				int_tmp = va_arg(arg, int);
 				utos(int_tmp, buffer, 2, 0);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
 				break;
 
 			// %o int
@@ -268,7 +278,8 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				int_tmp = va_arg(arg, int);
 				utos(int_tmp, buffer, 8, 0);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
 				break;
 
 			// %d int
@@ -276,7 +287,8 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				int_tmp = va_arg(arg, int);
 				itos(int_tmp, buffer, 10, 0);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
 				break;
 
 			// %u int
@@ -284,7 +296,10 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				int_tmp = va_arg(arg, int);
 				utos(int_tmp, buffer, 16, 0);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
+				length = 0;
+
 				break;
 
 			// %x int hex
@@ -292,7 +307,10 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				int_tmp = va_arg(arg, int);
 				utos(int_tmp, buffer, 16, 0);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
+				length = 0;
+
 				break;
 
 			// %x int hex
@@ -300,44 +318,79 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				int_tmp = va_arg(arg, int);
 				utos(int_tmp, buffer, 16, 1);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
+				length = 0;
+
 				break;
 
 			// %f float
 			case 'f':
 				double_tmp = va_arg(arg, double);
-				ftos(double_tmp, buffer, 3);
+				ftos(double_tmp, buffer, precision);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
+				length = 0;
 				break;
 			// %e float in scientific form
 			case 'e':
 				double_tmp = va_arg(arg, double);
 				ftoa_sci(buffer, double_tmp);
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
 				break;
 
 			case 'p':
-				int_tmp = (size_t)va_arg(arg, void*);
+				int_tmp = (size_t)va_arg(arg, void *);
 				utos(int_tmp, buffer, 16, 0);
 				WRITE("b");
 				WRITE(buffer);
-				length += strlen(buffer);
+				length = 0;
+
 				break;
+
+			case 'v':
+				if (length == 1)
+				{
+					ftos(va_arg(arg, double), buffer, precision);
+					WRITE(buffer)
+				}
+				else if (length == 2)
+				{
+					vec2_string(va_arg(arg, vec2), buffer, precision);
+					WRITE(buffer)
+				}
+				else if (length == 3)
+				{
+					vec3_string(va_arg(arg, vec3), buffer, precision);
+					WRITE(buffer);
+				}
+				else if (length == 4)
+				{
+					vec4_string(va_arg(arg, vec4), buffer, precision);
+					WRITE(buffer)
+				}
+				break;
+			default:
+				length = atoi(--fmt);
+				if (length)
+					continue;
+				WRITECH('%');
+				WRITECH(ch);
+				length = 0;
 			}
 		}
 		else
 		{
 			WRITECH(ch);
-			length++;
 		}
 	}
 	WRITECH('\n');
 	FLUSH_BUFCH;
 	set_print_color(CONSOLE_WHITE);
 	va_end(arg);
-	return length;
 }
 
 #define BUF_WRITE(s)                                                                                                   \
@@ -360,7 +413,7 @@ int vformat(char * buf, size_t size, char const * fmt, va_list arg)
 	char ch;
 	int length = 0;
 	int is_long = 0;
-	while (ch = *fmt++)
+	while ((ch = *fmt++))
 	{
 		is_long = 0;
 		if (ch == '%')

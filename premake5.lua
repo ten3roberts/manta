@@ -37,7 +37,7 @@ project "crescent"
     filter "system:linux"
     --linkoptions {"-lvulkan"}
         defines { "PL_LINUX=1"}
-        buildoptions { "-pthread" }
+        buildoptions { "-Wall", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function", "-pthread" }
 
         links { "m", "dl", "pthread", "X11", "GL", "vulkan" }
 	

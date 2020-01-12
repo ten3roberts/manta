@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 // Converts a signed integer to string
-void itos(signed long long num, char * buf, int base, int upper)
+int itos(signed long long num, char * buf, int base, int upper)
 {
 	int neg = num < 0;
 	num = abs(num);
@@ -13,6 +13,7 @@ void itos(signed long long num, char * buf, int base, int upper)
 		numerals = "0123456789abcdef";
 
 	size_t buf_index = logn(base, num) + 1 + neg;
+	int return_value = buf_index;
 	buf[buf_index] = '\0';
 
 	while (buf_index)
@@ -23,10 +24,11 @@ void itos(signed long long num, char * buf, int base, int upper)
 	}
 	if (neg)
 		buf[0] = '-';
+	return return_value;
 }
 
 // Converts an unsigned integer to string
-void utos(unsigned long long num, char * buf, int base, int upper)
+int utos(unsigned long long num, char * buf, int base, int upper)
 {
 	char * numerals;
 	if (upper)
@@ -35,6 +37,8 @@ void utos(unsigned long long num, char * buf, int base, int upper)
 		numerals = "0123456789abcdef";
 
 	size_t buf_index = logn(base, num) + 1;
+	int return_value = buf_index;
+
 	buf[buf_index] = '\0';
 
 	while (buf_index)
@@ -43,12 +47,13 @@ void utos(unsigned long long num, char * buf, int base, int upper)
 
 		num /= base;
 	}
+	return return_value;
 }
 
-void ftos(double num, char * buf, int precision)
+int ftos(double num, char * buf, int precision)
 {
 	// Shift decimal to ,'nul'
-	int a = num * pow(10, precision+1);
+	int a = num * pow(10, precision + 1);
 
 	if (a % 10 >= 5)
 		a += 10;
@@ -68,7 +73,9 @@ void ftos(double num, char * buf, int precision)
 	int base = 10;
 	char numerals[17] = {"0123456789ABCDEF"};
 
-	size_t buf_index = logn(base, a) + (dec_pos ? 2 : 1) + (a < pow(10, dec_pos));
+	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0);
+	int return_value = buf_index;
+
 	buf[buf_index] = '\0';
 	while (buf_index)
 	{
@@ -78,4 +85,5 @@ void ftos(double num, char * buf, int precision)
 		dec_pos--;
 		a /= base;
 	}
+	return return_value;
 }

@@ -1,8 +1,8 @@
 #include "utils.h"
+#include "math/math_extra.h"
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-
 
 #if PL_LINUX
 #include <unistd.h>
@@ -18,25 +18,25 @@
 #endif
 
 #if PL_LINUX
-int is_regular_file(const char* path)
+int is_regular_file(const char * path)
 {
 	struct stat path_stat;
 	stat(path, &path_stat);
 	return S_ISREG(path_stat.st_mode);
 }
 
-int is_dir(const char* path)
+int is_dir(const char * path)
 {
 	struct stat path_stat;
 	stat(path, &path_stat);
 	return S_ISDIR(path_stat.st_mode);
 }
 
-size_t listdir(const char* dir, char** result, size_t size, size_t depth)
+size_t listdir(const char * dir, char ** result, size_t size, size_t depth)
 {
-	DIR* dp = opendir(dir);
+	DIR * dp = opendir(dir);
 
-	struct dirent* ep;
+	struct dirent * ep;
 	if (dp != NULL)
 	{
 		while ((ep = readdir(dp)))
@@ -79,11 +79,11 @@ size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 	return size;
 }
 
-int find_file(const char* dir, char* result, size_t size, const char* filename)
+int find_file(const char * dir, char * result, size_t size, const char * filename)
 {
-	DIR* dp = opendir(dir);
+	DIR * dp = opendir(dir);
 
-	struct dirent* ep;
+	struct dirent * ep;
 	if (dp != NULL)
 	{
 		while ((ep = readdir(dp)))
@@ -118,7 +118,7 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 	}
 	return EXIT_FAILURE;
 }
-void create_dirs(const char* path)
+void create_dirs(const char * path)
 {
 	char buf[2048];
 	size_t len = strlen(path);
@@ -128,31 +128,29 @@ void create_dirs(const char* path)
 		{
 			strncpy(buf, path, i + 1);
 			buf[i + 1] = '\0';
-			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "")
-				|| !strcmp(buf + 1, ":") || !strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
+			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "") || !strcmp(buf + 1, ":") ||
+				!strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
 				continue;
 			mkdir(buf, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		}
 	}
 }
 #elif PL_WINDOWS
-int is_regular_file(const char* path)
+int is_regular_file(const char * path)
 {
 	DWORD dwAttrib = GetFileAttributesA(path);
 
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-		!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-int is_dir(const char* path)
+int is_dir(const char * path)
 {
 	DWORD dwAttrib = GetFileAttributesA(path);
 
-	return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
-		(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-size_t listdir(const char* dir, char** result, size_t size, size_t depth)
+size_t listdir(const char * dir, char ** result, size_t size, size_t depth)
 {
 	char pattern[2048];
 	snprintf(pattern, 2048, "%s\\*", dir);
@@ -161,8 +159,10 @@ size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 	HANDLE hFind;
 
 	char fname[2048];
-	if ((hFind = FindFirstFileA(pattern, &data)) != INVALID_HANDLE_VALUE) {
-		do {
+	if ((hFind = FindFirstFileA(pattern, &data)) != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
 			sprintf(fname, "%ws", data.cFileName);
 			if (!strcmp(fname, ".") || !strcmp(fname, ".."))
 				continue;
@@ -197,7 +197,7 @@ size_t listdir(const char* dir, char** result, size_t size, size_t depth)
 	}
 	return size;
 }
-int find_file(const char* dir, char* result, size_t size, const char* filename)
+int find_file(const char * dir, char * result, size_t size, const char * filename)
 {
 	char pattern[2048];
 	snprintf(pattern, 2048, "%s\\*", dir);
@@ -206,8 +206,10 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 	HANDLE hFind;
 
 	char fname[2048];
-	if ((hFind = FindFirstFileA(pattern, &data)) != INVALID_HANDLE_VALUE) {
-		do {
+	if ((hFind = FindFirstFileA(pattern, &data)) != INVALID_HANDLE_VALUE)
+	{
+		do
+		{
 			sprintf(fname, "%ws", data.cFileName);
 			if (!strcmp(fname, ".") || !strcmp(fname, ".."))
 				continue;
@@ -237,18 +239,18 @@ int find_file(const char* dir, char* result, size_t size, const char* filename)
 	}
 	return EXIT_FAILURE;
 }
-void create_dirs(const char* path)
+void create_dirs(const char * path)
 {
 	char buf[2048];
 	size_t len = strlen(path);
 	for (size_t i = 0; i < len; i++)
 	{
-		if (path[i] == '/' || path[i] == '\\' || i == len-1)
+		if (path[i] == '/' || path[i] == '\\' || i == len - 1)
 		{
-			strncpy(buf, path, i+1);
-			buf[i+1] = '\0';
-			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "")
-				|| !strcmp(buf + 1, ":") || !strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
+			strncpy(buf, path, i + 1);
+			buf[i + 1] = '\0';
+			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "") || !strcmp(buf + 1, ":") ||
+				!strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
 				continue;
 			CreateDirectoryA(buf, NULL);
 		}
@@ -256,7 +258,7 @@ void create_dirs(const char* path)
 }
 #endif
 
-void get_filename(const char* path, char* result, size_t size)
+void get_filename(const char * path, char * result, size_t size)
 {
 	for (size_t i = strlen(path); i != 0; i--)
 	{
@@ -270,7 +272,7 @@ void get_filename(const char* path, char* result, size_t size)
 	}
 }
 
-void get_dir(const char* path, char* result, size_t size)
+void get_dir(const char * path, char * result, size_t size)
 {
 	for (size_t i = strlen(path); i != 0; i--)
 	{
@@ -285,7 +287,7 @@ void get_dir(const char* path, char* result, size_t size)
 }
 
 #if PL_LINUX
-void set_workingdir(const char* dir)
+void set_workingdir(const char * dir)
 {
 	if (chdir(dir))
 	{
@@ -293,13 +295,13 @@ void set_workingdir(const char* dir)
 	}
 }
 #elif PL_WINDOWS
-void set_workingdir(const char* dir)
+void set_workingdir(const char * dir)
 {
 	_chdir(dir);
 }
 #endif
 
-void dir_up(const char* path, char* result, size_t size, size_t steps)
+void dir_up(const char * path, char * result, size_t size, size_t steps)
 {
 	size_t len = strlen(path) - 1;
 	for (size_t i = len; i != 0; i--)
@@ -319,7 +321,7 @@ void dir_up(const char* path, char* result, size_t size, size_t steps)
 	}
 }
 
-void posix_path(const char* path, char* result, size_t size)
+void posix_path(const char * path, char * result, size_t size)
 {
 	if (path != result)
 	{
@@ -327,14 +329,14 @@ void posix_path(const char* path, char* result, size_t size)
 		result[min(strlen(path), size)] = '\0';
 	}
 
-	for (char* p = result; *p != '\0'; p++)
+	for (char * p = result; *p != '\0'; p++)
 	{
 		if (*p == '\\')
 			*p = '/';
 	}
 }
 
-void replace_string(const char* src, char* result, size_t size, char find, char replace)
+void replace_string(const char * src, char * result, size_t size, char find, char replace)
 {
 	if (src != result)
 	{
@@ -342,7 +344,7 @@ void replace_string(const char* src, char* result, size_t size, char find, char 
 		result[min(strlen(src), size)] = '\0';
 	}
 
-	for (char* p = result; *p != '\0'; p++)
+	for (char * p = result; *p != '\0'; p++)
 	{
 		if (*p == find)
 			*p = replace;

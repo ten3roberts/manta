@@ -39,6 +39,3 @@ void posix_path(const char * path, char * result, size_t size);
 
 // Will replace
 void replace_string(const char * src, char * result, size_t size, char find, char replace);
-
-#define min(a, b) (a < b ? a : b)
-#define max(a, b) (a > b ? a : b)

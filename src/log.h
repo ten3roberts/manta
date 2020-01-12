@@ -25,7 +25,7 @@ void log_init();
 void log_terminate();
 
 // Issues a formated log call that prints to stdout and a log file
-int log_call(int color, const char* name, const char * fmt, ...);
+void log_call(int color, const char* name, const char * fmt, ...);
 
  
 // Issues a formated log call that prints to stdout and a log file
