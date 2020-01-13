@@ -17,23 +17,26 @@ int application_start()
 	if (window == NULL)
 		return -1;
 
-	
 	char buf[1024];
-	vec4 v = {0.3497,2,3,4};
+	vec4 v = {0.3497, 2, 3, 4};
 	LOG("%4v", v);
 	LOG("%f", 0.01);
 	LOG_OK("TEST");
-	
-	while (1)
+
+	while (!window_get_close(window))
 	{
 		time_update();
 		window_update(window);
-		LOG("Elapsed time %f", time_elapsed());
-
-		SLEEP(1.0f);
 	}
 
 	window_destroy(window);
 
 	return 0;
+}
+
+void application_send_event(Event event)
+{
+	if (event.type == EVENT_MOUSE_MOVED)
+		return;
+	LOG("Event type %d : %f, %f", event.type, (float)event.data[0], (float)event.data[1]);
 }

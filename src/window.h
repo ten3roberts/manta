@@ -1,4 +1,5 @@
 #pragma once
+#include <GLFW/glfw3.h>
 typedef enum
 {
 	// Creates a decorated window. Uses set width and height

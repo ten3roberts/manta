@@ -1,4 +1,6 @@
 #include "string.h"
+#include "application.h"
+#include "keycodes.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -27,6 +29,75 @@ typedef struct
 
 int glfw_initialized = 0;
 size_t window_count = 0;
+
+void window_size_callback(GLFWwindow * raw_window, int width, int height)
+{
+	Window * window = glfwGetWindowUserPointer(raw_window);
+	window->width = width;
+	window->height = height;
+	application_send_event((Event){EVENT_WINDOW_SIZE, {width, height}});
+}
+
+void window_focus_callback(GLFWwindow * raw_window, int focus)
+{
+	application_send_event((Event){EVENT_WINDOW_FOCUS, 1, 0});
+}
+
+void window_close_callback(GLFWwindow * raw_window)
+{
+	Window * window = glfwGetWindowUserPointer(raw_window);
+	window->should_close = 1;
+	application_send_event((Event){EVENT_WINDOW_CLOSE, 1, 0});
+}
+
+void key_callback(GLFWwindow * raw_window, int key, int scancode, int action, int mods)
+{
+	Window * window = glfwGetWindowUserPointer(raw_window);
+	switch (action)
+	{
+	case GLFW_PRESS: {
+		application_send_event((Event){EVENT_KEY_PRESSED, key, 0});
+		break;
+	}
+	case GLFW_RELEASE: {
+		application_send_event((Event){EVENT_KEY_RELEASED, key, 0});
+		break;
+	}
+	case GLFW_REPEAT: {
+		application_send_event((Event){EVENT_KEY_PRESSED, key, 1});
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void mouse_button_callback(GLFWwindow * raw_window, int key, int action, int mods)
+{
+	switch (action)
+	{
+	case GLFW_PRESS: {
+		application_send_event((Event){EVENT_KEY_PRESSED, {CR_MOUSE_1 + key, 0}});
+		break;
+	}
+	case GLFW_RELEASE: {
+		application_send_event((Event){EVENT_KEY_RELEASED, {CR_MOUSE_1 + key, 0}});
+		break;
+	}
+	default:
+		break;
+	}
+}
+
+void scroll_callback(GLFWwindow * raw_window, double xScroll, double yScroll)
+{
+	application_send_event((Event){EVENT_MOUSE_SCROLLED, xScroll, yScroll});
+}
+
+void mouse_moved_callback(GLFWwindow * raw_window, double x, double y)
+{
+	application_send_event((Event){EVENT_MOUSE_MOVED, x, y});
+}
 
 Window * window_create(char * title, int width, int height, WindowStyle style)
 {
@@ -84,6 +155,22 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 		window->height = mode->height;
 		window->raw_window = glfwCreateWindow(window->width, window->height, window->title, primary, NULL);
 	}
+
+	glfwSetWindowUserPointer(window->raw_window, window);
+	// Set up event handling
+	// glfwSetWindowSizeCallback(window->raw_window, [](GLFWwindow * window, int width, int height) {
+	glfwSetWindowSizeCallback(window->raw_window, window_size_callback);
+
+	glfwSetWindowFocusCallback(window->raw_window, window_focus_callback);
+	glfwSetWindowCloseCallback(window->raw_window, window_close_callback);
+
+	glfwSetKeyCallback(window->raw_window, key_callback);
+
+	glfwSetMouseButtonCallback(window->raw_window, mouse_button_callback);
+
+	glfwSetScrollCallback(window->raw_window, scroll_callback);
+
+	glfwSetCursorPosCallback(window->raw_window, mouse_moved_callback);
 	window_count++;
 	return window;
 }
@@ -100,7 +187,6 @@ void window_destroy(Window * window)
 void window_update(Window * window)
 {
 	glfwPollEvents();
-	window->should_close = glfwWindowShouldClose(window->raw_window);
 }
 
 bool window_get_close(Window * window)
