@@ -62,7 +62,7 @@ int ftos(double num, char * buf, int precision)
 	int dec_pos = precision;
 
 	// Carried the one, need to round once more
-	while (a % 10 == 0 && a)
+	while (a % 10 == 0 && a && a > num)
 	{
 		if (a % 10 >= 5)
 			a += 10;

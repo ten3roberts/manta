@@ -17,10 +17,7 @@ int application_start()
 	if (window == NULL)
 		return -1;
 
-	char buf[1024];
-	vec4 v = {0.3497, 2, 3, 4};
-	LOG("%4v", v);
-	LOG("%f", 0.01);
+	LOG("%f", 350.0f);
 	LOG_OK("TEST");
 
 	while (!window_get_close(window))
