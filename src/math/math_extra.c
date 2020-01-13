@@ -73,9 +73,13 @@ int ftos(double num, char * buf, int precision)
 	int base = 10;
 	char numerals[17] = {"0123456789ABCDEF"};
 
-	// Return zero characters printed if value is too small to print
+	// Return and write one character if float == 0 to precision accuracy
 	if (a == 0)
-		return 0;
+	{
+		*buf++ = '0';
+		*buf = '\0';
+		return 1;
+	}
 
 	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0);
 	int return_value = buf_index;
