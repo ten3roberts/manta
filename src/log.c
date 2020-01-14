@@ -85,7 +85,7 @@ void ftoa_sci(char* buffer, double value)
 	}
 
 	*buffer++ = 'e';
-	itoa(exponent, buffer, 10);
+	itos(exponent, buffer, 10, 1);
 }
 
 FILE* log_file = NULL;
@@ -121,7 +121,7 @@ size_t last_log_frame = 0;
 int log_init()
 {
 	if (log_file)
-		return;
+		return 1;
 
 	last_log_length = 0;
 	last_log_frame = 0;

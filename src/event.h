@@ -22,4 +22,5 @@ typedef struct
 		int idata[2];
         float fdata[2];
 	};
+	int handled;
 } Event;

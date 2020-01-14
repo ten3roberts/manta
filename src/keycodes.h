@@ -133,4 +133,4 @@
 #define CR_MOUSE_3                351
 #define CR_MOUSE_4                352
 
-#define CR_KEY_LAST               CR_KEY_MENU
+#define CR_KEY_LAST               CR_MOUSE_4
