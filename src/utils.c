@@ -303,10 +303,11 @@ void set_workingdir(const char * dir)
 
 void dir_up(const char * path, char * result, size_t size, size_t steps)
 {
+
 	size_t len = strlen(path) - 1;
 	for (size_t i = len; i != 0; i--)
 	{
-		if (steps == 0)
+		if (steps == 0 || i == 0)
 		{
 			memmove(result, path, min(i + 1, size));
 			result[min(i + 1, size)] = '\0';
@@ -318,6 +319,21 @@ void dir_up(const char * path, char * result, size_t size, size_t steps)
 		{
 			steps--;
 		}
+	}
+	if(strcmp(result, "./") == 0)
+	{
+		strncpy(result, "../", size);
+		return;
+	}
+	int contains_dir = 0;
+	for (char * p = result; *p != '\0'; p++)
+	{
+		if (*p != '/' && *p != '\\' && *p != '.')
+		contains_dir = 1;
+	}
+	if(!contains_dir)
+	{
+		strncat(result, "../",size);
 	}
 }
 
