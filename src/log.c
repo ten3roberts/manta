@@ -10,9 +10,7 @@
 
 static void ftoa_fixed(char * buffer, double value);
 static void ftoa_sci(char * buffer, double value);
-void itoa(int i, char * buf, int base)
-{
-}
+
 #if PL_LINUX
 void set_print_color(int color)
 {

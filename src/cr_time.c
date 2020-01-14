@@ -1,7 +1,7 @@
 #include "cr_time.h"
-#include "sys/time.h"
 
 #ifdef PL_LINUX
+#include "sys/time.h"
 typedef struct
 {
 	float elapsedtime;
@@ -50,6 +50,7 @@ clock_t time_init_time()
 	return cr_time.init_time.tv_sec + cr_time.init_time.tv_nsec/1000000000.0;
 }
 #elif PL_WINDOWS
+#include <window.h>
 typedef struct
 {
 	float elapsedtime;
@@ -74,8 +75,8 @@ void time_init()
 	cr_time.deltatime = 0.0f;
 	cr_time.framerate = 0.0f;
 	cr_time.framecount = 0;
-	cr_time.prev = cr_time.init_tick;
-	cr_time.now = cr_time.init_tick;
+	cr_time.prev_tick = cr_time.init_tick;
+	cr_time.now_tick = cr_time.init_tick;
 }
 
 void time_update()
@@ -85,9 +86,9 @@ void time_update()
 
 	// Update now
 	cr_time.now_tick = GetTickCount();
-	cr_time.deltatime = (cr_time.now - cr_time.prev)/1000.0f;
+	cr_time.deltatime = (cr_time.now_tick - cr_time.prev_tick)/1000.0f;
 
-	cr_time.elapsedtime = (cr_time.now - cr_time.init_tick);
+	cr_time.elapsedtime = (cr_time.now_tick - cr_time.init_tick);
 
 	cr_time.framerate = 1 / cr_time.deltatime;
 	cr_time.framecount++;

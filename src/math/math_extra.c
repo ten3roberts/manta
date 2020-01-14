@@ -23,7 +23,7 @@ int itos(signed long long num, char * buf, int base, int upper)
 		num /= base;
 	}
 	if (neg)
-		buf[0] = '-';
+		*buf = '-';
 	return return_value;
 }
 
@@ -52,7 +52,11 @@ int utos(unsigned long long num, char * buf, int base, int upper)
 
 int ftos(double num, char * buf, int precision)
 {
-	// Shift decimal to ,'nul'
+	// Save the sign and remove it from num
+	int neg = num < 0;
+	if (neg)
+		num *= -1;
+	// Shift decimal to precision places to an int
 	int a = num * pow(10, precision + 1);
 
 	if (a % 10 >= 5)
@@ -81,7 +85,7 @@ int ftos(double num, char * buf, int precision)
 		return 1;
 	}
 
-	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0);
+	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0) + neg;
 	int return_value = buf_index;
 
 	buf[buf_index] = '\0';
@@ -93,5 +97,7 @@ int ftos(double num, char * buf, int precision)
 		dec_pos--;
 		a /= base;
 	}
+	if (neg)
+		*buf = '-';
 	return return_value;
 }
