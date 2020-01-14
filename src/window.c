@@ -24,49 +24,49 @@ typedef struct
 	int width, height;
 	int in_focus;
 	int should_close;
-	GLFWwindow * raw_window;
+	GLFWwindow* raw_window;
 } Window;
 
 int glfw_initialized = 0;
 size_t window_count = 0;
 
-void window_size_callback(GLFWwindow * raw_window, int width, int height)
+void window_size_callback(GLFWwindow* raw_window, int width, int height)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	window->width = width;
 	window->height = height;
-	application_send_event((Event){EVENT_WINDOW_SIZE, {width, height}});
+	application_send_event((Event) { EVENT_WINDOW_SIZE, .idata = { width, height } });
 }
 
-void window_focus_callback(GLFWwindow * raw_window, int focus)
+void window_focus_callback(GLFWwindow* raw_window, int focus)
 {
 	Window* window = glfwGetWindowUserPointer(raw_window);
 	window->in_focus = focus;
-	application_send_event((Event){EVENT_WINDOW_FOCUS, focus, 0});
+	application_send_event((Event) { EVENT_WINDOW_FOCUS, .idata = { focus, 0 } });
 }
 
-void window_close_callback(GLFWwindow * raw_window)
+void window_close_callback(GLFWwindow* raw_window)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	window->should_close = 1;
-	application_send_event((Event){EVENT_WINDOW_CLOSE, 1, 0});
+	application_send_event((Event) { EVENT_WINDOW_CLOSE, .idata = { 1, 0 } });
 }
 
-void key_callback(GLFWwindow * raw_window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow* raw_window, int key, int scancode, int action, int mods)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	switch (action)
 	{
 	case GLFW_PRESS: {
-		application_send_event((Event){EVENT_KEY_PRESSED, key, 0});
+		application_send_event((Event) { EVENT_KEY_PRESSED, .idata = { key, 0 } });
 		break;
 	}
 	case GLFW_RELEASE: {
-		application_send_event((Event){EVENT_KEY_RELEASED, key, 0});
+		application_send_event((Event) { EVENT_KEY_RELEASED, .idata = { key, 0 } });
 		break;
 	}
 	case GLFW_REPEAT: {
-		application_send_event((Event){EVENT_KEY_PRESSED, key, 1});
+		application_send_event((Event) { EVENT_KEY_PRESSED, .idata = { key, 1 } });
 		break;
 	}
 	default:
@@ -74,16 +74,16 @@ void key_callback(GLFWwindow * raw_window, int key, int scancode, int action, in
 	}
 }
 
-void mouse_button_callback(GLFWwindow * raw_window, int key, int action, int mods)
+void mouse_button_callback(GLFWwindow* raw_window, int key, int action, int mods)
 {
 	switch (action)
 	{
 	case GLFW_PRESS: {
-		application_send_event((Event){EVENT_KEY_PRESSED, {CR_MOUSE_1 + key, 0}});
+		application_send_event((Event) { EVENT_KEY_PRESSED, .idata = { CR_MOUSE_1 + key, 0 } });
 		break;
 	}
 	case GLFW_RELEASE: {
-		application_send_event((Event){EVENT_KEY_RELEASED, {CR_MOUSE_1 + key, 0}});
+		application_send_event((Event) { EVENT_KEY_RELEASED, .idata = { CR_MOUSE_1 + key, 0 } });
 		break;
 	}
 	default:
@@ -91,25 +91,25 @@ void mouse_button_callback(GLFWwindow * raw_window, int key, int action, int mod
 	}
 }
 
-void scroll_callback(GLFWwindow * raw_window, double xScroll, double yScroll)
+void scroll_callback(GLFWwindow* raw_window, double xScroll, double yScroll)
 {
-	application_send_event((Event){EVENT_MOUSE_SCROLLED, xScroll, yScroll});
+	application_send_event((Event) { EVENT_MOUSE_SCROLLED, .fdata = { xScroll, yScroll } });
 }
 
-void mouse_moved_callback(GLFWwindow * raw_window, double x, double y)
+void mouse_moved_callback(GLFWwindow* raw_window, double x, double y)
 {
-	application_send_event((Event){EVENT_MOUSE_MOVED, x, y});
+	application_send_event((Event) { EVENT_MOUSE_MOVED, .fdata = { x, y } });
 }
 
-Window * window_create(char * title, int width, int height, WindowStyle style)
+Window* window_create(char* title, int width, int height, WindowStyle style)
 {
 	// Make sure to initialize glfw once
 	if (!glfw_initialized && glfwInit())
 		glfw_initialized = 1;
 
 	// Sets the resolution to native if res is set to -1
-	GLFWmonitor * primary = glfwGetPrimaryMonitor();
-	const GLFWvidmode * mode = glfwGetVideoMode(primary);
+	GLFWmonitor* primary = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(primary);
 	width = width > 0 ? width : mode->width;
 	height = height > 0 ? height : mode->height;
 
@@ -117,7 +117,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	printf("Creating window\n");
-	Window * window = malloc(sizeof(Window));
+	Window* window = malloc(sizeof(Window));
 	if (window == NULL)
 	{
 		return NULL;
@@ -177,7 +177,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	return window;
 }
 
-void window_destroy(Window * window)
+void window_destroy(Window* window)
 {
 	glfwDestroyWindow(window->raw_window);
 	window_count--;
@@ -186,12 +186,12 @@ void window_destroy(Window * window)
 	free(window);
 }
 
-void window_update(Window * window)
+void window_update(Window* window)
 {
 	glfwPollEvents();
 }
 
-bool window_get_close(Window * window)
+bool window_get_close(Window* window)
 {
 	return window->should_close;
 }

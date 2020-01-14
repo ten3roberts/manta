@@ -12,12 +12,14 @@ typedef enum
 
 } EVENT_TYPE;
 
-// Defines a normal event structure
+// Defines an event structure
+// Event data can be represented as either an integer or float
 typedef struct
 {
 	EVENT_TYPE type;
+	// A union representing the event data in either integer or float form
 	union {
-		int data[2];
+		int idata[2];
         float fdata[2];
 	};
 } Event;

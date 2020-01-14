@@ -35,9 +35,9 @@ void application_send_event(Event event)
 	if (event.type == EVENT_MOUSE_MOVED)
 		return;
 	else if (event.type == EVENT_KEY_PRESSED)
-		LOG("Key pressed  : %d, %c", event.data[0], event.data[0]);
+		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);
 	else if (event.type == EVENT_KEY_RELEASED)
-		LOG("Key released : %d, %c", event.data[0], event.data[0]);
+		LOG("Key released : %d, %c", event.idata[0], event.idata[0]);
 	else
-		LOG("Event type %d : %f, %f", event.type, (float)event.data[0], (float)event.data[1]);
+		LOG("Event type %d : %f, %f", event.type, event.fdata[0], event.fdata[1]);
 }
