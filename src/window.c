@@ -40,7 +40,9 @@ void window_size_callback(GLFWwindow * raw_window, int width, int height)
 
 void window_focus_callback(GLFWwindow * raw_window, int focus)
 {
-	application_send_event((Event){EVENT_WINDOW_FOCUS, 1, 0});
+	Window* window = glfwGetWindowUserPointer(raw_window);
+	window->in_focus = focus;
+	application_send_event((Event){EVENT_WINDOW_FOCUS, focus, 0});
 }
 
 void window_close_callback(GLFWwindow * raw_window)

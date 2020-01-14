@@ -13,41 +13,41 @@ typedef struct
 	struct timespec init_time;
 	struct timespec prev;
 	struct timespec now;
-} _time;
+} _Time;
 
-_time cr_time;
+_Time _time = { 0,0,0,0, {0,0}, {0,0}, {0,0} };
 
 void time_init()
 {
-	clock_gettime(CLOCK_MONOTONIC_RAW, &cr_time.init_time);
-	cr_time.elapsedtime = 0.0f;
-	cr_time.deltatime = 0.0f;
-	cr_time.framerate = 0.0f;
-	cr_time.framecount = 0;
-	cr_time.prev = cr_time.init_time;
-	cr_time.now = cr_time.init_time;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &_time.init_time);
+	_time.elapsedtime = 0.0f;
+	_time.deltatime = 0.0f;
+	_time.framerate = 0.0f;
+	_time.framecount = 0;
+	_time.prev = _time.init_time;
+	_time.now = _time.init_time;
 }
 
 void time_update()
 {
 	// Sets previous time to now
-	cr_time.prev = cr_time.now;
+	_time.prev = _time.now;
 
 	// Update now
-	clock_gettime(CLOCK_MONOTONIC_RAW, &cr_time.now);
-	cr_time.deltatime = (cr_time.now.tv_sec - cr_time.prev.tv_sec) + (cr_time.now.tv_nsec - cr_time.prev.tv_nsec)/
+	clock_gettime(CLOCK_MONOTONIC_RAW, &_time.now);
+	_time.deltatime = (_time.now.tv_sec - _time.prev.tv_sec) + (_time.now.tv_nsec - _time.prev.tv_nsec) /
 		1000000000.0;
 
-	cr_time.elapsedtime = (cr_time.now.tv_sec - cr_time.init_time.tv_sec) + (cr_time.now.tv_nsec - cr_time.init_time.tv_nsec)/
+	_time.elapsedtime = (_time.now.tv_sec - _time.init_time.tv_sec) + (_time.now.tv_nsec - _time.init_time.tv_nsec) /
 		1000000000.0;
 
-	cr_time.framerate = 1 / cr_time.deltatime;
-	cr_time.framecount++;
+	_time.framerate = 1 / _time.deltatime;
+	_time.framecount++;
 }
 
 clock_t time_init_time()
 {
-	return cr_time.init_time.tv_sec + cr_time.init_time.tv_nsec/1000000000.0;
+	return _time.init_time.tv_sec + _time.init_time.tv_nsec / 1000000000.0;
 }
 #elif PL_WINDOWS
 #include <window.h>
@@ -62,60 +62,60 @@ typedef struct
 	DWORD init_tick;
 	DWORD prev_tick;
 	DWORD now_tick;
-} _time;
+} _Time;
 
-_time cr_time;
+_Time _time = { 0,0 ,0,0,0,0,0 };
 
 void time_init()
 {
 
-	cr_time.init_tick = GetTickCount();
+	_time.init_tick = GetTickCount();
 
-	cr_time.elapsedtime = 0.0f;
-	cr_time.deltatime = 0.0f;
-	cr_time.framerate = 0.0f;
-	cr_time.framecount = 0;
-	cr_time.prev_tick = cr_time.init_tick;
-	cr_time.now_tick = cr_time.init_tick;
+	_time.elapsedtime = 0.0f;
+	_time.deltatime = 0.0f;
+	_time.framerate = 0.0f;
+	_time.framecount = 0;
+	_time.prev_tick = _time.init_tick;
+	_time.now_tick = _time.init_tick;
 }
 
 void time_update()
 {
 	// Sets previous time to now
-	cr_time.prev_tick = cr_time.now_tick;
+	_time.prev_tick = _time.now_tick;
 
 	// Update now
-	cr_time.now_tick = GetTickCount();
-	cr_time.deltatime = (cr_time.now_tick - cr_time.prev_tick)/1000.0f;
+	_time.now_tick = GetTickCount();
+	_time.deltatime = (_time.now_tick - _time.prev_tick) / 1000.0f;
 
-	cr_time.elapsedtime = (cr_time.now_tick - cr_time.init_tick);
+	_time.elapsedtime = (_time.now_tick - _time.init_tick);
 
-	cr_time.framerate = 1 / cr_time.deltatime;
-	cr_time.framecount++;
+	_time.framerate = 1 / _time.deltatime;
+	_time.framecount++;
 }
 
 clock_t time_init_time()
 {
-	return cr_time.init_tick / 1000.0f;
+	return _time.init_tick / 1000.0f;
 }
 #endif
 
 float time_elapsed()
 {
-	return cr_time.elapsedtime;
+	return _time.elapsedtime;
 }
 
 float time_delta()
 {
-	return cr_time.deltatime;
+	return _time.deltatime;
 }
 
 float time_framerate()
 {
-	return cr_time.framerate;
+	return _time.framerate;
 }
 
 size_t time_framecount()
 {
-	return cr_time.framecount;
+	return _time.framecount;
 }

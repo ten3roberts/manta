@@ -17,7 +17,7 @@
 // Needs to be called before any other log function
 // Creates the log file
 // Multiple calls are safe as they are ignored
-void log_init();
+int log_init();
 
 // Should be called at the end of the program
 // Flushes and closes the log file correctly
@@ -25,7 +25,7 @@ void log_init();
 void log_terminate();
 
 // Issues a formated log call that prints to stdout and a log file
-void log_call(int color, const char* name, const char * fmt, ...);
+int log_call(int color, const char* name, const char * fmt, ...);
 
  
 // Issues a formated log call that prints to stdout and a log file

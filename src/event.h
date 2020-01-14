@@ -16,8 +16,8 @@ typedef enum
 typedef struct
 {
 	EVENT_TYPE type;
-	//union {
+	union {
 		int data[2];
-        //float fdata[2];
-	//};
+        float fdata[2];
+	};
 } Event;
