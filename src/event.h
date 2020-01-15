@@ -1,12 +1,25 @@
 #pragma once
 typedef enum
 {
+	// Dummy or invalid event
 	EVENT_NONE = 0,
+	// A key or mouse button event
+	// { keycode, 0 = released : 1 = pressed }
 	EVENT_KEY,
+	// Scroll wheel event
+	// { xScroll, yScroll }
 	EVENT_MOUSE_SCROLLED,
+	// Mouse moved event
+	// { new x, new y }
 	EVENT_MOUSE_MOVED,
+
+	// Window resize event
+	// { new width, new height }
     EVENT_WINDOW_SIZE,
+	// Window focus or lost focus event
+	// { 0 = unfocused : 1 = focused, NULL }
     EVENT_WINDOW_FOCUS,
+	// Window X, or closed event
 	EVENT_WINDOW_CLOSE
 
 } EVENT_TYPE;
