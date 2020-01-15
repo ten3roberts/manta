@@ -25,9 +25,10 @@ int application_start()
 	{
 		input_update();
 		window_update(window);
-		LOG("%d", input_getkey_pressed(CR_MOUSE_1));
+		LOG("%d", input_getkey(CR_MOUSE_1));
+		LOG("%f", time_elapsed());
 		time_update();
-		SLEEP(0.5f);
+		SLEEP(0.1f);
 	}
 
 	window_destroy(window);
@@ -45,6 +46,6 @@ void application_send_event(Event event)
 		LOG("Key released : %d, %c", event.idata[0], event.idata[0]);
 	else
 		LOG("Event type %d : %f, %f", event.type, event.fdata[0], event.fdata[1]);*/
-	if (event.type == EVENT_KEY_PRESSED || event.type == EVENT_KEY_RELEASED)
+	if (event.type == EVENT_KEY)
 		input_send_event(&event);
 }

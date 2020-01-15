@@ -58,15 +58,15 @@ void key_callback(GLFWwindow * raw_window, int key, int scancode, int action, in
 	switch (action)
 	{
 	case GLFW_PRESS: {
-		application_send_event((Event){EVENT_KEY_PRESSED, .idata = {key, 0}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {key, 1}, 0});
 		break;
 	}
 	case GLFW_RELEASE: {
-		application_send_event((Event){EVENT_KEY_RELEASED, .idata = {key, 0}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {key, 0}, 0});
 		break;
 	}
 	case GLFW_REPEAT: {
-		application_send_event((Event){EVENT_KEY_PRESSED, .idata = {key, 1}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {key, 1}, 0});
 		break;
 	}
 	default:
@@ -79,11 +79,11 @@ void mouse_button_callback(GLFWwindow * raw_window, int key, int action, int mod
 	switch (action)
 	{
 	case GLFW_PRESS: {
-		application_send_event((Event){EVENT_KEY_PRESSED, .idata = {CR_MOUSE_1 + key, 0}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {CR_MOUSE_1 + key, 1 }, 0});
 		break;
 	}
 	case GLFW_RELEASE: {
-		application_send_event((Event){EVENT_KEY_RELEASED, .idata = {CR_MOUSE_1 + key, 0}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {CR_MOUSE_1 + key, 0}, 0});
 		break;
 	}
 	default:

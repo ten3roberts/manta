@@ -13,10 +13,10 @@ void input_send_event(Event* event);
 void input_update();
 
 // Returns true if the key is being pressed down
-int input_getkey(int keycode);
+int input_key(int keycode);
 
 // Returns true if the key was pressed this frame
-int input_getkey_pressed(int keycode);
+int input_key_pressed(int keycode);
 
 // Returns true if the key was released this frame
-int input_getkey_released(int keycode);
+int input_key_released(int keycode);
