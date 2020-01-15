@@ -88,7 +88,7 @@ void time_update()
 	_time.now_tick = GetTickCount();
 	_time.deltatime = (_time.now_tick - _time.prev_tick) / 1000.0f;
 
-	_time.elapsedtime = (_time.now_tick - _time.init_tick);
+	_time.elapsedtime = (_time.now_tick - _time.init_tick) / 1000.0f;
 
 	_time.framerate = 1 / _time.deltatime;
 	_time.framecount++;
