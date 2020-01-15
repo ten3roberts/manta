@@ -25,10 +25,10 @@ int application_start()
 	{
 		input_update();
 		window_update(window);
-		LOG("%d", input_getkey(CR_MOUSE_1));
-		LOG("%f", time_elapsed());
+		system("clear");
+		LOG("%d", input_key(CR_MOUSE_1));
 		time_update();
-		SLEEP(0.1f);
+		SLEEP(0.02f);
 	}
 
 	window_destroy(window);
