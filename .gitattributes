@@ -1,0 +1,5 @@
+# Normalize line endings
+* text=auto
+
+# Ensure .h files are correctly labeled as C
+*.c linguist-language=C
