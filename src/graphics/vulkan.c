@@ -7,8 +7,6 @@
 #include "log.h"
 #include "vulkan.h"
 
-
-
 VkInstance instance;
 Window * window;
 int create_instance();
