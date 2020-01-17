@@ -21,9 +21,7 @@ int application_start()
 	if (window == NULL)
 		return -1;
 
-	init_vulkan();
-
-	init_vulkan();
+	vulkan_init();
 
 	while (!window_get_close(window))
 	{
@@ -34,6 +32,7 @@ int application_start()
 		SLEEP(0.02f);
 	}
 
+	vulkan_terminate();
 	window_destroy(window);
 
 	return 0;

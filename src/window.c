@@ -1,6 +1,7 @@
 #include "string.h"
 #include "application.h"
 #include "keycodes.h"
+#include "log.h"
 #include <GLFW/glfw3.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -116,7 +117,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	printf("Creating window\n");
+	LOG("Creating window\n");
 	Window * window = malloc(sizeof(Window));
 	if (window == NULL)
 	{

@@ -27,7 +27,9 @@ void log_terminate();
 // Issues a formated log call that prints to stdout and a log file
 int log_call(int color, const char* name, const char * fmt, ...);
 
- 
+// Continues the previous log call
+#define LOG_CONT(fmt, ...) log_call(CONSOLE_WHITE, NULL, fmt, ##__VA_ARGS__)
+
 // Issues a formated log call that prints to stdout and a log file
 // Prints in white color and indicates a normal message
 #define LOG(fmt, ...) log_call(CONSOLE_WHITE, __FILENAME__, fmt, ##__VA_ARGS__)
