@@ -43,4 +43,9 @@ project "crescent"
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions
 	filter "system:windows"
-		defines {"PL_WINDOWS=1"}
+        defines {"PL_WINDOWS=1"}
+        systemversion "latest"
+		links "opengl32.lib"
+		-- Vulkan
+		includedirs "C:/VulkanSDK/1.1.126.0/Include"
+		links 		"C:/VulkanSDK/1.1.126.0/Lib/vulkan-1.lib"

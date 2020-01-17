@@ -3,7 +3,6 @@
 #include <string.h>
 #include "application.h"
 #include "utils.h"
-#include <unistd.h>
 
 int main(int argc, char ** argv)
 {

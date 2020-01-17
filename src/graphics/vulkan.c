@@ -25,16 +25,19 @@ int init_vulkan()
 
 int create_instance()
 {
-	VkApplicationInfo appInfo = {};
+	VkApplicationInfo appInfo;
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "crescent";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.pEngineName = "crescent";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.pNext = NULL;
 
-	VkInstanceCreateInfo createInfo = {};
+	VkInstanceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pNext = NULL;
+	createInfo.flags = NULL;
 	createInfo.pApplicationInfo = &appInfo;
 
 	/* Get the extensions required by glfw */
@@ -49,7 +52,6 @@ int create_instance()
 	createInfo.enabledLayerCount = 0;
 
 	/* Create the vulkan instance */
-	VkResult result = vkCreateInstance(&createInfo, NULL, &instance);
 	if (vkCreateInstance(&createInfo, NULL, &instance) != VK_SUCCESS)
 	{
 		LOG_E("Failed to create vulkan instance");
