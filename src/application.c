@@ -21,8 +21,7 @@ int application_start()
 	if (window == NULL)
 		return -1;
 
-	LOG("%f", 350.1f);
-	LOG_OK("TEST");
+	init_vulkan();
 
 	init_vulkan();
 
@@ -30,8 +29,7 @@ int application_start()
 	{
 		input_update();
 		window_update(window);
-		system("clear");
-		LOG("%d", input_key(CR_MOUSE_1));
+
 		time_update();
 		SLEEP(0.02f);
 	}
