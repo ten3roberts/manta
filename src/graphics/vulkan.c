@@ -206,7 +206,7 @@ int create_debug_messenger()
 	if (!enable_validation_layers)
 		return 0;
 	// Enable debug message callback
-	VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
+	VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
 	populate_debug_messenger_create_info(&createInfo);
 
 	VkResult result = create_debug_utils_messenger_ext(instance, &createInfo, NULL, &debug_messenger);
