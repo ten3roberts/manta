@@ -54,5 +54,9 @@ int log_call(int color, const char * name, const char * fmt, ...);
 #define LOG_W(fmt, ...) log_call(CONSOLE_YELLOW, __FILENAME__, fmt, ##__VA_ARGS__)
 
 // Issues a formated log call that prints to stdout and a log file
-// Prints in red color and indicates and error message
+// Prints in red color and indicates an error message
 #define LOG_E(fmt, ...) log_call(CONSOLE_RED, __FILENAME__, fmt, ##__VA_ARGS__)
+
+// Issues a formated log call that prints to stdout and a log file
+// Prints in blue color and indicates a status message
+#define LOG_S(fmt, ...) log_call(CONSOLE_BLUE, __FILENAME__, fmt, ##__VA_ARGS__)

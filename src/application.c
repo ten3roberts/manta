@@ -31,7 +31,7 @@ int application_start()
 		time_update();
 		SLEEP(0.02f);
 	}
-
+	LOG_S("Terminating");
 	vulkan_terminate();
 	window_destroy(window);
 

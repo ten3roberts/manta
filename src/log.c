@@ -168,7 +168,8 @@ int log_call(int color, const char * name, const char * fmt, ...)
 	if (last_log_frame != time_framecount())
 	{
 		last_log_frame = time_framecount();
-		last_log_length = min(sizeof buffer - 2, last_log_length);
+		//Write a divider with the length of last_log_length capped at 64 characters
+		last_log_length = min(64, last_log_length);
 		memset(buffer, '-', last_log_length);
 		buffer[last_log_length] = '\n';
 		buffer[last_log_length + 1] = '\0';
