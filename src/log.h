@@ -1,17 +1,25 @@
 #include <string.h>
 
 #if PL_LINUX
-#define CONSOLE_WHITE 37
+#define CONSOLE_BLACK 0
+#define CONSOLE_RED 31
 #define CONSOLE_GREEN 32
 #define CONSOLE_YELLOW 33
-#define CONSOLE_RED 31
+#define CONSOLE_BLUE 34
+#define CONSOLE_MAGENTA 35
+#define CONSOLE_CYAN 36
+#define CONSOLE_WHITE 37
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #elif PL_WINDOWS
-#define CONSOLE_WHITE 15
+#define CONSOLE_BLACK 0
+#define CONSOLE_RED 12
 #define CONSOLE_GREEN 2
 #define CONSOLE_YELLOW 6
-#define CONSOLE_RED 12
-#define __FILENAME__  (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+#define CONSOLE_BLUE 1
+#define CONSOLE_MAGENTA 5
+#define CONSOLE_CYAN 9
+#define CONSOLE_WHITE 15
+#define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #endif
 
 // Needs to be called before any other log function
@@ -25,7 +33,10 @@ int log_init();
 void log_terminate();
 
 // Issues a formated log call that prints to stdout and a log file
-int log_call(int color, const char* name, const char * fmt, ...);
+// name will be printed inside the header, "[ name @ %H.%M.%S ] {NONE, CONSOLE_RED:'WARNING', CONSOLE_YELLOW:'ERROR'}: "
+// If name is NULL, the header will not be printed
+// Can be called either directly or via the LOG_* macros provided for autmatic name and color assignment
+int log_call(int color, const char * name, const char * fmt, ...);
 
 // Continues the previous log call
 #define LOG_CONT(fmt, ...) log_call(CONSOLE_WHITE, NULL, fmt, ##__VA_ARGS__)
