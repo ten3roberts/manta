@@ -1,5 +1,4 @@
 #pragma once
-#include <GLFW/glfw3.h>
 typedef enum
 {
 	// Creates a decorated window. Uses set width and height
@@ -22,3 +21,7 @@ extern void window_update(Window * window);
 
 // Returns true if the window should close
 extern int window_get_close(Window * window);
+
+// Returns the raw glfw window
+// Returns as void* so that glfw3.h does not need to be included in header
+extern void* window_get_raw(Window* window);

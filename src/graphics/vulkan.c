@@ -69,11 +69,16 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT * c
 
 VkInstance instance = VK_NULL_HANDLE;
 VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
+
 VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 VkDevice device = VK_NULL_HANDLE;
-VkQueue graphics_queue = VK_NULL_HANDLE;
 
-// A pointer to the
+VkQueue graphics_queue = VK_NULL_HANDLE;
+VkQueue present_queue = VK_NULL_HANDLE;
+
+VkSurfaceKHR surface = VK_NULL_HANDLE;
+
+// A pointer to the current window
 Window * window;
 
 const char * validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
@@ -142,7 +147,7 @@ int create_instance()
 		if (exists == 0)
 		{
 			LOG_E("System does not provide the required extension '%s'", required_extensions[i]);
-			// return -1;
+			return -1;
 		}
 	}
 
@@ -218,7 +223,11 @@ int create_debug_messenger()
 	return 0;
 }
 
-#define GRAPHICS_QUEUE_VALID_BIT 0b1
+#define GRAPHICS_FAMILY_VALID_BIT 0b1
+#define PRESENT_FAMILY_VALID_BIT 0b01
+#define QUEUE_FAMILIES_COMLPLETE 0b11
+
+#define QUEUE_FAMILY_COUNT 2
 
 // Specifies the indices for the different queue families
 // Is filled in by get_queue_families function
@@ -226,6 +235,7 @@ typedef struct
 {
 	// The index for the graphics queue family
 	uint32_t graphics;
+	uint32_t present;
 
 	// Defines a bitfield of the valid queues
 	// graphics queue 0b1
@@ -239,17 +249,27 @@ QueueFamilies get_queue_families(VkPhysicalDevice device)
 	uint32_t queue_family_count = 0;
 	VkQueueFamilyProperties * queue_families = NULL;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, NULL);
-	queue_families = malloc(queue_family_count * sizeof (VkQueueFamilyProperties));
+	queue_families = malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
 
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
 
 	size_t i = 0;
 	for (i = 0; i < queue_family_count; i++)
 	{
+		// Check if index belongs to graphics queue family
 		if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 		{
 			indices.graphics = i;
-			indices.queue_validity |= GRAPHICS_QUEUE_VALID_BIT;
+			indices.queue_validity |= GRAPHICS_FAMILY_VALID_BIT;
+		}
+
+		// Check if index belongs to the present queue family
+		VkBool32 present_support = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
+		if (present_support)
+		{
+			indices.present = i;
+			indices.queue_validity |= PRESENT_FAMILY_VALID_BIT;
 		}
 	}
 
@@ -278,7 +298,6 @@ int pick_physical_device()
 	int max_score = 0;
 	VkPhysicalDevice best_device = NULL;
 
-
 	// Enumerate them and select the best one by score
 	for (i = 0; i < device_count; i++)
 	{
@@ -296,7 +315,7 @@ int pick_physical_device()
 
 		// Checks to see if the required families are supported
 		QueueFamilies indices = get_queue_families(devices[i]);
-		if (!indices.queue_validity & 0b1)
+		if (!(indices.queue_validity & QUEUE_FAMILIES_COMLPLETE))
 			continue;
 
 		// Discrete GPUs have a significant performance advantage
@@ -325,7 +344,7 @@ int pick_physical_device()
 	vkGetPhysicalDeviceProperties(best_device, &deviceProperties);
 	LOG_OK("Picking graphical device '%s'", deviceProperties.deviceName);
 	physical_device = best_device;
-	
+
 	free(devices);
 	return 0;
 }
@@ -335,24 +354,46 @@ int create_logical_device()
 	// Get the queues we require
 	QueueFamilies indices = get_queue_families(physical_device);
 
-	// Specify to create them along with the logical device
-	VkDeviceQueueCreateInfo queueCreateInfo = {0};
+	// Calculate the number of unique queues
+	uint32_t unique_queue_families[QUEUE_FAMILY_COUNT];
+	uint32_t unique_queue_family_count = 0;
+	for (size_t i = 0; i < 2; i++)
+	{
+		int exists = false;
+		for (size_t j = 0; j < unique_queue_family_count; j++)
+		{
+			if (*(&indices.graphics + i) == unique_queue_families[j])
+			{
+				exists = true;
+			}
+		}
+		if (!exists)
+		{
+			unique_queue_families[i] = *(&indices.graphics + i);
+			unique_queue_family_count++;
+		}
+	}
 
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.graphics;
-	queueCreateInfo.queueCount = 1;
-	float queue_priority = 1.0f;
-	queueCreateInfo.pQueuePriorities = &queue_priority;
+	// Specify to create them along with the logical device
+	VkDeviceQueueCreateInfo queueCreateInfos[QUEUE_FAMILY_COUNT] = {0};
+	for (size_t i = 0; i < unique_queue_family_count; i++)
+	{
+		queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfos[i].queueFamilyIndex = indices.graphics;
+		queueCreateInfos[i].queueCount = 1;
+
+		float queue_priority = 1.0f;
+		queueCreateInfos[i].pQueuePriorities = &queue_priority;
+	}
 
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
 
 	VkDeviceCreateInfo createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos = &queueCreateInfo;
-	createInfo.queueCreateInfoCount = 1;
+	createInfo.pQueueCreateInfos = queueCreateInfos;
+	createInfo.queueCreateInfoCount = unique_queue_family_count;
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
-
 
 	// Specify device validation layers for support with older implementations
 	if (enable_validation_layers)
@@ -367,7 +408,7 @@ int create_logical_device()
 
 	// Create a logical device to interface with the previously picked physical device
 	VkResult result = vkCreateDevice(physical_device, &createInfo, NULL, &device);
-	if(result != VK_SUCCESS)
+	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create logical device - code %d", result);
 		return -1;
@@ -375,7 +416,18 @@ int create_logical_device()
 
 	// Get the handles for the newly created queues
 	vkGetDeviceQueue(device, indices.graphics, 0, &graphics_queue);
+	vkGetDeviceQueue(device, indices.present, 0, &present_queue);
 
+	return 0;
+}
+
+int create_surface()
+{
+	VkResult result = glfwCreateWindowSurface(instance, window_get_raw(window), NULL, &surface);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create KHR surface - code %d", result);
+	}
 	return 0;
 }
 
@@ -391,13 +443,17 @@ int vulkan_init()
 	{
 		return -2;
 	}
-	if (pick_physical_device())
+	if (create_surface())
 	{
 		return -3;
 	}
-	if (create_logical_device())
+	if (pick_physical_device())
 	{
 		return -4;
+	}
+	if (create_logical_device())
+	{
+		return -5;
 	}
 	LOG_OK("Successfully initialized vulkan");
 	return 0;
@@ -410,6 +466,6 @@ void vulkan_terminate()
 	{
 		destroy_debug_utils_messenger_ext(instance, debug_messenger, NULL);
 	}
-
+	vkDestroySurfaceKHR(instance, surface, NULL);
 	vkDestroyInstance(instance, NULL);
 }

@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <GLFW/glfw3.h>
+
+
 typedef enum
 {
 	// Creates a decorated window. Uses set width and height
@@ -195,4 +198,9 @@ void window_update(Window * window)
 bool window_get_close(Window * window)
 {
 	return window->should_close;
+}
+
+extern void* window_get_raw(Window* window)
+{
+	return window->raw_window;
 }
