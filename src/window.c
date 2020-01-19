@@ -200,6 +200,15 @@ bool window_get_close(Window * window)
 	return window->should_close;
 }
 
+extern float window_get_width(Window * window)
+{
+	return window->width;
+}
+extern float window_get_height(Window * window)
+{
+	return window->height;
+}
+
 extern void* window_get_raw(Window* window)
 {
 	return window->raw_window;

@@ -19,6 +19,9 @@ extern void window_destroy(Window * window);
 
 extern void window_update(Window * window);
 
+extern float window_get_width(Window * window);
+extern float window_get_height(Window * window);
+
 // Returns true if the window should close
 extern int window_get_close(Window * window);
 
