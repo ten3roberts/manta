@@ -18,4 +18,5 @@ int main(int argc, char ** argv)
 	application_start();
 
 	log_terminate();
+	return 0;
 }
