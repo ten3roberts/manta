@@ -4,6 +4,7 @@
 #include "window.h"
 #include "application.h"
 #include "log.h"
+#include "math/math_extra.h"
 #include "vulkan.h"
 #include <stdlib.h>
 #include <stdbool.h>
@@ -67,6 +68,36 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT * c
 	createInfo->pfnUserCallback = debug_callback;
 }
 
+#define GRAPHICS_FAMILY_VALID_BIT 0b1
+#define PRESENT_FAMILY_VALID_BIT 0b01
+#define QUEUE_FAMILIES_COMLPLETE 0b11
+
+#define QUEUE_FAMILY_COUNT 2
+
+// Specifies the indices for the different queue families
+// Is filled in by get_queue_families function
+typedef struct
+{
+	// The index for the graphics queue family
+	uint32_t graphics;
+	uint32_t present;
+
+	// Defines a bitfield of the valid queues
+	// graphics queue 0b1
+	int queue_validity;
+} QueueFamilies;
+
+typedef struct
+{
+	VkSurfaceCapabilitiesKHR capabilities;
+	VkSurfaceFormatKHR formats[64];
+	uint32_t format_count;
+	VkPresentModeKHR present_modes[64];
+	uint32_t present_mode_count;
+} SwapchainSupportDetails;
+
+// Vulkan api members
+
 VkInstance instance = VK_NULL_HANDLE;
 VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
 
@@ -78,11 +109,24 @@ VkQueue present_queue = VK_NULL_HANDLE;
 
 VkSurfaceKHR surface = VK_NULL_HANDLE;
 
+VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+
+
+// Swap chain
+VkImage* swapchain_images = NULL;
+uint32_t swapchain_image_count = 0;
+
+VkFormat swapchain_image_format;
+VkExtent2D swapchain_extent;
+
 // A pointer to the current window
 Window * window;
 
 const char * validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
 const size_t validation_layers_count = (sizeof(validation_layers) / sizeof(char *));
+
+const char * device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char *));
 
 #if NDEBUG
 const int enable_validation_layers = 0;
@@ -223,24 +267,7 @@ int create_debug_messenger()
 	return 0;
 }
 
-#define GRAPHICS_FAMILY_VALID_BIT 0b1
-#define PRESENT_FAMILY_VALID_BIT 0b01
-#define QUEUE_FAMILIES_COMLPLETE 0b11
 
-#define QUEUE_FAMILY_COUNT 2
-
-// Specifies the indices for the different queue families
-// Is filled in by get_queue_families function
-typedef struct
-{
-	// The index for the graphics queue family
-	uint32_t graphics;
-	uint32_t present;
-
-	// Defines a bitfield of the valid queues
-	// graphics queue 0b1
-	int queue_validity;
-} QueueFamilies;
 
 QueueFamilies get_queue_families(VkPhysicalDevice device)
 {
@@ -279,6 +306,74 @@ QueueFamilies get_queue_families(VkPhysicalDevice device)
 	return indices;
 }
 
+// Checks if supplied device supports all requirements for picking a device
+// Returns 0 on success
+bool check_device_extension_support(VkPhysicalDevice device)
+{
+	// Check if all necessary extensions are supported
+	uint32_t extension_count;
+	VkExtensionProperties * available_extensions = NULL;
+	vkEnumerateDeviceExtensionProperties(device, NULL, &extension_count, NULL);
+	available_extensions = malloc(extension_count * sizeof(VkExtensionProperties));
+	vkEnumerateDeviceExtensionProperties(device, NULL, &extension_count, available_extensions);
+
+	/* Check if the system supports our required extensions */
+	size_t i = 0;
+	for (i = 0; i < device_extensions_count; i++)
+	{
+		int exists = 0;
+		for (size_t j = 0; j < extension_count; j++)
+		{
+			if (strcmp(device_extensions[i], available_extensions[j].extensionName) == 0)
+			{
+				exists = 1;
+				break;
+			}
+		}
+		if (exists == 0)
+		{
+			return -1;
+		}
+	}
+
+	free(available_extensions);
+	return 0;
+}
+
+int create_surface()
+{
+	VkResult result = glfwCreateWindowSurface(instance, window_get_raw(window), NULL, &surface);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create KHR surface - code %d", result);
+	}
+	return 0;
+}
+
+SwapchainSupportDetails get_swapchain_support(VkPhysicalDevice device)
+{
+	SwapchainSupportDetails details;
+
+	// Get the device capabilites for the swapchain
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+	// Get the surface formats
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &details.format_count, NULL);
+	if (details.format_count)
+	{
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &details.format_count, details.formats);
+	}
+	
+	// Get the present formats
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &details.present_mode_count, NULL);
+	if (details.present_mode_count)
+	{
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &details.present_mode_count, details.present_modes);
+	}
+
+	return details;
+}
+
 int pick_physical_device()
 {
 	// Pick a suitable device
@@ -292,6 +387,7 @@ int pick_physical_device()
 		LOG_E("Unable to retrieve graphical devices");
 		return -1;
 	}
+
 	devices = malloc(device_count * sizeof(VkPhysicalDevice));
 	vkEnumeratePhysicalDevices(instance, &device_count, devices);
 	size_t i = 0;
@@ -309,6 +405,9 @@ int pick_physical_device()
 		VkPhysicalDeviceFeatures deviceFeatures;
 		vkGetPhysicalDeviceFeatures(devices[i], &deviceFeatures);
 
+		if (check_device_extension_support(devices[i]))
+			continue;
+
 		// Application can't function without support for geometry shader
 		if (!deviceFeatures.geometryShader)
 			continue;
@@ -316,6 +415,13 @@ int pick_physical_device()
 		// Checks to see if the required families are supported
 		QueueFamilies indices = get_queue_families(devices[i]);
 		if (!(indices.queue_validity & QUEUE_FAMILIES_COMLPLETE))
+			continue;
+
+		// Check to see if swap chain support is adequate
+		bool swapchain_adequate = false;
+		SwapchainSupportDetails swapchain_support = get_swapchain_support(devices[i]);
+		swapchain_adequate = swapchain_support.format_count && swapchain_support.present_mode_count;
+		if (!swapchain_adequate)
 			continue;
 
 		// Discrete GPUs have a significant performance advantage
@@ -393,6 +499,11 @@ int create_logical_device()
 	createInfo.pQueueCreateInfos = queueCreateInfos;
 	createInfo.queueCreateInfoCount = unique_queue_family_count;
 
+	// The device specific extension
+	// The physical device extension support has been checked before
+	createInfo.enabledExtensionCount = device_extensions_count;
+	createInfo.ppEnabledExtensionNames = device_extensions;
+
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
 	// Specify device validation layers for support with older implementations
@@ -421,13 +532,129 @@ int create_logical_device()
 	return 0;
 }
 
-int create_surface()
+// Picks the best swapchain surface format and returns it from those supplied
+VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR * formats, size_t count)
 {
-	VkResult result = glfwCreateWindowSurface(instance, window_get_raw(window), NULL, &surface);
+	for (size_t i = 0; i < count; i++)
+	{
+		// The best format exists and is returned
+		if (formats[i].format == VK_FORMAT_B8G8R8_UNORM && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		{
+			LOG_OK("The best swapchain surface format was available");
+			return formats[i];
+		}
+	}
+
+	// If the best one wasn't available
+	return formats[0];
+}
+
+// Picks the best swapchain present mode and returns it from those supplied
+VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR * modes, size_t count)
+{
+	for (size_t i = 0; i < count; i++)
+	{
+		// Triple buffered present mode is preferred
+		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+		{
+			LOG_OK("The best swapchain present mode was available");
+			return modes[i];
+		}
+	}
+
+	// Only FIFO/double buffered vsync is guranteed to be available
+	// Use it as a fallback
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D pick_swap_extent(VkSurfaceCapabilitiesKHR * capabilities)
+{
+	if (capabilities->currentExtent.width != UINT32_MAX)
+	{
+		return capabilities->currentExtent;
+	}
+	else
+	{
+		VkExtent2D actual_extent = {window_get_width(window), window_get_height(window)};
+		actual_extent.width =
+			max(capabilities->minImageExtent.width, min(capabilities->maxImageExtent.width, actual_extent.width));
+		actual_extent.height =
+			max(capabilities->minImageExtent.height, min(capabilities->maxImageExtent.height, actual_extent.height));
+
+		return actual_extent;
+	}
+}
+
+int create_swapchain()
+{
+	SwapchainSupportDetails support = get_swapchain_support(physical_device);
+	VkSurfaceFormatKHR surface_format = pick_swap_surface_format(support.formats, support.format_count);
+	VkPresentModeKHR present_mode = pick_swap_present_mode(support.present_modes, support.present_mode_count);
+	VkExtent2D extent = pick_swap_extent(&support.capabilities);
+
+	uint32_t image_count = support.capabilities.minImageCount + 1;
+
+	if (support.capabilities.maxImageCount != 0 && image_count > support.capabilities.maxImageCount)
+	{
+		image_count = support.capabilities.maxImageCount;
+	}
+
+	// Fill in the create info
+	VkSwapchainCreateInfoKHR createInfo = {0};
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = surface;
+
+	createInfo.minImageCount = image_count;
+	createInfo.imageFormat = surface_format.format;
+	createInfo.imageColorSpace = surface_format.colorSpace;
+	createInfo.imageExtent = extent;
+	createInfo.imageArrayLayers = 1;
+	// Specifies if we are to render directly to the swapchain image
+	// For post processing VK_IMAGE_USAGE_TRANSFER_DST_BIT is to be used with a memcpy
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	QueueFamilies indices = get_queue_families(physical_device);
+	uint32_t queueFamilyIndices[] = {indices.graphics, indices.present};
+
+	// If the family indices for graphics and present queue families differ
+	if (indices.graphics != indices.present)
+	{
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	}
+	// If they are the same
+	else
+	{
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0;  // Optional
+		createInfo.pQueueFamilyIndices = NULL; // Optional
+	}
+
+	createInfo.preTransform = support.capabilities.currentTransform;
+
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+	createInfo.presentMode = present_mode;
+	// If pixels are obscured by another window, ignore them
+	// If we need to read data from those pixels, disable it
+	createInfo.clipped = VK_TRUE;
+
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	VkResult result = vkCreateSwapchainKHR(device, &createInfo, NULL, &swapchain);
 	if (result != VK_SUCCESS)
 	{
-		LOG_E("Failed to create KHR surface - code %d", result);
+		LOG_E("Failed to create swapchaing - code %d", result);
+		return -1;
 	}
+	swapchain_image_format = surface_format.format;
+	swapchain_extent = extent;
+
+	// Retrieve swapchain images
+	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, NULL);
+	swapchain_images = malloc(swapchain_image_count);
+	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
 	return 0;
 }
 
@@ -455,12 +682,18 @@ int vulkan_init()
 	{
 		return -5;
 	}
+	if (create_swapchain())
+	{
+		return -6;
+	}
 	LOG_OK("Successfully initialized vulkan");
 	return 0;
 }
 
 void vulkan_terminate()
 {
+	vkDestroySwapchainKHR(device, swapchain, NULL);
+	free(swapchain_images);
 	vkDestroyDevice(device, NULL);
 	if (enable_validation_layers)
 	{

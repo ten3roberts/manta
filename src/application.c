@@ -27,7 +27,6 @@ int application_start()
 	{
 		input_update();
 		window_update(window);
-		LOG_S("%2v", input_get_rel_scroll());
 		time_update();
 		SLEEP(0.05f);
 	}
