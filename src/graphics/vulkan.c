@@ -357,7 +357,7 @@ int create_logical_device()
 	// Calculate the number of unique queues
 	uint32_t unique_queue_families[QUEUE_FAMILY_COUNT];
 	uint32_t unique_queue_family_count = 0;
-	for (size_t i = 0; i < 2; i++)
+	for (size_t i = 0; i < QUEUE_FAMILY_COUNT; i++)
 	{
 		int exists = false;
 		for (size_t j = 0; j < unique_queue_family_count; j++)
@@ -379,7 +379,7 @@ int create_logical_device()
 	for (size_t i = 0; i < unique_queue_family_count; i++)
 	{
 		queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfos[i].queueFamilyIndex = indices.graphics;
+		queueCreateInfos[i].queueFamilyIndex = *(&indices.graphics + i);
 		queueCreateInfos[i].queueCount = 1;
 
 		float queue_priority = 1.0f;
