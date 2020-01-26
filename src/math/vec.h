@@ -9,61 +9,71 @@ typedef struct
 	float x, y;
 } vec2;
 
-const static vec2 vec2_one = {1, 1};
-const static vec2 vec2_zero = {0, 0};
+const static vec2 vec2_one = { 1, 1 };
+const static vec2 vec2_zero = { 0, 0 };
 
 typedef struct
 {
 	float x, y, z;
 } vec3;
 
-const static vec3 vec3_one = {1, 1, 1};
-const static vec3 vec3_zero = {0, 0, 0};
+const static vec3 vec3_one = { 1, 1, 1 };
+const static vec3 vec3_zero = { 0, 0, 0 };
 
-const static vec3 vec3_forward = {0, 0, 1};
-const static vec3 vec3_right = {1, 0, 0};
-const static vec3 vec3_up = {0, 1, 0};
+const static vec3 vec3_forward = { 0, 0, 1 };
+const static vec3 vec3_right = { 1, 0, 0 };
+const static vec3 vec3_up = { 0, 1, 0 };
 
-const static vec3 vec3_red = {1, 0, 0};
-const static vec3 vec3_green = {0, 1, 0};
-const static vec3 vec3_blue = {0, 0, 1};
+const static vec3 vec3_red = { 1, 0, 0 };
+const static vec3 vec3_green = { 0, 1, 0 };
+const static vec3 vec3_blue = { 0, 0, 1 };
 
 typedef struct
 {
-	float x, y, z, w;
+	union
+	{
+		struct
+		{
+			float x, y, z, w;
+		};
+		struct
+		{
+			vec3 xyz;
+		};
+	};
 } vec4;
 
-const static vec4 vec4_one = {1, 1, 1};
-const static vec4 vec4_zero = {0, 0, 0};
+const static vec4 vec4_one = { 1, 1, 1 };
+const static vec4 vec4_zero = { 0, 0, 0 };
 
-const static vec4 vec4_red = {1, 0, 0, 1};
-const static vec4 vec4_green = {0, 1, 0, 1};
-const static vec4 vec4_blue = {0, 0, 1, 1};
+const static vec4 vec4_red = { 1, 0, 0, 1 };
+const static vec4 vec4_green = { 0, 1, 0, 1 };
+const static vec4 vec4_blue = { 0, 0, 1, 1 };
 
 /*vec2*/
 
 // Adds two vectors together component wise
 static inline vec2 vec2_add(vec2 a, vec2 b)
 {
-	return (vec2){a.x + b.x, a.y + b.y};
+	return (vec2) { a.x + b.x, a.y + b.y };
 }
 
 // Subtracts two vectors component wise
 static inline vec2 vec2_sub(vec2 a, vec2 b)
 {
-	return (vec2){a.x - b.x, a.y - b.y};
+	return (vec2) { a.x - b.x, a.y - b.y };
 }
 
 // Calculates the pairwise vector product
 static inline vec2 vec2_prod(vec2 a, vec2 b)
 {
-	return (vec2){a.x * b.x, a.y * b.y};
+	return (vec2) { a.x* b.x, a.y* b.y };
 }
 
 // Returns the vector scaled with b
 static inline vec2 vec2_scale(vec2 a, float b)
 {
-	return (vec2){a.x * b, a.y * b};
+	return (vec2) { a.x* b, a.y* b };
 }
 
 // Calculates the magnitude of a vector
@@ -89,35 +99,35 @@ static inline float vec2_dot(vec2 a, vec2 b)
 vec2 vec2_norm(vec2 a);
 
 // Converts a vector to a comma separated string with the components
-void vec2_string(vec2 a, char * buf, int precision);
+void vec2_string(vec2 a, char* buf, int precision);
 
 // Converts a vector to a comma separated string with the components and magnitude
-void vec2_string_long(vec2 a, char * buf, int precision);
+void vec2_string_long(vec2 a, char* buf, int precision);
 
 /*vec3*/
 
 // Adds two vectors together component wise
 static inline vec3 vec3_add(vec3 a, vec3 b)
 {
-	return (vec3){a.x + b.x, a.y + b.y, a.z + b.z};
+	return (vec3) { a.x + b.x, a.y + b.y, a.z + b.z };
 }
 
 // Subtracts two vectors component wise
 static inline vec3 vec3_sub(vec3 a, vec3 b)
 {
-	return (vec3){a.x - b.x, a.y - b.y, a.z - b.z};
+	return (vec3) { a.x - b.x, a.y - b.y, a.z - b.z };
 }
 
 // Calculates the pairwise vector product
 static inline vec3 vec3_prod(vec3 a, vec3 b)
 {
-	return (vec3){a.x * b.x, a.y * b.y, a.z * b.z};
+	return (vec3) { a.x* b.x, a.y* b.y, a.z* b.z };
 }
 
 // Returns the vector scaled with b
 static inline vec3 vec3_scale(vec3 a, float b)
 {
-	return (vec3){a.x * b, a.y * b, a.z * b};
+	return (vec3) { a.x* b, a.y* b, a.z* b };
 }
 
 // Calculates the dot product between two vectors
@@ -130,7 +140,7 @@ static inline float vec3_dot(vec3 a, vec3 b)
 // The cross product produces a vector perpendicular to both vectors
 static inline vec3 vec3_cross(vec3 a, vec3 b)
 {
-	return (vec3){a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+	return (vec3) { a.y* b.z - a.z * b.y, a.z* b.x - a.x * b.z, a.x* b.y - a.y * b.x };
 }
 // Calculates the magnitude of a vector
 static inline float vec3_mag(vec3 a)
@@ -178,35 +188,35 @@ vec3 to_vec3(vec4 a);
 vec4 to_vec4(vec3 a, float w);
 
 // Converts a vector to a comma separated string with the components
-void vec3_string(vec3 a, char * buf, int precision);
+void vec3_string(vec3 a, char* buf, int precision);
 
 // Converts a vector to a comma separated string with the components and magnitude
-void vec3_string_long(vec3 a, char * buf, int precision);
+void vec3_string_long(vec3 a, char* buf, int precision);
 
 /*vec4*/
 
 // Adds two vectors together component wise
 static inline vec4 vec4_add(vec4 a, vec4 b)
 {
-	return (vec4){a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w};
+	return (vec4) { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w };
 }
 
 // Subtracts two vectors component wise
 static inline vec4 vec4_sub(vec4 a, vec4 b)
 {
-	return (vec4){a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w};
+	return (vec4) { a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w };
 }
 
 // Calculates the pairwise vector product
 static inline vec4 vec4_prod(vec4 a, vec4 b)
 {
-	return (vec4){a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w};
+	return (vec4) { a.x* b.x, a.y* b.y, a.z* b.z, a.w* b.w };
 }
 
 // Returns the vector scaled with b
 static inline vec4 vec4_scale(vec4 a, float b)
 {
-	return (vec4){a.x * b, a.y * b, a.z * b, a.w * b};
+	return (vec4) { a.x* b, a.y* b, a.z* b, a.w* b };
 }
 
 // Calculates the dot product between two vectors
@@ -232,7 +242,7 @@ static inline float vec4_sqrmag(vec4 a)
 vec4 vec4_norm(vec4 a);
 
 // Converts a vector to a comma separated string with the components
-void vec4_string(vec4 a, char * buf, int precision);
+void vec4_string(vec4 a, char* buf, int precision);
 
 // Converts a vector to a comma separated string with the components and magnitude
-void vec4_string_long(vec4 a, char * buf, int precision);
+void vec4_string_long(vec4 a, char* buf, int precision);

@@ -23,6 +23,10 @@ int application_start()
 	input_init(window);
 	vulkan_init();
 
+	vec4 v4 = { 1,2,3,4 };
+	vec3 v3 = v4.xyz;
+	LOG_S("%3v %f", v4.xyz, v4.w);
+
 	while (!window_get_close(window))
 	{
 		input_update();
@@ -39,12 +43,8 @@ int application_start()
 
 void application_send_event(Event event)
 {
-	/*else if (event.type == EVENT_KEY_PRESSED)
+	if (event.type == EVENT_KEY)
 		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);
-	else if (event.type == EVENT_KEY_RELEASED)
-		LOG("Key released : %d, %c", event.idata[0], event.idata[0]);
-	else
-		LOG("Event type %d : %f, %f", event.type, event.fdata[0], event.fdata[1]);*/
 	if (event.type == EVENT_KEY || event.type == EVENT_MOUSE_MOVED || event.type == EVENT_MOUSE_SCROLLED)
 		input_send_event(&event);
 }

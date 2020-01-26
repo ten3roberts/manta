@@ -343,6 +343,7 @@ int log_call(int color, const char * name, const char * fmt, ...)
 					vec4_string(va_arg(arg, vec4), buffer, precision);
 					WRITE(buffer)
 				}
+				length_mod = 0;
 				break;
 			default:
 				length_mod = atoi(--fmt);
