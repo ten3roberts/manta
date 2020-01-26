@@ -97,7 +97,7 @@ PenaltyBreakString: 1000
 PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 1000
-PointerAlignment: Middle
+PointerAlignment: Left
 ReflowComments:  true
 SortIncludes:    false
 SortUsingDeclarations: true
