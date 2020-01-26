@@ -10,8 +10,14 @@
 #include "input.h"
 #include "graphics/vulkan.h"
 #include "timer.h"
+#include "graphics/renderer.h"
 
 Window* window = NULL;
+
+void draw()
+{
+	renderer_draw();
+}
 
 int application_start()
 {
@@ -31,6 +37,7 @@ int application_start()
 		input_update();
 		window_update(window);
 		time_update();
+		draw();
 		SLEEP(0.05f);
 	}
 	LOG_S("Terminating");

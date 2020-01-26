@@ -1,0 +1,1 @@
+void renderer_draw();

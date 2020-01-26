@@ -1,7 +1,4 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-#include "window.h"
+#include "vulkan_members.h"
 #include "application.h"
 #include "log.h"
 #include "utils.h"
@@ -68,82 +65,6 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT* cr
 							  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo->pfnUserCallback = debug_callback;
 }
-
-#define GRAPHICS_FAMILY_VALID_BIT 0b1
-#define PRESENT_FAMILY_VALID_BIT 0b01
-#define QUEUE_FAMILIES_COMLPLETE 0b11
-
-#define QUEUE_FAMILY_COUNT 2
-
-// Specifies the indices for the different queue families
-// Is filled in by get_queue_families function
-typedef struct
-{
-	// The index for the graphics queue family
-	uint32_t graphics;
-	uint32_t present;
-
-	// Defines a bitfield of the valid queues
-	// graphics queue 0b1
-	int queue_validity;
-} QueueFamilies;
-
-typedef struct
-{
-	VkSurfaceCapabilitiesKHR capabilities;
-	VkSurfaceFormatKHR formats[64];
-	uint32_t format_count;
-	VkPresentModeKHR present_modes[64];
-	uint32_t present_mode_count;
-} SwapchainSupportDetails;
-
-// Vulkan api members
-
-VkInstance instance = VK_NULL_HANDLE;
-VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
-
-VkPhysicalDevice physical_device = VK_NULL_HANDLE;
-VkDevice device = VK_NULL_HANDLE;
-
-VkQueue graphics_queue = VK_NULL_HANDLE;
-VkQueue present_queue = VK_NULL_HANDLE;
-
-VkSurfaceKHR surface = VK_NULL_HANDLE;
-
-VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-
-// Swap chain
-VkImage* swapchain_images = NULL;
-uint32_t swapchain_image_count = 0;
-
-VkImageView* swapchain_image_views = NULL;
-uint32_t swapchain_image_view_count = 0;
-
-VkFormat swapchain_image_format;
-VkExtent2D swapchain_extent;
-
-// Pipeline layout
-VkPipelineLayout pipeline_layout;
-
-VkPipeline graphicsPipeline;
-
-// A pointer to the current window
-Window* window;
-
-// Rendering
-VkRenderPass renderPass;
-
-const char* validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
-const size_t validation_layers_count = (sizeof(validation_layers) / sizeof(char*));
-
-const char* device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char*));
-
-#if NDEBUG
-const int enable_validation_layers = 0;
-#else
-const int enable_validation_layers = 1;
-#endif
 
 int create_instance()
 {
@@ -567,12 +488,14 @@ VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
 		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
 		{
 			LOG_OK("The best swapchain present mode was available");
+			LOG_OK("Choosing triple buffered vsync");
 			return modes[i];
 		}
 	}
 
 	// Only FIFO/double buffered vsync is guranteed to be available
 	// Use it as a fallback
+	LOG_OK("Choosing double buffered vsync");
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
@@ -654,7 +577,7 @@ int create_swapchain()
 	VkResult result = vkCreateSwapchainKHR(device, &createInfo, NULL, &swapchain);
 	if (result != VK_SUCCESS)
 	{
-		LOG_E("Failed to create swapchaing - code %d", result);
+		LOG_E("Failed to create swapchain - code %d", result);
 		return -1;
 	}
 	swapchain_image_format = surface_format.format;
@@ -749,6 +672,21 @@ int create_render_pass()
 	renderPassInfo.pAttachments = &color_attachment;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+
+	// Subpass dependencies
+	VkSubpassDependency dependency = {0};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	// Specify what the subpass should wait for
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
+
 	VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass);
 	if (result != VK_SUCCESS)
 	{
@@ -946,8 +884,8 @@ int create_graphics_pipeline()
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1;			  // Optional
 
-	result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &graphicsPipeline);
-	if(result != VK_SUCCESS)
+	result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &graphics_pipeline);
+	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create pipeline - code %d", result);
 		return -2;
@@ -959,6 +897,130 @@ int create_graphics_pipeline()
 	// Modules are not needed after the creaton
 	vkDestroyShaderModule(device, vert_shader_module, NULL);
 	vkDestroyShaderModule(device, frag_shader_module, NULL);
+	return 0;
+}
+
+int create_framebuffers()
+{
+	framebuffer_count = swapchain_image_view_count;
+	framebuffers = malloc(framebuffer_count * sizeof(VkFramebuffer));
+
+	for (size_t i = 0; i < swapchain_image_view_count; i++)
+	{
+		VkImageView attachments[] = {swapchain_image_views[i]};
+
+		VkFramebufferCreateInfo framebufferInfo = {0};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = swapchain_extent.width;
+		framebufferInfo.height = swapchain_extent.height;
+		framebufferInfo.layers = 1;
+
+		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers[i]);
+		if (result != VK_SUCCESS)
+		{
+			LOG_E("Failed to create frambuffer %d - code %d", i, result);
+			return -i;
+		}
+	}
+	return 0;
+}
+
+int create_command_pool()
+{
+	QueueFamilies queueFamilyIndices = get_queue_families(physical_device);
+
+	VkCommandPoolCreateInfo poolInfo = {0};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex = queueFamilyIndices.graphics;
+	poolInfo.flags = 0; // Optional
+	VkResult result = vkCreateCommandPool(device, &poolInfo, NULL, &command_pool);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create command pool - code %d", result);
+		return -1;
+	}
+	return 0;
+}
+
+int create_command_buffers()
+{
+	command_buffer_count = framebuffer_count;
+	command_buffers = malloc(command_buffer_count * sizeof(VkCommandBuffer));
+
+	VkCommandBufferAllocateInfo allocInfo = {0};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = command_pool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = (uint32_t)command_buffer_count;
+
+	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, command_buffers);
+
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create command buffers - code %d", result);
+		return -1;
+	}
+
+	// Prerecord command buffers
+	for (size_t i = 0; i < command_buffer_count; i++)
+	{
+		VkCommandBufferBeginInfo begin_info = {0};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = NULL; // Optional
+
+		// Start recording
+		// If something was already recorded, it is reset
+		// It is not possible to append recordings to a command buffer
+		result = vkBeginCommandBuffer(command_buffers[i], &begin_info);
+		if (result != VK_SUCCESS)
+		{
+			LOG_E("Failed to begin recording command buffer %d - code %d", i, result);
+			return -2;
+		}
+		VkRenderPassBeginInfo render_pass_info = {0};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_info.renderPass = renderPass;
+		render_pass_info.framebuffer = framebuffers[i];
+		render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
+		render_pass_info.renderArea.extent = swapchain_extent;
+		VkClearValue clearColor = {{{0.0f, 0.5f, 0.0f, 1.0f}}};
+		render_pass_info.clearValueCount = 1;
+		render_pass_info.pClearValues = &clearColor;
+		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+		vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
+		vkCmdEndRenderPass(command_buffers[i]);
+		result = vkEndCommandBuffer(command_buffers[i]);
+		if (result != VK_SUCCESS)
+		{
+			LOG_E("Failed to record command buffer");
+			return -3;
+		}
+	}
+	return 0;
+}
+
+int create_semaphores()
+{
+	VkSemaphoreCreateInfo semaphore_info = {0};
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VkResult result;
+	result = vkCreateSemaphore(device, &semaphore_info, NULL, &semaphore_image_available);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create image available semaphore - code %d", result);
+		return -1;
+	}
+	result = vkCreateSemaphore(device, &semaphore_info, NULL, &semaphore_render_finished);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create render_finished semaphore - code %d", result);
+		return -2;
+	}
 	return 0;
 }
 
@@ -990,13 +1052,33 @@ int vulkan_init()
 	{
 		return -6;
 	}
-	if (create_render_pass())
+	if (create_image_views())
 	{
 		return -7;
 	}
-	if (create_graphics_pipeline())
+	if (create_render_pass())
 	{
 		return -8;
+	}
+	if (create_graphics_pipeline())
+	{
+		return -9;
+	}
+	if (create_framebuffers())
+	{
+		return -10;
+	}
+	if (create_command_pool())
+	{
+		return -11;
+	}
+	if (create_command_buffers())
+	{
+		return -12;
+	}
+	if (create_semaphores())
+	{
+		return -13;
 	}
 	LOG_OK("Successfully initialized vulkan");
 	return 0;
@@ -1004,9 +1086,17 @@ int vulkan_init()
 
 void vulkan_terminate()
 {
-	vkDestroyPipeline(device, graphicsPipeline, NULL);
+	vkDestroySemaphore(device, semaphore_render_finished, NULL);
+	vkDestroySemaphore(device, semaphore_image_available, NULL);
+	vkDestroyCommandPool(device, command_pool, NULL);
+
+	for (size_t i = 0; i < framebuffer_count; i++)
+		vkDestroyFramebuffer(device, framebuffers[i], NULL);
+
+	vkDestroyPipeline(device, graphics_pipeline, NULL);
 	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
 	vkDestroyRenderPass(device, renderPass, NULL);
+
 	// Destroy the image views since they were explicitely created
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
 		vkDestroyImageView(device, swapchain_image_views[i], NULL);
