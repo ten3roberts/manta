@@ -4,6 +4,7 @@
 #include "window.h"
 #include "application.h"
 #include "log.h"
+#include "utils.h"
 #include "math/math_extra.h"
 #include "vulkan.h"
 #include <stdlib.h>
@@ -11,8 +12,8 @@
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 													 VkDebugUtilsMessageTypeFlagsEXT messageType,
-													 const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData,
-													 void * pUserData)
+													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+													 void* pUserData)
 {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 		log_call(CONSOLE_RED, "Vulkan debug callback", "(%d)%s", messageSeverity, pCallbackData->pMessage);
@@ -23,12 +24,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	return VK_FALSE;
 }
 
-VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
-										  const VkAllocationCallbacks * pAllocator,
-										  VkDebugUtilsMessengerEXT * pDebugMessenger)
+VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+										  const VkAllocationCallbacks* pAllocator,
+										  VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
-					 const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pMessenger) =
+	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+					 const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) =
 		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 
 	if (func != NULL)
@@ -42,9 +43,9 @@ VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtil
 }
 
 void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-									   const VkAllocationCallbacks * pAllocator)
+									   const VkAllocationCallbacks* pAllocator)
 {
-	void (*func)(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks * pAllocator) =
+	void (*func)(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator) =
 		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 
 	if (func != NULL)
@@ -53,7 +54,7 @@ void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessenge
 	}
 }
 
-void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT * createInfo)
+void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT* createInfo)
 {
 	createInfo->pUserData = NULL;
 	createInfo->pNext = NULL;
@@ -112,23 +113,31 @@ VkSurfaceKHR surface = VK_NULL_HANDLE;
 VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 
 // Swap chain
-VkImage * swapchain_images = NULL;
+VkImage* swapchain_images = NULL;
 uint32_t swapchain_image_count = 0;
 
-VkImageView * swapchain_image_views = NULL;
+VkImageView* swapchain_image_views = NULL;
 uint32_t swapchain_image_view_count = 0;
 
 VkFormat swapchain_image_format;
 VkExtent2D swapchain_extent;
 
+// Pipeline layout
+VkPipelineLayout pipeline_layout;
+
+VkPipeline graphicsPipeline;
+
 // A pointer to the current window
-Window * window;
+Window* window;
 
-const char * validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
-const size_t validation_layers_count = (sizeof(validation_layers) / sizeof(char *));
+// Rendering
+VkRenderPass renderPass;
 
-const char * device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char *));
+const char* validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
+const size_t validation_layers_count = (sizeof(validation_layers) / sizeof(char*));
+
+const char* device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char*));
 
 #if NDEBUG
 const int enable_validation_layers = 0;
@@ -152,13 +161,13 @@ int create_instance()
 
 	// Get the extensions required by glfw and application
 	uint32_t glfw_extension_count = 0;
-	const char ** glfw_extensions;
+	const char** glfw_extensions;
 
 	glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
 	// Create and fill in array containing the extensions required by both glfw and the application
 	uint32_t required_extension_count = glfw_extension_count + enable_validation_layers;
-	const char ** required_extensions = malloc(required_extension_count * sizeof(char *));
+	const char** required_extensions = malloc(required_extension_count * sizeof(char*));
 
 	size_t i = 0;
 	for (i = 0; i < glfw_extension_count; i++)
@@ -173,7 +182,7 @@ int create_instance()
 	// Check the currently supported extensions
 	uint32_t extension_count = 0;
 	vkEnumerateInstanceExtensionProperties(NULL, &extension_count, NULL);
-	VkExtensionProperties * extensions = malloc(sizeof(VkExtensionProperties) * extension_count);
+	VkExtensionProperties* extensions = malloc(sizeof(VkExtensionProperties) * extension_count);
 	vkEnumerateInstanceExtensionProperties(NULL, &extension_count, extensions);
 
 	/* Check if the system supports our required extensions */
@@ -200,7 +209,7 @@ int create_instance()
 	// Check for validation layer support
 	uint32_t layer_count;
 	vkEnumerateInstanceLayerProperties(&layer_count, NULL);
-	VkLayerProperties * available_layers = malloc(layer_count * sizeof(VkLayerProperties));
+	VkLayerProperties* available_layers = malloc(layer_count * sizeof(VkLayerProperties));
 	vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
 
 	for (i = 0; i < validation_layers_count; i++)
@@ -229,7 +238,7 @@ int create_instance()
 		createInfo.enabledLayerCount = validation_layers_count;
 		createInfo.ppEnabledLayerNames = validation_layers;
 		populate_debug_messenger_create_info(&debugCreateInfo);
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
 	{
@@ -274,7 +283,7 @@ QueueFamilies get_queue_families(VkPhysicalDevice device)
 	QueueFamilies indices = {0, 0};
 
 	uint32_t queue_family_count = 0;
-	VkQueueFamilyProperties * queue_families = NULL;
+	VkQueueFamilyProperties* queue_families = NULL;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, NULL);
 	queue_families = malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
 
@@ -312,7 +321,7 @@ bool check_device_extension_support(VkPhysicalDevice device)
 {
 	// Check if all necessary extensions are supported
 	uint32_t extension_count;
-	VkExtensionProperties * available_extensions = NULL;
+	VkExtensionProperties* available_extensions = NULL;
 	vkEnumerateDeviceExtensionProperties(device, NULL, &extension_count, NULL);
 	available_extensions = malloc(extension_count * sizeof(VkExtensionProperties));
 	vkEnumerateDeviceExtensionProperties(device, NULL, &extension_count, available_extensions);
@@ -380,7 +389,7 @@ int pick_physical_device()
 
 	// Get all physical devices on the system
 	uint32_t device_count = 0;
-	VkPhysicalDevice * devices = NULL;
+	VkPhysicalDevice* devices = NULL;
 	vkEnumeratePhysicalDevices(instance, &device_count, NULL);
 	if (device_count == 0)
 	{
@@ -533,7 +542,7 @@ int create_logical_device()
 }
 
 // Picks the best swapchain surface format and returns it from those supplied
-VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR * formats, size_t count)
+VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR* formats, size_t count)
 {
 	for (size_t i = 0; i < count; i++)
 	{
@@ -550,7 +559,7 @@ VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR * formats, size_t
 }
 
 // Picks the best swapchain present mode and returns it from those supplied
-VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR * modes, size_t count)
+VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
 {
 	for (size_t i = 0; i < count; i++)
 	{
@@ -567,7 +576,7 @@ VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR * modes, size_t count)
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D pick_swap_extent(VkSurfaceCapabilitiesKHR * capabilities)
+VkExtent2D pick_swap_extent(VkSurfaceCapabilitiesKHR* capabilities)
 {
 	if (capabilities->currentExtent.width != UINT32_MAX)
 	{
@@ -695,6 +704,264 @@ int create_image_views()
 	return 0;
 }
 
+VkShaderModule create_shader_module(char* code, size_t size)
+{
+	VkShaderModuleCreateInfo createInfo = {0};
+	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	createInfo.codeSize = size;
+	createInfo.pCode = (uint32_t*)code;
+	VkShaderModule shader_module;
+	VkResult result = vkCreateShaderModule(device, &createInfo, NULL, &shader_module);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create shader module - code %d", result);
+	}
+	return shader_module;
+}
+
+int create_render_pass()
+{
+	VkAttachmentDescription color_attachment = {0};
+	color_attachment.format = swapchain_image_format;
+	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+	// Ignore stencil data since we don't have a depth buffer
+	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference color_attachment_ref = {0};
+	color_attachment_ref.attachment = 0;
+	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {0};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &color_attachment_ref;
+
+	VkRenderPassCreateInfo renderPassInfo = {0};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &color_attachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create render pass - code %d", result);
+		return -1;
+	}
+	return 0;
+}
+
+int create_graphics_pipeline()
+{
+	// Read vertex shader from SPIR-V
+	size_t vert_code_size = read_fileb("./assets/shaders/standard.vert.spv", NULL);
+	if (vert_code_size == 0)
+	{
+		LOG_E("Failed to read vertex shader %s from binary file", "./assets/shaders/standard.vert.spv");
+		return -1;
+	}
+	char* vert_shader_code = malloc(vert_code_size);
+	read_fileb("./assets/shaders/standard.vert.spv", vert_shader_code);
+
+	// Read fragment shader from SPIR-V
+	size_t frag_code_size = read_fileb("./assets/shaders/standard.frag.spv", NULL);
+	if (vert_code_size == 0)
+	{
+		LOG_E("Failed to read vertex shader %s from binary file", "./assets/shaders/standard.frag.spv");
+		return -1;
+	}
+	char* frag_shader_code = malloc(frag_code_size);
+	read_fileb("./assets/shaders/standard.frag.spv", frag_shader_code);
+
+	VkShaderModule vert_shader_module = create_shader_module(vert_shader_code, vert_code_size);
+	VkShaderModule frag_shader_module = create_shader_module(frag_shader_code, frag_code_size);
+
+	// Shader stage creation
+	// Vertex shader
+	VkPipelineShaderStageCreateInfo shader_stage_infos[2] = {{0}, {0}};
+	// Create infos for the shaders
+	// 0 - vertex shader
+	// 1 - fragment shader
+
+	shader_stage_infos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader_stage_infos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shader_stage_infos[0].module = vert_shader_module;
+	shader_stage_infos[0].pName = "main";
+	shader_stage_infos[0].pSpecializationInfo = NULL;
+
+	// Fragment shader
+	shader_stage_infos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shader_stage_infos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	shader_stage_infos[1].module = frag_shader_module;
+	shader_stage_infos[1].pName = "main";
+	shader_stage_infos[1].pSpecializationInfo = NULL;
+
+	// Vertex input
+	// Specify the data the vertex shader takes as input
+	// For now, nothing
+	VkPipelineVertexInputStateCreateInfo vertex_input_info = {0};
+	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertex_input_info.vertexBindingDescriptionCount = 0;
+	vertex_input_info.pVertexBindingDescriptions = NULL; // Optional
+	vertex_input_info.vertexAttributeDescriptionCount = 0;
+	vertex_input_info.pVertexAttributeDescriptions = NULL; // Optional
+
+	// Input assembly
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {0};
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	// Specify viewports and scissors
+	VkViewport viewport = {0};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)swapchain_extent.width;
+	viewport.height = (float)swapchain_extent.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	// Specify a scissor rectangle that covers the entire frame buffer
+	VkRect2D scissor = {0};
+	scissor.offset = (VkOffset2D){0, 0};
+	scissor.extent = swapchain_extent;
+
+	// Combine viewport and scissor into a viewport state
+	VkPipelineViewportStateCreateInfo viewportState = {0};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = &viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = &scissor;
+
+	// Rasterizer
+	VkPipelineRasterizationStateCreateInfo rasterizer = {0};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE;
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	// Fills the polygons
+	// Drawing lines or points requires enabling a GPU feature
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterizer.lineWidth = 1.0f;
+
+	// Cull mode
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+
+	rasterizer.depthBiasEnable = VK_FALSE;
+	rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+	rasterizer.depthBiasClamp = 0.0f;		   // Optional
+	rasterizer.depthBiasSlopeFactor = 0.0f;	   // Optional
+
+	// Multisampling
+	// Requires GPU feature
+	// For now, disable it
+	VkPipelineMultisampleStateCreateInfo multisampling = {0};
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling.minSampleShading = 1.0f;			// Optional
+	multisampling.pSampleMask = NULL;				// Optional
+	multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+	multisampling.alphaToOneEnable = VK_FALSE;		// Optional
+
+	// No depth and stencil testing for now
+
+	// Color blending
+	// For now, disabled
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
+	colorBlendAttachment.colorWriteMask =
+		VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;	 // Optional
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;			 // Optional
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;	 // Optional
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;			 // Optional
+
+	VkPipelineColorBlendStateCreateInfo colorBlending = {0};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable = VK_FALSE;
+	colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.blendConstants[0] = 0.0f; // Optional
+	colorBlending.blendConstants[1] = 0.0f; // Optional
+	colorBlending.blendConstants[2] = 0.0f; // Optional
+	colorBlending.blendConstants[3] = 0.0f; // Optional
+
+	// Dynamic states
+	VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
+
+	VkPipelineDynamicStateCreateInfo dynamicState = {0};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = 2;
+	dynamicState.pDynamicStates = dynamicStates;
+
+	// Pipeline layout
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;		   // Optional
+	pipelineLayoutInfo.pSetLayouts = NULL;		   // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = NULL; // Optional
+	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &pipeline_layout);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create pipeline layout - code %d", result);
+		return -1;
+	}
+	VkGraphicsPipelineCreateInfo pipelineInfo = {0};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.flags = 0;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = shader_stage_infos;
+
+	pipelineInfo.pVertexInputState = &vertex_input_info;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = NULL; // Optional
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = NULL; // Optional
+
+	// Reference pipelin layout
+	pipelineInfo.layout = pipeline_layout;
+
+	// Render passes
+	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.subpass = 0;
+
+	// Create an entirely new pipeline, not deriving from an old one
+	// VK_PIPELINE_CREATE_DERIVATE_BIT needs to be specified in createInfo
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+	pipelineInfo.basePipelineIndex = -1;			  // Optional
+
+	result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &graphicsPipeline);
+	if(result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create pipeline - code %d", result);
+		return -2;
+	}
+	// Free the temporary resources
+	free(vert_shader_code);
+	free(frag_shader_code);
+
+	// Modules are not needed after the creaton
+	vkDestroyShaderModule(device, vert_shader_module, NULL);
+	vkDestroyShaderModule(device, frag_shader_module, NULL);
+	return 0;
+}
+
 int vulkan_init()
 {
 	window = application_get_window();
@@ -723,12 +990,23 @@ int vulkan_init()
 	{
 		return -6;
 	}
+	if (create_render_pass())
+	{
+		return -7;
+	}
+	if (create_graphics_pipeline())
+	{
+		return -8;
+	}
 	LOG_OK("Successfully initialized vulkan");
 	return 0;
 }
 
 void vulkan_terminate()
 {
+	vkDestroyPipeline(device, graphicsPipeline, NULL);
+	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
+	vkDestroyRenderPass(device, renderPass, NULL);
 	// Destroy the image views since they were explicitely created
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
 		vkDestroyImageView(device, swapchain_image_views[i], NULL);

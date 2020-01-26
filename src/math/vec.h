@@ -30,17 +30,7 @@ const static vec3 vec3_blue = { 0, 0, 1 };
 
 typedef struct
 {
-	union
-	{
-		struct
-		{
-			float x, y, z, w;
-		};
-		struct
-		{
-			vec3 xyz;
-		};
-	};
+	float x, y, z, w;
 } vec4;
 
 const static vec4 vec4_one = { 1, 1, 1 };

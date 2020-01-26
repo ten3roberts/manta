@@ -23,10 +23,6 @@ int application_start()
 	input_init(window);
 	vulkan_init();
 
-	vec4 v4 = { 1,2,3,4 };
-	vec3 v3 = v4.xyz;
-	LOG_S("%3v %f", v4.xyz, v4.w);
-
 	while (!window_get_close(window))
 	{
 		input_update();
