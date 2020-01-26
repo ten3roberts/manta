@@ -20,3 +20,6 @@ obj
 
 *.log
 logs/
+
+# Shader bytecode
+*.spv

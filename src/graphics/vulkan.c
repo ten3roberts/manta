@@ -987,7 +987,7 @@ int create_command_buffers()
 		render_pass_info.framebuffer = framebuffers[i];
 		render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 		render_pass_info.renderArea.extent = swapchain_extent;
-		VkClearValue clearColor = {{{0.0f, 0.5f, 0.0f, 1.0f}}};
+		VkClearValue clearColor = {{{0.0f, 0.0f, 0.1f, 1.0f}}};
 		render_pass_info.clearValueCount = 1;
 		render_pass_info.pClearValues = &clearColor;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1004,22 +1004,38 @@ int create_command_buffers()
 	return 0;
 }
 
-int create_semaphores()
+int create_sync_objects()
 {
+	images_in_flight = calloc(swapchain_image_count, sizeof *images_in_flight);
+
 	VkSemaphoreCreateInfo semaphore_info = {0};
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_info = {0};
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
 	VkResult result;
-	result = vkCreateSemaphore(device, &semaphore_info, NULL, &semaphore_image_available);
-	if (result != VK_SUCCESS)
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		LOG_E("Failed to create image available semaphore - code %d", result);
-		return -1;
-	}
-	result = vkCreateSemaphore(device, &semaphore_info, NULL, &semaphore_render_finished);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to create render_finished semaphore - code %d", result);
-		return -2;
+		result = vkCreateSemaphore(device, &semaphore_info, NULL, &semaphores_image_available[i]);
+		if (result != VK_SUCCESS)
+		{
+			LOG_E("Failed to create image available semaphore for frame %d - code %d", i, result);
+			return -1;
+		}
+		result = vkCreateSemaphore(device, &semaphore_info, NULL, &semaphores_render_finished[i]);
+		if (result != VK_SUCCESS)
+		{
+			LOG_E("Failed to create render finished semaphore for frame %d - code %d", i, result);
+			return -2;
+		}
+		result = vkCreateFence(device, &fence_info, NULL, &in_flight_fences[i]);
+		if (result != VK_SUCCESS)
+		{
+			LOG_E("Failed to create in flight fence %d - code %d", i, result);
+			return -3;
+		}
 	}
 	return 0;
 }
@@ -1076,7 +1092,7 @@ int vulkan_init()
 	{
 		return -12;
 	}
-	if (create_semaphores())
+	if (create_sync_objects())
 	{
 		return -13;
 	}
@@ -1086,8 +1102,15 @@ int vulkan_init()
 
 void vulkan_terminate()
 {
-	vkDestroySemaphore(device, semaphore_render_finished, NULL);
-	vkDestroySemaphore(device, semaphore_image_available, NULL);
+	// Wait for device to finish operations before cleaning up
+	vkDeviceWaitIdle(device);
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		vkDestroySemaphore(device, semaphores_render_finished[i], NULL);
+		vkDestroySemaphore(device, semaphores_image_available[i], NULL);
+		vkDestroyFence(device, in_flight_fences[i], NULL);
+	}
+	free(images_in_flight);
 	vkDestroyCommandPool(device, command_pool, NULL);
 
 	for (size_t i = 0; i < framebuffer_count; i++)

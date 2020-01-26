@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include "window.h"
 
+#define MAX_FRAMES_IN_FLIGHT 2
 
 #define GRAPHICS_FAMILY_VALID_BIT 0b1
 #define PRESENT_FAMILY_VALID_BIT 0b01
@@ -35,60 +36,65 @@ typedef struct
 
 // Vulkan api members
 
-static VkInstance instance = VK_NULL_HANDLE;
-static VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
+extern VkInstance instance;
+extern VkDebugUtilsMessengerEXT debug_messenger;
 
-static VkPhysicalDevice physical_device = VK_NULL_HANDLE;
-static VkDevice device = VK_NULL_HANDLE;
+extern VkPhysicalDevice physical_device;
+extern VkDevice device;
 
-static VkQueue graphics_queue = VK_NULL_HANDLE;
-static VkQueue present_queue = VK_NULL_HANDLE;
+extern VkQueue graphics_queue;
+extern VkQueue present_queue;
 
-static VkSurfaceKHR surface = VK_NULL_HANDLE;
+extern VkSurfaceKHR surface;
 
-static VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+extern VkSwapchainKHR swapchain;
 
 // Swap chain
-static VkImage* swapchain_images = NULL;
-static uint32_t swapchain_image_count = 0;
+extern VkImage* swapchain_images;
+extern uint32_t swapchain_image_count;
 
-static VkImageView* swapchain_image_views = NULL;
-static uint32_t swapchain_image_view_count = 0;
+extern VkImageView* swapchain_image_views;
+extern uint32_t swapchain_image_view_count;
 
-static VkFormat swapchain_image_format;
-static VkExtent2D swapchain_extent;
+extern VkFormat swapchain_image_format;
+extern VkExtent2D swapchain_extent;
 
 // Pipeline layout
-static VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+extern VkPipelineLayout pipeline_layout;
 
-static VkPipeline graphics_pipeline = VK_NULL_HANDLE;
+extern VkPipeline graphics_pipeline;
 
-static VkFramebuffer* framebuffers = NULL;
-static size_t framebuffer_count = 0;
+extern VkFramebuffer* framebuffers;
+extern size_t framebuffer_count;
 
-static VkCommandPool command_pool;
+extern VkCommandPool command_pool;
 
-static VkCommandBuffer* command_buffers = NULL;
-static size_t command_buffer_count = 0;
+extern VkCommandBuffer* command_buffers;
+extern size_t command_buffer_count;
 
 // Semaphores
-VkSemaphore semaphore_image_available;
-VkSemaphore semaphore_render_finished;
+extern VkSemaphore semaphores_image_available[MAX_FRAMES_IN_FLIGHT];
+extern VkSemaphore semaphores_render_finished[MAX_FRAMES_IN_FLIGHT];
+extern VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT];
+extern VkFence* images_in_flight;
+
+// Keep track of frames in advance, I.e; frames in flight
+extern uint32_t current_frame;
 
 // A pointer to the current window
-static Window* window = NULL;
+extern Window* window;
 
 // Rendering
-static VkRenderPass renderPass;
+extern VkRenderPass renderPass;
 
-static const char* validation_layers[] = {"VK_LAYER_KHRONOS_validation"};
-static const size_t validation_layers_count = (sizeof(validation_layers) / sizeof(char*));
+extern const char* validation_layers[];
+extern const size_t validation_layers_count;
 
-static const char* device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-static const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char*));
+extern const char* device_extensions[];
+extern const size_t device_extensions_count;
 
 #if NDEBUG
-statuc const int enable_validation_layers = 0;
+extern const int enable_validation_layers;
 #else
-static const int enable_validation_layers = 1;
+extern const int enable_validation_layers;
 #endif

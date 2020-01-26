@@ -3,15 +3,26 @@
 
 void renderer_draw()
 {
+	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
+
 	uint32_t image_index;
-	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphore_image_available, VK_NULL_HANDLE, &image_index);
+	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE,
+						  &image_index);
+	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
+	if (images_in_flight[image_index] != VK_NULL_HANDLE)
+	{
+		vkWaitForFences(device, 1, &images_in_flight[image_index], VK_TRUE, UINT64_MAX);
+	}
+
+	// Mark the image as now being in use by this frame
+	images_in_flight[image_index] = in_flight_fences[current_frame];
 
 	// Submit render queue
 	// Specifies which semaphores to wait for before execution
 	// Specify to wait for image available before writing to swapchain
 	VkSubmitInfo submit_info = {0};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	VkSemaphore wait_semaphores[] = {semaphore_image_available};
+	VkSemaphore wait_semaphores[] = {semaphores_image_available[current_frame]};
 	VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submit_info.waitSemaphoreCount = sizeof wait_semaphores / sizeof *wait_semaphores;
 	submit_info.pWaitSemaphores = wait_semaphores;
@@ -22,11 +33,14 @@ void renderer_draw()
 	submit_info.pCommandBuffers = &command_buffers[image_index];
 
 	// Specify which semaphores to signal on completion
-	VkSemaphore signal_semaphores[] = {semaphore_render_finished};
+	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};
 	submit_info.signalSemaphoreCount = sizeof signal_semaphores / sizeof *signal_semaphores;
 	submit_info.pSignalSemaphores = signal_semaphores;
 
-	VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+	// Synchronise CPU-GPU
+	vkResetFences(device, 1, &in_flight_fences[current_frame]);
+
+	VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to submit draw command buffer - code %d", result);
@@ -47,4 +61,6 @@ void renderer_draw()
 	present_info.pResults = NULL; // Optional
 
 	vkQueuePresentKHR(present_queue, &present_info);
+
+	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

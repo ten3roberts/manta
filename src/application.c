@@ -12,7 +12,7 @@
 #include "timer.h"
 #include "graphics/renderer.h"
 
-Window* window = NULL;
+Window* main_window = NULL;
 
 void draw()
 {
@@ -24,25 +24,24 @@ int application_start()
 	Timer timer = timer_start();
 	time_init();
 
-	window = window_create("crescent", 800, 600, WS_WINDOWED);
-	if (window == NULL)
+	main_window = window_create("crescent", 800, 600, WS_WINDOWED);
+	if (main_window == NULL)
 		return -1;
 
-	input_init(window);
+	input_init(main_window);
 	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
-	while (!window_get_close(window))
+	while (!window_get_close(main_window))
 	{
 		input_update();
-		window_update(window);
+		window_update(main_window);
 		time_update();
 		draw();
-		SLEEP(0.05f);
 	}
 	LOG_S("Terminating");
 	vulkan_terminate();
-	window_destroy(window);
+	window_destroy(main_window);
 
 	return 0;
 }
@@ -57,5 +56,5 @@ void application_send_event(Event event)
 
 void* application_get_window()
 {
-	return window;
+	return main_window;
 }
