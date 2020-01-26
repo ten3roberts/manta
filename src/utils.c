@@ -286,6 +286,79 @@ void get_dir(const char* path, char* result, size_t size)
 	}
 }
 
+size_t read_file(char* path, char* buf)
+{
+	FILE* file = fopen(path, "r");
+	if(!file)
+		return 0;
+	size_t size;
+	fseek(file, 0L, SEEK_END);
+	size = ftell(file);
+	if(!buf)
+		return size+1;
+	fseek(file, 0L, SEEK_SET);
+	fread(buf, 1, size, file);
+	buf[size] = '\0';
+	fclose(file);
+	return size + 1;
+}
+
+char* read_file_alloc(char* path)
+{
+	char* buf = NULL;
+	FILE* file = fopen(path, "r");
+	if(!file)
+		return NULL;
+	size_t size;
+	fseek(file, 0L, SEEK_END);
+	size = ftell(file);
+
+	// Allocate enough memory for file contents and null terminator
+	buf = malloc(size + 1);
+
+	fseek(file, 0L, SEEK_SET);
+	fread(buf, 1, size, file);
+	buf[size] = '\0';
+	fclose(file);
+	return buf;
+}
+
+size_t read_fileb(char* path, char* buf)
+{
+	FILE* file = fopen(path, "rb");
+	if(!file)
+		return 0;
+	size_t size;
+	fseek(file, 0L, SEEK_END);
+	size = ftell(file);
+	if(!buf)
+		return size;
+	fseek(file, 0L, SEEK_SET);
+	fread(buf, 1, size, file);
+	fclose(file);
+	return size ;
+}
+
+char* read_fileb_alloc(char* path)
+{
+	char* buf = NULL;
+	FILE* file = fopen(path, "rb");
+	if(!file)
+		return NULL;
+	size_t size;
+	fseek(file, 0L, SEEK_END);
+	size = ftell(file);
+
+	// Allocate enough memory for file contents and null terminator
+	buf = malloc(size + 1);
+
+	fseek(file, 0L, SEEK_SET);
+	fread(buf, 1, size, file);
+	buf[size] = '\0';
+	fclose(file);
+	return buf;
+}
+
 #if PL_LINUX
 void set_workingdir(const char* dir)
 {
