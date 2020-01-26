@@ -9,11 +9,13 @@
 #include "math/vec.h"
 #include "input.h"
 #include "graphics/vulkan.h"
+#include "timer.h"
 
 Window* window = NULL;
 
 int application_start()
 {
+	Timer timer = timer_start();
 	time_init();
 
 	window = window_create("crescent", 800, 600, WS_WINDOWED);
@@ -22,6 +24,7 @@ int application_start()
 
 	input_init(window);
 	vulkan_init();
+	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	while (!window_get_close(window))
 	{

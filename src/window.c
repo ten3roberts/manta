@@ -120,7 +120,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	LOG("Creating window\n");
+	LOG("Creating window");
 	Window * window = malloc(sizeof(Window));
 	if (window == NULL)
 	{
