@@ -1,9 +1,15 @@
 #include "timer.h"
-#include "log.h"
 #if PL_WINDOWS
 #include <windows.h>
 #define GET_TICKS (GetTickCount64() * (CLOCKS_PER_SEC / 1000))
 #elif PL_LINUX
+uint64_t _get_ticks()
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	return ts.tv_sec * CLOCKS_PER_SEC + ts.tv_nsec * CLOCKS_PER_SEC / 1000000000;
+}
+#define GET_TICKS _get_ticks()
 #endif
 Timer timer_start(ClockType type)
 {

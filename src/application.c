@@ -39,14 +39,13 @@ int application_start()
 		window_update(main_window);
 		time_update();
 		draw();
-		
 		if (timer_duration(&timer) > 0.5f)
 		{
 			LOG("Timer : %f", timer_duration(&timer));
-			timer_reset(&timer);
+			//timer_reset(&timer);
 			//LOG("Frame %d, %f/s", time_framecount(), time_framerate());
 		}
-			SLEEP(0.01);
+			SLEEP(10);
 	}
 	LOG_S("Terminating");
 	vulkan_terminate();

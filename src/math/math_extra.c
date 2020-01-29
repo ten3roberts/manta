@@ -70,17 +70,21 @@ int ftos(double num, char* buf, int precision)
 {
 	if (isinf(num))
 	{
-		strcpy(buf, "inf");
-		return 3;
+		if (num < 0)
+			*buf++ = '-';
+		*buf++ = 'i';
+		*buf++ = 'n';
+		*buf++ = 'f';
+		*buf++ = '\0';
+		return num < 0 ? 4 : 3;
 	}
-
 
 	// Save the sign and remove it from num
 	int neg = num < 0;
 	if (neg)
 		num *= -1;
 	// Shift decimal to precision places to an int
-	int32_t a = num * pow(10, precision + 1);
+	uint64_t a = num * pow(10, precision + 1);
 
 	if (a % 10 >= 5)
 		a += 10;
@@ -98,7 +102,7 @@ int ftos(double num, char* buf, int precision)
 	}
 
 	int base = 10;
-	char numerals[17] = { "0123456789ABCDEF" };
+	char numerals[17] = {"0123456789ABCDEF"};
 
 	// Return and write one character if float == 0 to precision accuracy
 	if (a == 0)

@@ -9,6 +9,15 @@ typedef enum
 	CT_WALL_TICKS
 } ClockType;
 
+// Defines a timer which can be used to time functions and create intervals
+// There are two modes
+// CT_EXECUTION_TICKS times the time taken executing a function. 
+// CT_WALL_TICKS
+// timer_start starts a timer
+// timer_duration() reads the current elapsed timer from the timer
+// timer_stop stops a timer and returns its elapsed time
+// A stopped timer's elapsed time can be reread with timer_duration
+// timer_reset will reset a timer's elapsed time, and it if it stopped, start it again
 typedef struct
 {
 	ClockType type;
