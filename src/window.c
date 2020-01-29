@@ -118,7 +118,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	height = height > 0 ? height : mode->height;
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	LOG("Creating window");
 	Window * window = malloc(sizeof(Window));
@@ -195,10 +195,6 @@ void window_update(Window * window)
 	glfwPollEvents();
 }
 
-int window_get_close(Window * window)
-{
-	return window->should_close;
-}
 
 float window_get_width(Window * window)
 {
@@ -207,6 +203,15 @@ float window_get_width(Window * window)
 float window_get_height(Window * window)
 {
 	return window->height;
+}
+int window_get_minimized(Window* window)
+{
+	return window->width == 0 || window->height == 0;
+}
+
+int window_get_close(Window * window)
+{
+	return window->should_close;
 }
 
 void* window_get_raw(Window* window)

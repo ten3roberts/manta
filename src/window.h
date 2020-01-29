@@ -25,6 +25,8 @@ float window_get_height(Window * window);
 // Returns true if the window should close
 int window_get_close(Window * window);
 
+int window_get_minimized(Window* window);
+
 // Returns the raw glfw window
 // Returns as void* so that glfw3.h does not need to be included in header
 void* window_get_raw(Window* window);

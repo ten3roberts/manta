@@ -80,6 +80,7 @@ int swapchain_create()
 int swapchain_recreate()
 {
 	vkDeviceWaitIdle(device);
+	LOG("Recreating swapchain");
 
 	swapchain_destroy();
 
