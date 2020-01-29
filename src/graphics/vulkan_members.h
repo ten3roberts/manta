@@ -25,6 +25,8 @@ typedef struct
 	int queue_validity;
 } QueueFamilies;
 
+QueueFamilies get_queue_families(VkPhysicalDevice device);
+
 typedef struct
 {
 	VkSurfaceCapabilitiesKHR capabilities;

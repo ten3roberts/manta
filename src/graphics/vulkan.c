@@ -1,9 +1,10 @@
-#include "vulkan_members.h"
+#include "vulkan_internal.h"
 #include "application.h"
 #include "log.h"
 #include "utils.h"
 #include "math/math_extra.h"
 #include "vulkan.h"
+#include "swapchain.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -199,42 +200,7 @@ int create_debug_messenger()
 	return 0;
 }
 
-QueueFamilies get_queue_families(VkPhysicalDevice device)
-{
-	QueueFamilies indices = {0, 0};
 
-	uint32_t queue_family_count = 0;
-	VkQueueFamilyProperties* queue_families = NULL;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, NULL);
-	queue_families = malloc(queue_family_count * sizeof(VkQueueFamilyProperties));
-
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families);
-
-	size_t i = 0;
-	for (i = 0; i < queue_family_count; i++)
-	{
-		// Check if index belongs to graphics queue family
-		if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-		{
-			indices.graphics = i;
-			indices.queue_validity |= GRAPHICS_FAMILY_VALID_BIT;
-		}
-
-		// Check if index belongs to the present queue family
-		VkBool32 present_support = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
-		if (present_support)
-		{
-			indices.present = i;
-			indices.queue_validity |= PRESENT_FAMILY_VALID_BIT;
-		}
-	}
-
-	free(queue_families);
-	queue_families = NULL;
-
-	return indices;
-}
 
 // Checks if supplied device supports all requirements for picking a device
 // Returns 0 on success
@@ -280,29 +246,7 @@ int create_surface()
 	return 0;
 }
 
-SwapchainSupportDetails get_swapchain_support(VkPhysicalDevice device)
-{
-	SwapchainSupportDetails details;
 
-	// Get the device capabilites for the swapchain
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-	// Get the surface formats
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &details.format_count, NULL);
-	if (details.format_count)
-	{
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &details.format_count, details.formats);
-	}
-
-	// Get the present formats
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &details.present_mode_count, NULL);
-	if (details.present_mode_count)
-	{
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &details.present_mode_count, details.present_modes);
-	}
-
-	return details;
-}
 
 int pick_physical_device()
 {
@@ -462,133 +406,7 @@ int create_logical_device()
 	return 0;
 }
 
-// Picks the best swapchain surface format and returns it from those supplied
-VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR* formats, size_t count)
-{
-	for (size_t i = 0; i < count; i++)
-	{
-		// The best format exists and is returned
-		if (formats[i].format == VK_FORMAT_B8G8R8_UNORM && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-		{
-			LOG_OK("The best swapchain surface format was available");
-			return formats[i];
-		}
-	}
 
-	// If the best one wasn't available
-	return formats[0];
-}
-
-// Picks the best swapchain present mode and returns it from those supplied
-VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
-{
-	for (size_t i = 0; i < count; i++)
-	{
-		// Triple buffered present mode is preferred
-		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
-		{
-			LOG_OK("The best swapchain present mode was available");
-			LOG_OK("Choosing triple buffered vsync");
-			return modes[i];
-		}
-	}
-
-	// Only FIFO/double buffered vsync is guranteed to be available
-	// Use it as a fallback
-	LOG_OK("Choosing double buffered vsync");
-	return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkExtent2D pick_swap_extent(VkSurfaceCapabilitiesKHR* capabilities)
-{
-	if (capabilities->currentExtent.width != UINT32_MAX)
-	{
-		return capabilities->currentExtent;
-	}
-	else
-	{
-		VkExtent2D actual_extent = {window_get_width(window), window_get_height(window)};
-		actual_extent.width =
-			max(capabilities->minImageExtent.width, min(capabilities->maxImageExtent.width, actual_extent.width));
-		actual_extent.height =
-			max(capabilities->minImageExtent.height, min(capabilities->maxImageExtent.height, actual_extent.height));
-
-		return actual_extent;
-	}
-}
-
-int create_swapchain()
-{
-	SwapchainSupportDetails support = get_swapchain_support(physical_device);
-	VkSurfaceFormatKHR surface_format = pick_swap_surface_format(support.formats, support.format_count);
-	VkPresentModeKHR present_mode = pick_swap_present_mode(support.present_modes, support.present_mode_count);
-	VkExtent2D extent = pick_swap_extent(&support.capabilities);
-
-	uint32_t image_count = support.capabilities.minImageCount + 1;
-
-	if (support.capabilities.maxImageCount != 0 && image_count > support.capabilities.maxImageCount)
-	{
-		image_count = support.capabilities.maxImageCount;
-	}
-
-	// Fill in the create info
-	VkSwapchainCreateInfoKHR createInfo = {0};
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = surface;
-
-	createInfo.minImageCount = image_count;
-	createInfo.imageFormat = surface_format.format;
-	createInfo.imageColorSpace = surface_format.colorSpace;
-	createInfo.imageExtent = extent;
-	createInfo.imageArrayLayers = 1;
-	// Specifies if we are to render directly to the swapchain image
-	// For post processing VK_IMAGE_USAGE_TRANSFER_DST_BIT is to be used with a memcpy
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-	QueueFamilies indices = get_queue_families(physical_device);
-	uint32_t queueFamilyIndices[] = {indices.graphics, indices.present};
-
-	// If the family indices for graphics and present queue families differ
-	if (indices.graphics != indices.present)
-	{
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndices;
-	}
-	// If they are the same
-	else
-	{
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;  // Optional
-		createInfo.pQueueFamilyIndices = NULL; // Optional
-	}
-
-	createInfo.preTransform = support.capabilities.currentTransform;
-
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
-	createInfo.presentMode = present_mode;
-	// If pixels are obscured by another window, ignore them
-	// If we need to read data from those pixels, disable it
-	createInfo.clipped = VK_TRUE;
-
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	VkResult result = vkCreateSwapchainKHR(device, &createInfo, NULL, &swapchain);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to create swapchain - code %d", result);
-		return -1;
-	}
-	swapchain_image_format = surface_format.format;
-	swapchain_extent = extent;
-
-	// Retrieve swapchain images
-	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, NULL);
-	swapchain_images = malloc(swapchain_image_count * sizeof(VkImage));
-	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
-	return 0;
-}
 
 int create_image_views()
 {
@@ -1064,7 +882,7 @@ int vulkan_init()
 	{
 		return -5;
 	}
-	if (create_swapchain())
+	if (swapchain_create())
 	{
 		return -6;
 	}
