@@ -15,7 +15,7 @@ typedef enum
 
 	// Window resize event
 	// { new width, new height }
-    EVENT_WINDOW_SIZE,
+    EVENT_WINDOW_RESIZE,
 	// Window focus or lost focus event
 	// { 0 = unfocused : 1 = focused, NULL }
     EVENT_WINDOW_FOCUS,

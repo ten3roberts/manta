@@ -1,10 +1,9 @@
 #include "vulkan_members.h"
 #include "vulkan_internal.h"
+#include "swapchain.h"
 #include "vulkan.h"
 #include <stdlib.h>
 #include "log.h"
-
-
 
 int swapchain_create()
 {
@@ -78,5 +77,53 @@ int swapchain_create()
 	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
 	return 0;
 }
-int swapchain_recreate();
-int swapchain_destroy();
+int swapchain_recreate()
+{
+	vkDeviceWaitIdle(device);
+
+	swapchain_destroy();
+
+	swapchain_create();
+	create_image_views();
+	create_render_pass();
+	create_graphics_pipeline();
+	create_framebuffers();
+	create_command_buffers();
+	return 0;
+}
+int swapchain_destroy()
+{
+	for (size_t i = 0; i < framebuffer_count; i++)
+		vkDestroyFramebuffer(device, framebuffers[i], NULL);
+
+	vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
+
+	vkDestroyPipeline(device, graphics_pipeline, NULL);
+	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
+	vkDestroyRenderPass(device, renderPass, NULL);
+
+	// Destroy the image views since they were explicitely created
+	for (size_t i = 0; i < swapchain_image_view_count; i++)
+		vkDestroyImageView(device, swapchain_image_views[i], NULL);
+
+	vkDestroySwapchainKHR(device, swapchain, NULL);
+
+	// Freeing of local resources
+	free(framebuffers);
+	framebuffers = NULL;
+	framebuffer_count = 0;
+
+	free(command_buffers);
+	command_buffers = NULL;
+	command_buffer_count = 0;
+
+	free(swapchain_images);
+	swapchain_images = NULL;
+	swapchain_image_count = 0;
+
+	free(swapchain_image_views);
+	swapchain_image_views = NULL;
+	swapchain_image_view_count = 0;
+
+	return 0;
+}

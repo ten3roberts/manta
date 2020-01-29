@@ -187,6 +187,8 @@ int create_debug_messenger()
 {
 	if (!enable_validation_layers)
 		return 0;
+
+	LOG_S("Creating debug messenger");
 	// Enable debug message callback
 	VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
 	populate_debug_messenger_create_info(&createInfo);
@@ -199,8 +201,6 @@ int create_debug_messenger()
 	}
 	return 0;
 }
-
-
 
 // Checks if supplied device supports all requirements for picking a device
 // Returns 0 on success
@@ -245,8 +245,6 @@ int create_surface()
 	}
 	return 0;
 }
-
-
 
 int pick_physical_device()
 {
@@ -405,8 +403,6 @@ int create_logical_device()
 
 	return 0;
 }
-
-
 
 int create_image_views()
 {
@@ -921,32 +917,18 @@ int vulkan_init()
 void vulkan_terminate()
 {
 	LOG_S("Terminating vulkan");
-	// Wait for device to finish operations before cleaning up
+
 	vkDeviceWaitIdle(device);
+	swapchain_destroy();
+	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		vkDestroySemaphore(device, semaphores_render_finished[i], NULL);
 		vkDestroySemaphore(device, semaphores_image_available[i], NULL);
 		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
-	free(images_in_flight);
 	vkDestroyCommandPool(device, command_pool, NULL);
-	free(command_buffers);
 
-	for (size_t i = 0; i < framebuffer_count; i++)
-		vkDestroyFramebuffer(device, framebuffers[i], NULL);
-	free(framebuffers);
-	vkDestroyPipeline(device, graphics_pipeline, NULL);
-	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
-	vkDestroyRenderPass(device, renderPass, NULL);
-
-	// Destroy the image views since they were explicitely created
-	for (size_t i = 0; i < swapchain_image_view_count; i++)
-		vkDestroyImageView(device, swapchain_image_views[i], NULL);
-
-	free(swapchain_images);
-	free(swapchain_image_views);
-	vkDestroySwapchainKHR(device, swapchain, NULL);
 	vkDestroyDevice(device, NULL);
 	if (enable_validation_layers)
 	{
@@ -954,4 +936,6 @@ void vulkan_terminate()
 	}
 	vkDestroySurfaceKHR(instance, surface, NULL);
 	vkDestroyInstance(instance, NULL);
+	free(images_in_flight);
+	images_in_flight = NULL;
 }

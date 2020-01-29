@@ -95,8 +95,4 @@ extern const size_t validation_layers_count;
 extern const char* device_extensions[];
 extern const size_t device_extensions_count;
 
-#if NDEBUG
 extern const int enable_validation_layers;
-#else
-extern const int enable_validation_layers;
-#endif

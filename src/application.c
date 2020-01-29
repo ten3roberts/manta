@@ -9,6 +9,7 @@
 #include "math/vec.h"
 #include "input.h"
 #include "graphics/vulkan.h"
+#include "graphics/swapchain.h"
 #include "timer.h"
 #include "graphics/renderer.h"
 
@@ -22,6 +23,8 @@ void draw()
 int application_start()
 {
 	Timer timer = timer_start(CT_WALL_TICKS);
+	if (DEBUG)
+		LOG_S("Running in debug mode");
 	time_init();
 
 	main_window = window_create("crescent", 800, 600, WS_WINDOWED);
@@ -54,6 +57,12 @@ int application_start()
 
 void application_send_event(Event event)
 {
+	// Recreate swapchain on resize
+	if (event.type == EVENT_WINDOW_RESIZE)
+	{
+		LOG_S("Resizing window %d %d", event.idata[0], event.idata[1]);
+		swapchain_recreate();
+	}
 	if (event.type == EVENT_KEY)
 		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);
 	if (event.type == EVENT_KEY || event.type == EVENT_MOUSE_MOVED || event.type == EVENT_MOUSE_SCROLLED)
