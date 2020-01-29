@@ -7,7 +7,7 @@ void renderer_draw()
 
 	uint32_t image_index;
 	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE,
-						  &image_index);
+		&image_index);
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
 	if (images_in_flight[image_index] != VK_NULL_HANDLE)
 	{
@@ -20,11 +20,11 @@ void renderer_draw()
 	// Submit render queue
 	// Specifies which semaphores to wait for before execution
 	// Specify to wait for image available before writing to swapchain
-	VkSubmitInfo submit_info = {0};
+	VkSubmitInfo submit_info = { 0 };
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	VkSemaphore wait_semaphores[] = {semaphores_image_available[current_frame]};
-	VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	submit_info.waitSemaphoreCount = sizeof wait_semaphores / sizeof *wait_semaphores;
+	VkSemaphore wait_semaphores[] = { semaphores_image_available[current_frame] };
+	VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submit_info.waitSemaphoreCount = sizeof wait_semaphores / sizeof * wait_semaphores;
 	submit_info.pWaitSemaphores = wait_semaphores;
 	submit_info.pWaitDstStageMask = wait_stages;
 
@@ -33,8 +33,8 @@ void renderer_draw()
 	submit_info.pCommandBuffers = &command_buffers[image_index];
 
 	// Specify which semaphores to signal on completion
-	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};
-	submit_info.signalSemaphoreCount = sizeof signal_semaphores / sizeof *signal_semaphores;
+	VkSemaphore signal_semaphores[] = { semaphores_render_finished[current_frame] };
+	submit_info.signalSemaphoreCount = sizeof signal_semaphores / sizeof * signal_semaphores;
 	submit_info.pSignalSemaphores = signal_semaphores;
 
 	// Synchronise CPU-GPU
@@ -48,13 +48,13 @@ void renderer_draw()
 	}
 
 	// Presentation
-	VkPresentInfoKHR present_info = {0};
+	VkPresentInfoKHR present_info = { 0 };
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	present_info.waitSemaphoreCount = sizeof signal_semaphores / sizeof *signal_semaphores;
+	present_info.waitSemaphoreCount = sizeof signal_semaphores / sizeof * signal_semaphores;
 	present_info.pWaitSemaphores = signal_semaphores;
 
-	VkSwapchainKHR swapchains[] = {swapchain};
-	present_info.swapchainCount = sizeof swapchains / sizeof *swapchains;
+	VkSwapchainKHR swapchains[] = { swapchain };
+	present_info.swapchainCount = sizeof swapchains / sizeof * swapchains;
 	present_info.pSwapchains = swapchains;
 	present_info.pImageIndices = &image_index;
 

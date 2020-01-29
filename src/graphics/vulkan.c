@@ -1102,6 +1102,7 @@ int vulkan_init()
 
 void vulkan_terminate()
 {
+	LOG_S("Terminating vulkan");
 	// Wait for device to finish operations before cleaning up
 	vkDeviceWaitIdle(device);
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1112,10 +1113,11 @@ void vulkan_terminate()
 	}
 	free(images_in_flight);
 	vkDestroyCommandPool(device, command_pool, NULL);
+	free(command_buffers);
 
 	for (size_t i = 0; i < framebuffer_count; i++)
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);
-
+	free(framebuffers);
 	vkDestroyPipeline(device, graphics_pipeline, NULL);
 	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
 	vkDestroyRenderPass(device, renderPass, NULL);

@@ -21,7 +21,7 @@ void draw()
 
 int application_start()
 {
-	Timer timer = timer_start();
+	Timer timer = timer_start(CT_WALL_TICKS);
 	time_init();
 
 	main_window = window_create("crescent", 800, 600, WS_WINDOWED);
@@ -32,12 +32,21 @@ int application_start()
 	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
+	timer_reset(&timer);
 	while (!window_get_close(main_window))
 	{
 		input_update();
 		window_update(main_window);
 		time_update();
 		draw();
+		
+		if (timer_duration(&timer) > 0.5f)
+		{
+			LOG("Timer : %f", timer_duration(&timer));
+			timer_reset(&timer);
+			//LOG("Frame %d, %f/s", time_framecount(), time_framerate());
+		}
+			SLEEP(0.01);
 	}
 	LOG_S("Terminating");
 	vulkan_terminate();

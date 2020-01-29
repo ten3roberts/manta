@@ -69,7 +69,7 @@ _Time _time = { 0,0 ,0,0,0,0,0 };
 void time_init()
 {
 
-	_time.init_tick = GetTickCount();
+	_time.init_tick = GetTickCount64();
 
 	_time.elapsedtime = 0.0f;
 	_time.deltatime = 0.0f;
@@ -85,7 +85,7 @@ void time_update()
 	_time.prev_tick = _time.now_tick;
 
 	// Update now
-	_time.now_tick = GetTickCount();
+	_time.now_tick = GetTickCount64();
 	_time.deltatime = (_time.now_tick - _time.prev_tick) / 1000.0f;
 
 	_time.elapsedtime = (_time.now_tick - _time.init_tick) / 1000.0f;

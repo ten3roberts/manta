@@ -58,7 +58,7 @@ const char* device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char*));
 
 #if NDEBUG
-statuc const int enable_validation_layers = 0;
+const int enable_validation_layers = 0;
 #else
 const int enable_validation_layers = 1;
 #endif

@@ -1,8 +1,10 @@
 #include "math_extra.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
 
 // Converts a signed integer to string
-int itos(signed long long num, char * buf, int base, int upper)
+int itos(signed long long num, char* buf, int base, int upper)
 {
 	// Return and write one character num == 0
 	if (num == 0)
@@ -13,7 +15,7 @@ int itos(signed long long num, char * buf, int base, int upper)
 	}
 	int neg = num < 0;
 	num = abs(num);
-	char * numerals;
+	char* numerals;
 	if (upper)
 		numerals = "0123456789ABCDEF";
 	else
@@ -35,7 +37,7 @@ int itos(signed long long num, char * buf, int base, int upper)
 }
 
 // Converts an unsigned integer to string
-int utos(unsigned long long num, char * buf, int base, int upper)
+int utos(unsigned long long num, char* buf, int base, int upper)
 {
 	// Return and write one character num == 0
 	if (num == 0)
@@ -44,7 +46,7 @@ int utos(unsigned long long num, char * buf, int base, int upper)
 		*buf = '\0';
 		return 1;
 	}
-	char * numerals;
+	char* numerals;
 	if (upper)
 		numerals = "0123456789ABCDEF";
 	else
@@ -64,14 +66,21 @@ int utos(unsigned long long num, char * buf, int base, int upper)
 	return return_value;
 }
 
-int ftos(double num, char * buf, int precision)
+int ftos(double num, char* buf, int precision)
 {
+	if (isinf(num))
+	{
+		strcpy(buf, "inf");
+		return 3;
+	}
+
+
 	// Save the sign and remove it from num
 	int neg = num < 0;
 	if (neg)
 		num *= -1;
 	// Shift decimal to precision places to an int
-	int a = num * pow(10, precision + 1);
+	int32_t a = num * pow(10, precision + 1);
 
 	if (a % 10 >= 5)
 		a += 10;
@@ -89,7 +98,7 @@ int ftos(double num, char * buf, int precision)
 	}
 
 	int base = 10;
-	char numerals[17] = {"0123456789ABCDEF"};
+	char numerals[17] = { "0123456789ABCDEF" };
 
 	// Return and write one character if float == 0 to precision accuracy
 	if (a == 0)
