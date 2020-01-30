@@ -38,12 +38,6 @@ int application_start()
 	timer_reset(&timer);
 	while (!window_get_close(main_window))
 	{
-		if (window_get_minimized(main_window))
-		{
-			LOG("Minimized");
-			SLEEP(0.1);
-			continue;
-		}
 		input_update();
 		window_update(main_window);
 		time_update();
@@ -64,7 +58,7 @@ int application_start()
 void application_send_event(Event event)
 {
 	// Recreate swapchain on resize
-	if (event.type == EVENT_WINDOW_RESIZE)
+	if (event.type == EVENT_WINDOW_RESIZE && event.idata[0] != 0 && event.idata[1] != 0)
 	{
 		LOG("%d %d", event.idata[0], event.idata[1]);
 		swapchain_recreate();

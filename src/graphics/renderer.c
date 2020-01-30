@@ -5,6 +5,11 @@
 
 void renderer_draw()
 {
+	// Skip rendering if window is minimized
+	if (window_get_minimized(window))
+	{
+		return;
+	}
 	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 	uint32_t image_index;
