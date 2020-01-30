@@ -118,7 +118,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	height = height > 0 ? height : mode->height;
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	LOG("Creating window");
 	Window * window = malloc(sizeof(Window));
@@ -184,6 +184,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 void window_destroy(Window * window)
 {
 	glfwDestroyWindow(window->raw_window);
+	window->raw_window = NULL;
 	window_count--;
 	if (window_count == 0)
 		glfwTerminate();
