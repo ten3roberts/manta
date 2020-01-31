@@ -30,27 +30,28 @@ int application_start()
 	main_window = window_create("crescent", 800, 600, WS_WINDOWED);
 	if (main_window == NULL)
 		return -1;
-	
+
 	input_init(main_window);
-	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);
+	vulkan_init();
+
 	while (!window_get_close(main_window))
 	{
-		break;
 		input_update();
 		window_update(main_window);
 		time_update();
 		draw();
 		if (timer_duration(&timer) > 1.0f)
 		{
+			swapchain_recreate();
 			timer_reset(&timer);
 			LOG("Framerate %f", time_framerate());
 		}
 	}
-	LOG_S("Terminating");
 	vulkan_terminate();
+	LOG_S("Terminating");
 	window_destroy(main_window);
 
 	return 0;

@@ -99,10 +99,8 @@ int create_instance()
 	}
 	required_extensions[i++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
-	// createInfo.enabledExtensionCount = required_extension_count;
-	// createInfo.ppEnabledExtensionNames = required_extensions;
-	createInfo.enabledExtensionCount = 0;
-	createInfo.ppEnabledExtensionNames = NULL;
+	createInfo.enabledExtensionCount = required_extension_count;
+	createInfo.ppEnabledExtensionNames = required_extensions;
 
 	// Check the currently supported extensions
 	uint32_t extension_count = 0;
@@ -110,7 +108,7 @@ int create_instance()
 	VkExtensionProperties* extensions = malloc(sizeof(VkExtensionProperties) * extension_count);
 	vkEnumerateInstanceExtensionProperties(NULL, &extension_count, extensions);
 
-	/*// Check if the system supports our required extensions
+	// Check if the system supports our required extensions
 	for (i = 0; i < required_extension_count; i++)
 	{
 		int exists = 0;
@@ -155,7 +153,6 @@ int create_instance()
 			return -1;
 		}
 	}
-*/
 	// Setup a temporary debug messenger and enable validation layers
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 	if (enable_validation_layers)
@@ -182,7 +179,7 @@ int create_instance()
 
 	free(required_extensions);
 	free(extensions);
-	// free(available_layers);
+	free(available_layers);
 
 	return 0;
 }
@@ -404,6 +401,7 @@ int create_logical_device()
 	// Get the handles for the newly created queues
 	vkGetDeviceQueue(device, indices.graphics, 0, &graphics_queue);
 	vkGetDeviceQueue(device, indices.present, 0, &present_queue);
+	
 
 	return 0;
 }
@@ -860,26 +858,6 @@ int create_sync_objects()
 
 int vulkan_init()
 {
-	for (int i = 0; i < 1000; i++)
-	{
-		VkInstance minstance;
-		VkApplicationInfo appInfo = {0};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "crescent";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "crescent";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_0;
-
-		VkInstanceCreateInfo createInfo = {0};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
-		VkResult result = vkCreateInstance(&createInfo, NULL, &minstance);
-		LOG("%d", i);
-		vkDestroyInstance(minstance, NULL);
-		SLEEP(1);
-	}
-	return 0;
 	window = application_get_window();
 	// Create a vulkan instance
 	if (create_instance())
@@ -942,7 +920,7 @@ void vulkan_terminate()
 {
 	LOG_S("Terminating vulkan");
 
-	/*vkDeviceWaitIdle(device);
+	vkDeviceWaitIdle(device);
 	swapchain_destroy();
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -952,14 +930,14 @@ void vulkan_terminate()
 		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
 	vkDestroyCommandPool(device, command_pool, NULL);
-
+	
 	vkDestroyDevice(device, NULL);
 	if (enable_validation_layers)
 	{
 		destroy_debug_utils_messenger_ext(instance, debug_messenger, NULL);
 	}
-	vkDestroySurfaceKHR(instance, surface, NULL);*/
-	// vkDestroyInstance(instance, NULL);
-	/*free(images_in_flight);
-	images_in_flight = NULL;*/
+	vkDestroySurfaceKHR(instance, surface, NULL);
+	vkDestroyInstance(instance, NULL);
+	free(images_in_flight);
+	images_in_flight = NULL;
 }

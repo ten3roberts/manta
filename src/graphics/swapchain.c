@@ -100,7 +100,9 @@ int swapchain_destroy()
 	vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
 
 	vkDestroyPipeline(device, graphics_pipeline, NULL);
+	graphics_pipeline = NULL;
 	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
+	pipeline_layout = NULL;
 	vkDestroyRenderPass(device, renderPass, NULL);
 
 	// Destroy the image views since they were explicitely created
