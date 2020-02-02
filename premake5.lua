@@ -50,6 +50,6 @@ project "crescent"
 		-- Vulkan
 		includedirs "C:/VulkanSDK/1.1.126.0/Include"
         links 		"C:/VulkanSDK/1.1.126.0/Lib/vulkan-1.lib"
-        postbuildcommands "cd assets/shaders && ./compile.bat"
+        postbuildcommands "cd assets/shaders && compile.bat"
 
     

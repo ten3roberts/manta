@@ -99,7 +99,7 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	VkCommandBuffer commandBuffer;
 	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
-	VkCommandBufferBeginInfo beginInfo = {};
+	VkCommandBufferBeginInfo beginInfo = {0};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
@@ -113,7 +113,7 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	vkEndCommandBuffer(commandBuffer);
 
 	// Execute command buffer
-	VkSubmitInfo submitInfo = {};
+	VkSubmitInfo submitInfo = {0};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
