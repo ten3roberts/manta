@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 VertexBuffer* vb = NULL;
+VertexBuffer* vb2 = NULL;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 													 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -814,6 +815,8 @@ int create_command_buffers()
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 		vb_bind(vb, command_buffers[i]);
 		vkCmdDraw(command_buffers[i], vb->vertex_count, 1, 0, 0);
+		vb_bind(vb2, command_buffers[i]);
+		vkCmdDraw(command_buffers[i], vb2->vertex_count, 1, 0, 0);
 		vkCmdEndRenderPass(command_buffers[i]);
 		result = vkEndCommandBuffer(command_buffers[i]);
 		if (result != VK_SUCCESS)
@@ -910,6 +913,7 @@ int vulkan_init()
 		return -11;
 	}
 	vb = vb_generate_triangle();
+	vb2 = vb_generate_square();
 	if (create_command_buffers())
 	{
 		return -12;
@@ -929,6 +933,7 @@ void vulkan_terminate()
 	vkDeviceWaitIdle(device);
 	swapchain_destroy();
 	vb_destroy(vb);
+	vb_destroy(vb2);
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
