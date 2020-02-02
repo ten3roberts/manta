@@ -1,4 +1,5 @@
 #include "vulkan_internal.h"
+#include "vertexbuffer.h"
 #include "application.h"
 #include "log.h"
 #include "utils.h"
@@ -8,6 +9,8 @@
 #include "cr_time.h"
 #include <stdlib.h>
 #include <stdbool.h>
+
+VertexBuffer* vb = NULL;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 													 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -559,13 +562,14 @@ int create_graphics_pipeline()
 
 	// Vertex input
 	// Specify the data the vertex shader takes as input
-	// For now, nothing
+
+	VertexInputDescription vertex_description = vertex_get_description();
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {0};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input_info.vertexBindingDescriptionCount = 0;
-	vertex_input_info.pVertexBindingDescriptions = NULL; // Optional
-	vertex_input_info.vertexAttributeDescriptionCount = 0;
-	vertex_input_info.pVertexAttributeDescriptions = NULL; // Optional
+	vertex_input_info.vertexBindingDescriptionCount = 1;
+	vertex_input_info.pVertexBindingDescriptions = &vertex_description.binding_description; // Optional
+	vertex_input_info.vertexAttributeDescriptionCount = vertex_description.attribute_count;
+	vertex_input_info.pVertexAttributeDescriptions = vertex_description.attributes; // Optional
 
 	// Input assembly
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {0};
@@ -808,7 +812,8 @@ int create_command_buffers()
 		render_pass_info.pClearValues = &clearColor;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
-		vkCmdDraw(command_buffers[i], 3, 1, 0, 0);
+		vb_bind(vb, command_buffers[i]);
+		vkCmdDraw(command_buffers[i], vb->vertex_count, 1, 0, 0);
 		vkCmdEndRenderPass(command_buffers[i]);
 		result = vkEndCommandBuffer(command_buffers[i]);
 		if (result != VK_SUCCESS)
@@ -904,6 +909,7 @@ int vulkan_init()
 	{
 		return -11;
 	}
+	vb = vb_generate_triangle();
 	if (create_command_buffers())
 	{
 		return -12;
@@ -922,6 +928,7 @@ void vulkan_terminate()
 
 	vkDeviceWaitIdle(device);
 	swapchain_destroy();
+	vb_destroy(vb);
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{

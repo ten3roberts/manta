@@ -45,7 +45,6 @@ int application_start()
 		draw();
 		if (timer_duration(&timer) > 1.0f)
 		{
-			swapchain_recreate();
 			timer_reset(&timer);
 			LOG("Framerate %f", time_framerate());
 		}

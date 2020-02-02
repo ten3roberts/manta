@@ -40,6 +40,7 @@ project "crescent"
         buildoptions { "-Wall", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function", "-pthread" }
 
         links { "m", "dl", "pthread", "X11", "GL", "vulkan" }
+        postbuildcommands "cd assets/shaders && ./compile.sh"
 	
 	-- Specifies Windows and MSVC specific options and preprocessor definitions
 	filter "system:windows"
@@ -48,4 +49,7 @@ project "crescent"
 		links "opengl32.lib"
 		-- Vulkan
 		includedirs "C:/VulkanSDK/1.1.126.0/Include"
-		links 		"C:/VulkanSDK/1.1.126.0/Lib/vulkan-1.lib"
+        links 		"C:/VulkanSDK/1.1.126.0/Lib/vulkan-1.lib"
+        postbuildcommands "cd assets/shaders && ./compile.bat"
+
+    
