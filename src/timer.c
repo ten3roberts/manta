@@ -1,7 +1,7 @@
 #include "timer.h"
+#define MILLION 1000000
 #if PL_WINDOWS
 #include <windows.h>
-#define MILLION 1000000
 #define GET_FREQ(f) (QueryPerformanceFrequency(&f))
 #define GET_TICKS(t) (QueryPerformanceCounter(&t))
 #elif PL_LINUX
@@ -11,7 +11,7 @@ void _get_ticks(uint64_t* t)
 	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 	*t = ts.tv_sec * MILLION + ts.tv_nsec / 1000;
 }
-#define GET_FREQ(f) MILLION
+#define GET_FREQ(f) (f = MILLION)
 #define GET_TICKS(t) _get_ticks(&t)
 #endif
 Timer timer_start(ClockType type)
