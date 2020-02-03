@@ -19,25 +19,24 @@ uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties
 
 VertexBuffer* vb_generate_triangle()
 {
-	Vertex vertices[3];
-	vertices[0] = (Vertex){(vec2){0, -0.5f}, (vec3){1, 0, 0}};
-	vertices[1] = (Vertex){(vec2){0.5, 0.5f}, (vec3){0, 1, 0}};
-	vertices[2] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 0, 1}};
-	return vb_create(vertices, 3);
+	return vb_generate_square();
 }
 
 VertexBuffer* vb_generate_square()
 {
-	Vertex vertices[3];
+	Vertex vertices[4];
 	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}};
-	vertices[1] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 1}};
-	vertices[2] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 0, 1}};
-	return vb_create(vertices, 3);
+	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){1, 0, 1}};
+	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){0, 0, 1}};
+	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 1, 1}};
+	return vb_create(vertices, 4);
 }
 VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 {
-	size_t buffer_size = sizeof(Vertex) * vertex_count;
-	VertexBuffer* vb = malloc(buffer_size);
+	VertexBuffer* vb = malloc(sizeof(VertexBuffer));
+
+	size_t buffer_size = sizeof(*vb->vertices) * vertex_count;
+
 	vb->vertex_count = vertex_count;
 	vb->vertices = malloc(buffer_size);
 	memcpy(vb->vertices, vertices, sizeof(*vb->vertices) * vb->vertex_count);
@@ -65,7 +64,7 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 	VkResult result = vkCreateBuffer(device, &bufferInfo, NULL, buffer);
 	if (result != VK_SUCCESS)
 	{
-		LOG_E("Failed to create vertex buffer");
+		LOG_E("Failed to create buffer");
 		return -1;
 	}
 	VkMemoryRequirements memRequirements;
@@ -79,7 +78,7 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 	result = vkAllocateMemory(device, &allocInfo, NULL, buffer_memory);
 	if (result != VK_SUCCESS)
 	{
-		LOG_E("Failed to allocate vertex buffer memory");
+		LOG_E("Failed to allocate buffer memory");
 		return -2;
 	}
 
