@@ -32,13 +32,17 @@ int application_start()
 		return -1;
 
 	input_init(main_window);
+	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);
-	vulkan_init();
 
 	while (!window_get_close(main_window))
 	{
+		if (window_get_minimized(main_window))
+		{
+			SLEEP(0.1);
+		}
 		input_update();
 		window_update(main_window);
 		time_update();
@@ -46,7 +50,7 @@ int application_start()
 		if (timer_duration(&timer) > 1.0f)
 		{
 			timer_reset(&timer);
-			LOG("Framerate %f", time_framerate());
+			LOG("Framerate %d %f", time_framecount(), time_framerate());
 		}
 	}
 	vulkan_terminate();

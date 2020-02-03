@@ -23,6 +23,7 @@ typedef struct
 	ClockType type;
 	uint64_t start_tick;
 	uint64_t end_tick;
+	uint64_t freq;
 	short running;
 } Timer;
 
@@ -42,4 +43,4 @@ void timer_reset(Timer* timer);
 float timer_duration(const Timer* timer);
 
 // Reads the duration of a stopped timer in CPU ticks
-clock_t timer_ticks(const Timer* timer);
+uint64_t timer_ticks(const Timer* timer);

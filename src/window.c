@@ -118,7 +118,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	height = height > 0 ? height : mode->height;
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	LOG("Creating window");
 	Window * window = malloc(sizeof(Window));

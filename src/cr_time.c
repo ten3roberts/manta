@@ -59,17 +59,18 @@ typedef struct
 	float framerate;
 	size_t framecount;
 
-	DWORD init_tick;
-	DWORD prev_tick;
-	DWORD now_tick;
+	LARGE_INTEGER freq;
+	LARGE_INTEGER init_tick;
+	LARGE_INTEGER prev_tick;
+	LARGE_INTEGER now_tick;
 } _Time;
 
 _Time _time = { 0,0 ,0,0,0,0,0 };
 
 void time_init()
 {
-
-	_time.init_tick = GetTickCount64();
+	QueryPerformanceFrequency(&_time.freq);
+	QueryPerformanceCounter(&_time.init_tick);
 
 	_time.elapsedtime = 0.0f;
 	_time.deltatime = 0.0f;
@@ -85,18 +86,19 @@ void time_update()
 	_time.prev_tick = _time.now_tick;
 
 	// Update now
-	_time.now_tick = GetTickCount64();
-	_time.deltatime = (_time.now_tick - _time.prev_tick) / 1000.0f;
+	QueryPerformanceCounter(&_time.now_tick);
+	uint64_t diff = (_time.now_tick.QuadPart - _time.prev_tick.QuadPart);
+	_time.deltatime = diff / (float)_time.freq.QuadPart;
 
-	_time.elapsedtime = (_time.now_tick - _time.init_tick) / 1000.0f;
+	_time.elapsedtime = diff / (float)_time.freq.QuadPart;
 
-	_time.framerate = 1 / _time.deltatime;
+	_time.framerate = _time.freq.QuadPart / (float)diff;
 	_time.framecount++;
 }
 
 clock_t time_init_time()
 {
-	return _time.init_tick / 1000.0f;
+	return _time.init_tick.QuadPart / (float)_time.freq.QuadPart;
 }
 #endif
 
