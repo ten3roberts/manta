@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mat4.h"
-#include "vec3.h"
+#include "vec.h"
 #include <math.h>
 
 // Specifies the quaternion structure

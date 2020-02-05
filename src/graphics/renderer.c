@@ -2,6 +2,8 @@
 #include "vulkan_members.h"
 #include "swapchain.h"
 #include "cr_time.h"
+#include "graphics/ubo.h"
+#include "math/quaternion.h"
 
 void renderer_draw()
 {
@@ -15,6 +17,18 @@ void renderer_draw()
 	uint32_t image_index;
 	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame],
 											VK_NULL_HANDLE, &image_index);
+
+
+	// Update uniform buffer
+	TransformType transform_buffer;
+	quaternion rotation = quat_axis_angle((vec3){1, 0, 0}, time_elapsed());
+	mat4 rot = quat_to_mat4(rotation);
+	mat4 pos = mat4_translate((vec3) { 0, sin(time_elapsed()), 1 });
+	transform_buffer.model = mat4_mul(&pos, &rot);
+	transform_buffer.model = mat4_transpose(&transform_buffer.model);
+	transform_buffer.view = mat4_identity;
+	transform_buffer.proj = mat4_identity;
+	ub_update(ub, &transform_buffer, sizeof(TransformType), 0, image_index);
 
 	
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)

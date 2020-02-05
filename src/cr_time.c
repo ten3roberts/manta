@@ -90,7 +90,7 @@ void time_update()
 	uint64_t diff = (_time.now_tick.QuadPart - _time.prev_tick.QuadPart);
 	_time.deltatime = diff / (float)_time.freq.QuadPart;
 
-	_time.elapsedtime = diff / (float)_time.freq.QuadPart;
+	_time.elapsedtime = (_time.now_tick.QuadPart - _time.init_tick.QuadPart) / (float)_time.freq.QuadPart;
 
 	_time.framerate = _time.freq.QuadPart / (float)diff;
 	_time.framecount++;

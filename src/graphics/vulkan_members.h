@@ -63,6 +63,8 @@ extern VkExtent2D swapchain_extent;
 
 // Pipeline layout
 extern VkPipelineLayout pipeline_layout;
+extern VkDescriptorSetLayout descriptorSetLayout;
+
 
 extern VkPipeline graphics_pipeline;
 
@@ -96,3 +98,9 @@ extern const char* device_extensions[];
 extern const size_t device_extensions_count;
 
 extern const int enable_validation_layers;
+
+extern void* ub;
+
+extern VkDescriptorPool descriptor_pool;
+
+extern VkDescriptorSet* descriptor_sets;

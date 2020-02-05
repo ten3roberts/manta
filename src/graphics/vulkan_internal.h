@@ -15,4 +15,5 @@ int create_render_pass();
 int create_graphics_pipeline();
 int create_framebuffers();
 int create_command_buffers();
+int create_descriptor_pool();
 

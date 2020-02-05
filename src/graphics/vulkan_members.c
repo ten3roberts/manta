@@ -28,6 +28,9 @@ VkExtent2D swapchain_extent;
 // Pipeline layout
 VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
 
+VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+
+
 VkPipeline graphics_pipeline = VK_NULL_HANDLE;
 
 VkFramebuffer* framebuffers = NULL;
@@ -62,3 +65,9 @@ const int enable_validation_layers = 0;
 #else
 const int enable_validation_layers = 1;
 #endif
+
+void* ub = NULL;
+
+VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
+
+VkDescriptorSet* descriptor_sets = VK_NULL_HANDLE;

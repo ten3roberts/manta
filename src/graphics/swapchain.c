@@ -4,9 +4,12 @@
 #include "vulkan.h"
 #include <stdlib.h>
 #include "log.h"
+#include "graphics/ubo.h"
 
 int swapchain_create()
 {
+
+
 	SwapchainSupportDetails support = get_swapchain_support(physical_device);
 	VkSurfaceFormatKHR surface_format = pick_swap_surface_format(support.formats, support.format_count);
 	VkPresentModeKHR present_mode = pick_swap_present_mode(support.present_modes, support.present_mode_count);
@@ -84,16 +87,22 @@ int swapchain_recreate()
 
 	swapchain_destroy();
 
+
+
 	swapchain_create();
 	create_image_views();
 	create_render_pass();
 	create_graphics_pipeline();
 	create_framebuffers();
+	ub = ub_create(sizeof(TransformType));
+	create_descriptor_pool();
 	create_command_buffers();
 	return 0;
 }
 int swapchain_destroy()
 {
+	ub_destroy(ub);
+	vkDestroyDescriptorPool(device, descriptor_pool, NULL);
 	for (size_t i = 0; i < framebuffer_count; i++)
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);
 
