@@ -47,7 +47,6 @@ VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR* formats, size_t 
 // Picks the best swapchain present mode and returns it from those supplied
 VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
 {
-	return VK_PRESENT_MODE_IMMEDIATE_KHR;
 	for (size_t i = 0; i < count; i++)
 	{
 		// Triple buffered present mode is preferred

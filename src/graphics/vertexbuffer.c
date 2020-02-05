@@ -26,8 +26,8 @@ VertexBuffer* vb_generate_square()
 {
 	Vertex vertices[4];
 	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}};
-	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){1, 0, 1}};
-	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){0, 0, 1}};
+	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){0, 1, 0}};
+	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 0}};
 	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 1, 1}};
 	return vb_create(vertices, 4);
 }

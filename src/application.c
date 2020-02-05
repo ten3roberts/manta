@@ -20,6 +20,7 @@ void draw()
 	renderer_draw();
 }
 
+int swapchain_resize = 0;
 int application_start()
 {
 	Timer timer = timer_start(CT_WALL_TICKS);
@@ -36,7 +37,7 @@ int application_start()
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);
-
+	swapchain_resize = 0;
 	while (!window_get_close(main_window))
 	{
 		if (window_get_minimized(main_window))
@@ -44,7 +45,20 @@ int application_start()
 			SLEEP(0.1);
 		}
 		input_update();
+
+		// Don't resize every frame
+		if (swapchain_resize == 2)
+			swapchain_resize = 1;
 		window_update(main_window);
+		if (swapchain_resize == 1)
+		{
+			swapchain_recreate();
+			swapchain_resize = 0;
+		}
+		else if(swapchain_resize == 2)
+		{
+			continue;
+		}
 		time_update();
 		draw();
 		if (timer_duration(&timer) > 1.0f)
@@ -60,13 +74,14 @@ int application_start()
 	return 0;
 }
 
+
 void application_send_event(Event event)
 {
 	// Recreate swapchain on resize
 	if (event.type == EVENT_WINDOW_RESIZE && event.idata[0] != 0 && event.idata[1] != 0)
 	{
 		LOG("%d %d", event.idata[0], event.idata[1]);
-		swapchain_recreate();
+		swapchain_resize = 2;
 	}
 	if (event.type == EVENT_KEY)
 		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);
