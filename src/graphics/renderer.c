@@ -21,10 +21,9 @@ void renderer_draw()
 
 	// Update uniform buffer
 	TransformType transform_buffer;
-	quaternion rotation = quat_axis_angle((vec3){1, 0, 0}, time_elapsed());
+	quaternion rotation = quat_axis_angle((vec3){0, 0, 1}, time_elapsed());
 	mat4 rot = quat_to_mat4(rotation);
-	mat4 pos = mat4_translate((vec3) { 0, sin(time_elapsed()), 1 });
-	transform_buffer.model = mat4_mul(&pos, &rot);
+	transform_buffer.model = rot;
 	transform_buffer.model = mat4_transpose(&transform_buffer.model);
 	transform_buffer.view = mat4_identity;
 	transform_buffer.proj = mat4_identity;

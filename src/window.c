@@ -10,17 +10,9 @@
 
 #include <GLFW/glfw3.h>
 
-
-typedef enum
-{
-	// Creates a decorated window. Uses set width and height
-	WS_WINDOWED,
-	// Creates an undercorated window. Uses set width and height
-	WS_BORDERLESS,
-	// Creates a fullscreen undecorated window covering kde panels. width and
-	// height are overridden to the displays resulution
-	WS_FULLSCREEN
-} WindowStyle;
+#define WS_WINDOWED 1
+#define WS_BORDERLESS 2
+#define WS_FULLSCREEN 4
 
 typedef struct
 {
@@ -105,7 +97,7 @@ void mouse_moved_callback(GLFWwindow * raw_window, double x, double y)
 	application_send_event((Event){EVENT_MOUSE_MOVED, .fdata = {x, y}, 0});
 }
 
-Window * window_create(char * title, int width, int height, WindowStyle style)
+Window * window_create(char * title, int width, int height, int style)
 {
 	// Make sure to initialize glfw once
 	if (!glfw_initialized && glfwInit())
@@ -120,7 +112,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-	LOG("Creating window");
+	LOG("Creating window %d %d", width, height);
 	Window * window = malloc(sizeof(Window));
 	if (window == NULL)
 	{
@@ -132,12 +124,16 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 	window->should_close = 0;
 	strcpy(window->title, title);
 
-	if (style == WS_WINDOWED)
+	if(style == 0)
+	{
+		LOG_E("Error empty window style");
+	}
+	if (style & WS_WINDOWED)
 	{
 		window->raw_window = glfwCreateWindow(window->width, window->height, window->title, NULL, NULL);
 	}
 
-	else if (style == WS_BORDERLESS)
+	else if (style & WS_BORDERLESS)
 	{
 		// const GLFWvidmode* mode = glfwGetVideoMode(primary);
 		glfwWindowHint(GLFW_RED_BITS, mode->redBits);
@@ -149,7 +145,7 @@ Window * window_create(char * title, int width, int height, WindowStyle style)
 		window->raw_window = glfwCreateWindow(window->width, window->height, window->title, NULL, NULL);
 	}
 
-	else if (style == WS_FULLSCREEN)
+	else if (style & WS_FULLSCREEN)
 	{
 		// const GLFWvidmode* mode = glfwGetVideoMode(primary);
 		glfwWindowHint(GLFW_RED_BITS, mode->redBits);

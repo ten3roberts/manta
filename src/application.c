@@ -12,6 +12,7 @@
 #include "graphics/swapchain.h"
 #include "timer.h"
 #include "graphics/renderer.h"
+#include "settings.h"
 
 Window* main_window = NULL;
 
@@ -28,7 +29,9 @@ int application_start()
 		LOG_S("Running in debug mode");
 	time_init();
 
-	main_window = window_create("crescent", 800, 600, WS_WINDOWED);
+	settings_load();
+
+	main_window = window_create("crescent", settings_get_resolution().x,  settings_get_resolution().y, settings_get_window_style());
 	if (main_window == NULL)
 		return -1;
 
@@ -70,6 +73,7 @@ int application_start()
 	vulkan_terminate();
 	LOG_S("Terminating");
 	window_destroy(main_window);
+	settings_save();
 
 	return 0;
 }

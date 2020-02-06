@@ -1,18 +1,12 @@
 #pragma once
-typedef enum
-{
-	// Creates a decorated window. Uses set width and height
-	WS_WINDOWED,
-	// Creates an undercorated window. Uses set width and height
-	WS_BORDERLESS,
-	// Creates a fullscreen undecorated window covering panels and status bars
-	// // Width and height are set to native resolution
-	WS_FULLSCREEN
-} WindowStyle;
+
+#define WS_WINDOWED 1
+#define WS_BORDERLESS 2
+#define WS_FULLSCREEN 4
 
 typedef void Window;
 
-Window * window_create(char * title, int width, int height, WindowStyle style);
+Window * window_create(char * title, int width, int height, int style);
 
 // Destroys a window and frees all resources
 void window_destroy(Window * window);

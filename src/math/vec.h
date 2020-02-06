@@ -8,6 +8,10 @@ typedef struct
 {
 	float x, y;
 } vec2;
+typedef struct
+{
+	int x, y;
+} ivec2;
 
 const static vec2 vec2_one = { 1, 1 };
 const static vec2 vec2_zero = { 0, 0 };
@@ -16,6 +20,10 @@ typedef struct
 {
 	float x, y, z;
 } vec3;
+typedef struct
+{
+	int x, y, z;
+} ivec3;
 
 const static vec3 vec3_one = { 1, 1, 1 };
 const static vec3 vec3_zero = { 0, 0, 0 };
@@ -32,6 +40,10 @@ typedef struct
 {
 	float x, y, z, w;
 } vec4;
+typedef struct
+{
+	int x, y, z, w;
+} ivec4;
 
 const static vec4 vec4_one = { 1, 1, 1 };
 const static vec4 vec4_zero = { 0, 0, 0 };

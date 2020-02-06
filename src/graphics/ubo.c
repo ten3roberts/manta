@@ -65,5 +65,5 @@ void ub_destroy(UniformBuffer* ub)
 
 void** ub_get_buffer(UniformBuffer* ub)
 {
-	return ub->buffers;
+	return (void*)ub->buffers;
 }

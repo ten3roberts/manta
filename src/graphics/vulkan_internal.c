@@ -1,5 +1,6 @@
 #include "vulkan_internal.h"
 #include "math/math_extra.h"
+#include "settings.h"
 #include "log.h"
 #include "stdlib.h"
 
@@ -47,13 +48,22 @@ VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR* formats, size_t 
 // Picks the best swapchain present mode and returns it from those supplied
 VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
 {
+	VkPresentModeKHR preferred_mode;
+	VsyncMode mode = settings_get_vsync();
+
+	if(mode == VSYNC_NONE)
+		preferred_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+	else if(mode == VSYNC_DOUBLE)
+		preferred_mode = VK_PRESENT_MODE_FIFO_KHR;
+	else if(mode == VSYNC_TRIPLE)
+		preferred_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+
 	for (size_t i = 0; i < count; i++)
 	{
 		// Triple buffered present mode is preferred
-		if (modes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
+		if (modes[i] == preferred_mode)
 		{
 			LOG_OK("The best swapchain present mode was available");
-			LOG_OK("Choosing triple buffered vsync");
 			return modes[i];
 		}
 	}
