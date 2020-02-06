@@ -6,10 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "math/mat4.h"
 
 #include "math/vec.h"
 
-static void ftoa_sci(char * buffer, double value);
+static void ftoa_sci(char* buffer, double value);
 
 #if PL_LINUX
 void set_print_color(int color)
@@ -27,7 +28,7 @@ void set_print_color(int color)
 }
 #endif
 
-int normalize(double * val)
+int normalize(double* val)
 {
 	int exponent = 0;
 	double value = *val;
@@ -48,7 +49,7 @@ int normalize(double * val)
 }
 
 // Converts a float to scientific notation
-void ftoa_sci(char * buffer, double value)
+void ftoa_sci(char* buffer, double value)
 {
 	int exponent = 0;
 	int places = 0;
@@ -88,7 +89,7 @@ void ftoa_sci(char * buffer, double value)
 	itos(exponent, buffer, 10, 1);
 }
 
-FILE * log_file = NULL;
+FILE* log_file = NULL;
 size_t last_log_length = 0;
 
 // Specifies the frame number the previous log was on, to indicate if a new message is on a new frame
@@ -129,7 +130,7 @@ int log_init()
 
 	char fname[256];
 	time_t rawtime;
-	struct tm * timeinfo;
+	struct tm* timeinfo;
 
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
@@ -150,7 +151,7 @@ void log_terminate()
 	log_file = NULL;
 }
 
-int log_call(int color, const char * name, const char * fmt, ...)
+int log_call(int color, const char* name, const char* fmt, ...)
 {
 	va_list arg;
 
@@ -168,7 +169,7 @@ int log_call(int color, const char * name, const char * fmt, ...)
 	if (last_log_frame != time_framecount())
 	{
 		last_log_frame = time_framecount();
-		//Write a divider with the length of last_log_length capped at 64 characters
+		// Write a divider with the length of last_log_length capped at 64 characters
 		last_log_length = min(64, last_log_length);
 		memset(buffer, '-', last_log_length);
 		buffer[last_log_length] = '\n';
@@ -184,19 +185,18 @@ int log_call(int color, const char * name, const char * fmt, ...)
 		strcat(buffer, " @ ");
 
 		time_t rawtime;
-		struct tm * timeinfo;
+		struct tm* timeinfo;
 
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
 
-		
 		strftime(buffer + strlen(buffer), sizeof buffer, "%H.%M.%S", timeinfo);
 		strcat(buffer, " ]");
-		if(color == CONSOLE_RED)
+		if (color == CONSOLE_RED)
 		{
 			strcat(buffer, " ERROR ");
 		}
-		else if(color == CONSOLE_YELLOW)
+		else if (color == CONSOLE_YELLOW)
 		{
 			strcat(buffer, " WARNING ");
 		}
@@ -207,12 +207,12 @@ int log_call(int color, const char * name, const char * fmt, ...)
 	char ch;
 	long long int_tmp;
 	char char_tmp;
-	char * string_tmp;
+	char* string_tmp;
 	double double_tmp;
 
 	// Some specifiers require a length_mod before them, e.g; vectors %v
 	unsigned int length_mod = 0;
-	int precision = 3;
+	int precision = 4;
 	while ((ch = *fmt++))
 	{
 		if (ch == '%' || length_mod)
@@ -237,7 +237,7 @@ int log_call(int color, const char * name, const char * fmt, ...)
 
 				// %s string
 			case 's':
-				string_tmp = va_arg(arg, char *);
+				string_tmp = va_arg(arg, char*);
 				WRITE(string_tmp);
 				length_mod = 0;
 
@@ -314,7 +314,7 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				break;
 
 			case 'p':
-				int_tmp = (size_t)va_arg(arg, void *);
+				int_tmp = (size_t)va_arg(arg, void*);
 				utos(int_tmp, buffer, 16, 0);
 				WRITE("b");
 				WRITE(buffer);
@@ -345,6 +345,15 @@ int log_call(int color, const char * name, const char * fmt, ...)
 				}
 				length_mod = 0;
 				break;
+			case 'm': {
+				mat4 mat = va_arg(arg, mat4);
+				WRITECH('\n');
+				FLUSH_BUFCH;
+				mat4_string(&mat, buffer, precision);
+				WRITE(buffer);
+				length_mod = 0;
+				break;
+			}
 			default:
 				length_mod = atoi(--fmt);
 				if (length_mod)

@@ -47,3 +47,7 @@ int utos(unsigned long long num, char * buf, int base, int upper);
 // Prints up to precision digits after the comma, can write less. Can be used to print integers, where the comma is not written
 // Returns how many characters were written
 int ftos(double num, char * buf, int precision);
+
+// Converts a double/float to a string
+// Writes a fixed length number
+int ftos_fixed(double num, char * buf, int length);

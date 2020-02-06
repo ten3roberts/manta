@@ -13,6 +13,7 @@
 #include "timer.h"
 #include "graphics/renderer.h"
 #include "settings.h"
+#include "math/math_extra.h"
 
 Window* main_window = NULL;
 
@@ -31,10 +32,17 @@ int application_start()
 
 	settings_load();
 
+	char buf[2048];
+	ftos_fixed(0.075492, buf, 4);
+	puts(buf);
+
+	printf("%d", ftos_fixed(0, buf, 3));
+	puts(buf);
+
 	main_window = window_create("crescent", settings_get_resolution().x,  settings_get_resolution().y, settings_get_window_style());
 	if (main_window == NULL)
 		return -1;
-
+	
 	input_init(main_window);
 	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
@@ -69,6 +77,7 @@ int application_start()
 			timer_reset(&timer);
 			LOG("Framerate %d %f", time_framecount(), time_framerate());
 		}
+		SLEEP(0.05f);
 	}
 	vulkan_terminate();
 	LOG_S("Terminating");

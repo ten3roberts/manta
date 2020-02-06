@@ -17,7 +17,7 @@ void settings_load()
 		LOG_E("Failed to open settings file");
 		return;
 	}
-	char buf[2056];
+	char buf[2048];
 	while (fgets(buf, sizeof buf, file))
 	{
 		if (strcmp(buf, "\n") == 0)

@@ -15,21 +15,21 @@ void renderer_draw()
 	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 	uint32_t image_index;
-	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame],
-											VK_NULL_HANDLE, &image_index);
-
+	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE,
+						  &image_index);
 
 	// Update uniform buffer
 	TransformType transform_buffer;
 	quaternion rotation = quat_axis_angle((vec3){0, 0, 1}, time_elapsed());
 	mat4 rot = quat_to_mat4(rotation);
-	transform_buffer.model = rot;
-	transform_buffer.model = mat4_transpose(&transform_buffer.model);
+	mat4 pos = mat4_translate((vec3){0, sinf(time_elapsed()), 0});
+	LOG("%m", pos);
+	transform_buffer.model = mat4_mul(&rot, &pos);
+	
 	transform_buffer.view = mat4_identity;
 	transform_buffer.proj = mat4_identity;
 	ub_update(ub, &transform_buffer, sizeof(TransformType), 0, image_index);
 
-	
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
 	if (images_in_flight[image_index] != VK_NULL_HANDLE)
 	{

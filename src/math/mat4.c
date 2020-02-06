@@ -2,29 +2,26 @@
 #include <stdint.h>
 #include <math.h>
 #include "vec.h"
-
-typedef struct
-{
-	float raw[4][4];
-} mat4;
+#include "mat4.h"
+#include <stdio.h>
 
 // Returns a 4x4 matrix initialized with zero
-const static mat4 mat4_zero = {{{0, 0, 0, 0},
+const mat4 mat4_zero = {{{0, 0, 0, 0},
 
-								{0, 0, 0, 0},
+						 {0, 0, 0, 0},
 
-								{0, 0, 0, 0},
+						 {0, 0, 0, 0},
 
-								{0, 0, 0, 0}}};
+						 {0, 0, 0, 0}}};
 
 // Returns a 4x4 identity matrix
-const static mat4 mat4_identity = {{{1, 0, 0, 0},
+const mat4 mat4_identity = {{{1, 0, 0, 0},
 
-									{0, 1, 0, 0},
+							 {0, 1, 0, 0},
 
-									{0, 0, 1, 0},
+							 {0, 0, 1, 0},
 
-									{0, 0, 0, 1}}};
+							 {0, 0, 0, 1}}};
 
 // Returns a translation matrix
 mat4 mat4_translate(vec3 v)
@@ -34,8 +31,8 @@ mat4 mat4_translate(vec3 v)
 	{
 		for (size_t j = 0; j < 4; j++)
 		{
-			if (j == 3 && i != 3)
-				result.raw[i][j] = *(&v.x + i);
+			if (i == 3 && j != 3)
+				result.raw[i][j] = *(&v.x + j);
 			else if (i == j)
 				result.raw[i][j] = 1;
 			else
@@ -45,7 +42,7 @@ mat4 mat4_translate(vec3 v)
 	return result;
 }
 
-mat4 mat4_mul(const mat4 * a, const mat4 * b)
+mat4 mat4_mul(const mat4* a, const mat4* b)
 {
 	mat4 result = mat4_zero;
 	for (uint8_t i = 0; i < 4; i++) // row
@@ -61,7 +58,7 @@ mat4 mat4_mul(const mat4 * a, const mat4 * b)
 }
 
 // Multiplies a scalar pairwise on the matrix
-mat4 mat4_scalar_mul(const mat4 * a, float scalar)
+mat4 mat4_scalar_mul(const mat4* a, float scalar)
 {
 	mat4 result;
 	for (uint8_t i = 0; i < 16; i++)
@@ -71,7 +68,7 @@ mat4 mat4_scalar_mul(const mat4 * a, float scalar)
 	return result;
 }
 
-mat4 mat4_add(const mat4 * a, const mat4 * b)
+mat4 mat4_add(const mat4* a, const mat4* b)
 {
 	mat4 result = mat4_zero;
 	for (uint8_t i = 0; i < 4; i++)
@@ -80,7 +77,7 @@ mat4 mat4_add(const mat4 * a, const mat4 * b)
 	return result;
 }
 
-mat4 mat4_transpose(const mat4 * a)
+mat4 mat4_transpose(const mat4* a)
 {
 	mat4 result = mat4_zero;
 	for (uint8_t i = 0; i < 4; i++)
@@ -90,7 +87,7 @@ mat4 mat4_transpose(const mat4 * a)
 }
 
 // Performs a matrix vector column multiplication
-vec4 mat4_vec4_mul(const mat4 * m, vec4 v)
+vec4 mat4_vec4_mul(const mat4* m, vec4 v)
 {
 	return (vec4){m->raw[0][0] * v.x + m->raw[0][1] * v.y + m->raw[0][2] * v.z + m->raw[0][3] * v.w,
 				  m->raw[1][0] * v.x + m->raw[1][1] * v.y + m->raw[1][2] * v.z + m->raw[1][3] * v.w,
@@ -99,9 +96,26 @@ vec4 mat4_vec4_mul(const mat4 * m, vec4 v)
 }
 
 // Performs a matrix vector column multiplication
-vec3 mat4_vec3_mul(const mat4 * m, vec3 v)
+vec3 mat4_vec3_mul(const mat4* m, vec3 v)
 {
 	return (vec3){m->raw[0][0] * v.x + m->raw[0][1] * v.y + m->raw[0][2] * v.z + m->raw[0][3],
 				  m->raw[1][0] * v.x + m->raw[1][1] * v.y + m->raw[1][2] * v.z + m->raw[1][3],
 				  m->raw[2][0] * v.x + m->raw[2][1] * v.y + m->raw[2][2] * v.z + m->raw[2][3]};
+}
+
+void mat4_string(mat4* a, char* buf, int precision)
+{
+	for (uint8_t i = 0; i < 4; i++)
+	{
+		for (uint8_t j = 0; j < 4; j++)
+		{
+			printf("raw : %f\n", a->raw[i][j]);
+			buf += ftos_fixed(a->raw[i][j], buf, precision);
+
+			*buf++ = ',';
+			*buf++ = ' ';
+		}
+		*buf++ = '\n';
+	}
+	*buf++ = '\0';
 }

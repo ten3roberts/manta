@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 // Converts a signed integer to string
 int itos(signed long long num, char* buf, int base, int upper)
@@ -124,6 +125,71 @@ int ftos(double num, char* buf, int precision)
 		dec_pos--;
 		a /= base;
 	}
+	if (neg)
+		*buf = '-';
+	return return_value;
+}
+
+int ftos_fixed(double num, char* buf, int length)
+{
+	if (isinf(num))
+	{
+		memset(buf, '0', length);
+		if (num < 0)
+			*buf++ = '-';
+
+		*buf++ = 'i';
+		*buf++ = 'n';
+		*buf++ = 'f';
+		*buf++ = '\0';
+		return length;
+	}
+
+	if (fabs(num) < pow(10, -length))
+	{
+		memset(buf, ' ', length);
+		buf[length-1] = '0';
+		buf[length] = 0;
+		return length;
+	}
+
+	// Save the sign and remove it from num
+	int neg = num < 0;
+	if (neg)
+		num *= -1;
+	// Shift decimal to precision places to an int
+	uint64_t a = num * pow(10, length - (int64_t)log10(num) - 1 - neg) ;
+	if (a % 10 >= 5)
+		a += 10;
+	a /= 10;
+
+	uint64_t dec_pos = length - max((int64_t)log10(num), 0) - 1 - neg;
+
+	int base = 10;
+	char numerals[17] = {"0123456789ABCDEF"};
+
+	// Return and write one character if float == 0 to precision accuracy
+	if (a == 0)
+	{
+		*buf++ = '0';
+		*buf = '\0';
+		return 1;
+	}
+
+	int return_value = length;
+
+	buf[length] = '\0';
+	while (length > 0)
+	{
+		if (dec_pos == 1)
+		{
+			buf[--length] = '.';
+		}
+		buf[--length] = numerals[a % 10];
+		dec_pos--;
+		a /= 10;
+	}
+
 	if (neg)
 		*buf = '-';
 	return return_value;
