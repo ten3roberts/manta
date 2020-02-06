@@ -77,7 +77,6 @@ int application_start()
 			timer_reset(&timer);
 			LOG("Framerate %d %f", time_framecount(), time_framerate());
 		}
-		SLEEP(0.05f);
 	}
 	vulkan_terminate();
 	LOG_S("Terminating");

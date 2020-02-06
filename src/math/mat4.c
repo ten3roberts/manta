@@ -89,18 +89,18 @@ mat4 mat4_transpose(const mat4* a)
 // Performs a matrix vector column multiplication
 vec4 mat4_vec4_mul(const mat4* m, vec4 v)
 {
-	return (vec4){m->raw[0][0] * v.x + m->raw[0][1] * v.y + m->raw[0][2] * v.z + m->raw[0][3] * v.w,
-				  m->raw[1][0] * v.x + m->raw[1][1] * v.y + m->raw[1][2] * v.z + m->raw[1][3] * v.w,
-				  m->raw[2][0] * v.x + m->raw[2][1] * v.y + m->raw[2][2] * v.z + m->raw[2][3] * v.w,
-				  m->raw[3][0] * v.x + m->raw[3][1] * v.y + m->raw[3][2] * v.z + m->raw[3][3] * v.w};
+	return (vec4){m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0] * v.w,
+				  m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1] * v.w,
+				  m->raw[0][2] * v.x + m->raw[1][2] * v.y + m->raw[2][2] * v.z + m->raw[3][2] * v.w,
+				  m->raw[0][3] * v.x + m->raw[1][3] * v.y + m->raw[2][3] * v.z + m->raw[3][3] * v.w};
 }
 
 // Performs a matrix vector column multiplication
 vec3 mat4_vec3_mul(const mat4* m, vec3 v)
 {
-	return (vec3){m->raw[0][0] * v.x + m->raw[0][1] * v.y + m->raw[0][2] * v.z + m->raw[0][3],
-				  m->raw[1][0] * v.x + m->raw[1][1] * v.y + m->raw[1][2] * v.z + m->raw[1][3],
-				  m->raw[2][0] * v.x + m->raw[2][1] * v.y + m->raw[2][2] * v.z + m->raw[2][3]};
+	return (vec3){m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0],
+				  m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1],
+				  m->raw[0][2] * v.x + m->raw[1][2] * v.y + m->raw[2][2] * v.z + m->raw[3][2]};
 }
 
 void mat4_string(mat4* a, char* buf, int precision)
@@ -109,7 +109,6 @@ void mat4_string(mat4* a, char* buf, int precision)
 	{
 		for (uint8_t j = 0; j < 4; j++)
 		{
-			printf("raw : %f\n", a->raw[i][j]);
 			buf += ftos_fixed(a->raw[i][j], buf, precision);
 
 			*buf++ = ',';
