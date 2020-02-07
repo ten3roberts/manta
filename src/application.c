@@ -33,16 +33,20 @@ int application_start()
 	settings_load();
 
 	char buf[2048];
-	ftos_fixed(0.075492, buf, 4);
+	ftos_pad(1.45, buf, 4, 4, '-');
+	puts(buf);
+	ftos_pad(1.3, buf, 4, 4, '-');
+	puts(buf);
+	ftos_pad(0.45, buf, 4, 4, '-');
+	puts(buf);
+	ftos_pad(-1, buf, 4, 4, '-');
 	puts(buf);
 
-	printf("%d", ftos_fixed(0, buf, 3));
-	puts(buf);
-
-	main_window = window_create("crescent", settings_get_resolution().x,  settings_get_resolution().y, settings_get_window_style());
+	main_window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
+								settings_get_window_style());
 	if (main_window == NULL)
 		return -1;
-	
+
 	input_init(main_window);
 	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
@@ -66,7 +70,7 @@ int application_start()
 			swapchain_recreate();
 			swapchain_resize = 0;
 		}
-		else if(swapchain_resize == 2)
+		else if (swapchain_resize == 2)
 		{
 			continue;
 		}
@@ -85,7 +89,6 @@ int application_start()
 
 	return 0;
 }
-
 
 void application_send_event(Event event)
 {

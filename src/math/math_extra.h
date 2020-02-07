@@ -51,3 +51,10 @@ int ftos(double num, char * buf, int precision);
 // Converts a double/float to a string
 // Writes a fixed length number
 int ftos_fixed(double num, char * buf, int length);
+
+// Converts a double/float to a string
+// Precision indicates the max digits to include after the comma
+// Prints up to precision digits after the comma, can write less. Can be used to print integers, where the comma is not written
+// Writes a minimum of pad characters
+// Returns how many characters were written
+int ftos_pad(double num, char * buf, int precision, int padding, char padchar);

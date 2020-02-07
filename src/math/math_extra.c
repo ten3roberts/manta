@@ -148,7 +148,7 @@ int ftos_fixed(double num, char* buf, int length)
 	if (fabs(num) < pow(10, -length))
 	{
 		memset(buf, ' ', length);
-		buf[length-1] = '0';
+		buf[length - 1] = '0';
 		buf[length] = 0;
 		return length;
 	}
@@ -158,7 +158,7 @@ int ftos_fixed(double num, char* buf, int length)
 	if (neg)
 		num *= -1;
 	// Shift decimal to precision places to an int
-	uint64_t a = num * pow(10, length - (int64_t)log10(num) - 1 - neg) ;
+	uint64_t a = num * pow(10, length - (int64_t)log10(num) - 1 - neg);
 	if (a % 10 >= 5)
 		a += 10;
 	a /= 10;
@@ -190,6 +190,77 @@ int ftos_fixed(double num, char* buf, int length)
 		a /= 10;
 	}
 
+	if (neg)
+		*buf = '-';
+	return return_value;
+}
+
+int ftos_pad(double num, char* buf, int precision, int padding, char padchar)
+{
+	if (isinf(num))
+	{
+		if (num < 0)
+			*buf++ = '-';
+		*buf++ = 'i';
+		*buf++ = 'n';
+		*buf++ = 'f';
+		*buf++ = '\0';
+		return num < 0 ? 4 : 3;
+	}
+
+	// Save the sign and remove it from num
+	int neg = num < 0;
+	if (neg)
+		num *= -1;
+	// Shift decimal to precision places to an int
+	uint64_t a = num * pow(10, precision + 1);
+
+	if (a % 10 >= 5)
+		a += 10;
+	a /= 10;
+
+	int dec_pos = precision;
+
+	// Carried the one, need to round once more
+	while (a % 10 == 0 && a && a > num)
+	{
+		if (a % 10 >= 5)
+			a += 10;
+		a /= 10;
+		dec_pos--;
+	}
+
+	int base = 10;
+	char numerals[17] = {"0123456789ABCDEF"};
+
+	// Return and write one character if float == 0 to precision accuracy
+	if (a == 0)
+	{
+		*buf++ = '0';
+		*buf = '\0';
+		return 1;
+	}
+
+	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0) + neg;
+	int64_t pad_needed = padding - buf_index;
+	if (pad_needed > 0)
+		buf_index += pad_needed;
+
+	int return_value = buf_index;
+
+	buf[buf_index] = '\0';
+	while (buf_index)
+	{
+		buf[--buf_index] = numerals[a % base];
+		if (dec_pos == 1)
+			buf[--buf_index] = '.';
+		dec_pos--;
+		a /= base;
+	}
+	while (pad_needed > 0)
+	{
+		buf[--pad_needed] = padchar;
+	}
 	if (neg)
 		*buf = '-';
 	return return_value;
