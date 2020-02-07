@@ -236,9 +236,10 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 	// Return and write one character if float == 0 to precision accuracy
 	if (a == 0)
 	{
-		*buf++ = '0';
-		*buf = '\0';
-		return 1;
+		memset(buf, pad_char, pad_length);
+		buf[pad_length-1] = '0';
+		buf[pad_length] = '\0';
+		return pad_length;
 	}
 	memset(buf, 'I', 10);
 	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0);

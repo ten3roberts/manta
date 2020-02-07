@@ -109,7 +109,7 @@ void mat4_string(mat4* a, char* buf, int precision)
 	{
 		for (uint8_t j = 0; j < 4; j++)
 		{
-			buf += ftos_pad(a->raw[i][j], buf, precision - 1, precision + 5, ' ');
+			buf += ftos_pad(a->raw[i][j], buf, precision - 1, precision + 2, ' ');
 
 			*buf++ = ',';
 			*buf++ = ' ';
