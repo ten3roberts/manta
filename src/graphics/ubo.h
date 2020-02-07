@@ -15,7 +15,6 @@ typedef void UniformBuffer;
 
 int ub_create_descriptor_set_layout(uint32_t binding);
 int ub_create_descriptor_pool();
-int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t size);
 
 VkDescriptorSetLayout* ub_get_layouts();
 

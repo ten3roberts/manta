@@ -817,10 +817,17 @@ int create_command_buffers()
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 		ub_bind(ub, command_buffers[i], i);
+
 		vb_bind(vb, command_buffers[i]);
+		ib_bind(ib, command_buffers[i]);
+
+		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
 		vb_bind(vb2, command_buffers[i]);
 		ib_bind(ib, command_buffers[i]);
+		ub_bind(ub2, command_buffers[i], i);
 		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
+
+
 		vkCmdEndRenderPass(command_buffers[i]);
 		result = vkEndCommandBuffer(command_buffers[i]);
 		if (result != VK_SUCCESS)
@@ -908,16 +915,12 @@ int vulkan_init()
 	{
 		return -9;
 	}
-	ub = ub_create(sizeof(TransformType));
-	ub2 = ub_create(sizeof(TransformType));
 	if (ub_create_descriptor_pool())
 	{
 		return -10;
 	}
-	if (ub_create_descriptor_sets(ub, sizeof(TransformType)))
-	{
-		return -11;
-	}
+	ub = ub_create(sizeof(TransformType));
+	ub2 = ub_create(sizeof(TransformType));
 	if (create_graphics_pipeline())
 	{
 		return -10;

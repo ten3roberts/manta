@@ -7,8 +7,6 @@ VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
 
 VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 
-VkDescriptorSet* descriptor_sets = VK_NULL_HANDLE;
-
 VkDescriptorSetLayout* ub_get_layouts()
 {
 	return &descriptorSetLayout;
@@ -30,10 +28,12 @@ uint32_t pool_count = 0;
 typedef struct
 {
 	Head head;
+	// The size of one frame of the command buffer
 	uint32_t size;
 	uint32_t offset[3];
 	VkBuffer buffers[3];
 	VkDeviceMemory memories[3];
+	VkDescriptorSet descriptor_sets[3];
 } UniformBuffer;
 
 int ub_create_descriptor_set_layout(uint32_t binding)
@@ -65,7 +65,7 @@ int ub_create_descriptor_pool()
 {
 	VkDescriptorPoolSize poolSize = {0};
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = swapchain_image_count;
+	poolSize.descriptorCount = swapchain_image_count * 100;
 
 	VkDescriptorPoolCreateInfo poolInfo = {0};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -83,7 +83,7 @@ int ub_create_descriptor_pool()
 	return 0;
 }
 
-int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t size)
+int ub_create_descriptor_sets(UniformBuffer* ub)
 {
 	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
 	for (size_t i = 0; i < swapchain_image_count; i++)
@@ -94,18 +94,18 @@ int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t size)
 	allocInfo.descriptorPool = descriptor_pool;
 	allocInfo.descriptorSetCount = swapchain_image_count;
 	allocInfo.pSetLayouts = layouts;
-	descriptor_sets = malloc(swapchain_image_count * sizeof(VkDescriptorSet));
-	vkAllocateDescriptorSets(device, &allocInfo, descriptor_sets);
+	//descriptor_sets = malloc(swapchain_image_count * sizeof(VkDescriptorSet));
+	vkAllocateDescriptorSets(device, &allocInfo, ub->descriptor_sets);
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
 		VkDescriptorBufferInfo bufferInfo = {0};
 		bufferInfo.buffer = ub->buffers[i];
 		bufferInfo.offset = 0;
-		bufferInfo.range = size;
+		bufferInfo.range = ub->size;
 
 		VkWriteDescriptorSet descriptorWrite = {0};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = descriptor_sets[i];
+		descriptorWrite.dstSet = ub->descriptor_sets[i];
 		descriptorWrite.dstBinding = 0;
 		descriptorWrite.dstArrayElement = 0;
 
@@ -178,6 +178,9 @@ UniformBuffer* ub_create(uint32_t size)
 			pools[j].filled_size += size;
 		}
 	}
+
+	// Create descriptor sets
+	ub_create_descriptor_sets(ub);
 	return ub;
 }
 
@@ -207,6 +210,6 @@ void ub_destroy(UniformBuffer* ub)
 
 void ub_bind(UniformBuffer* ub, VkCommandBuffer command_buffer, int i)
 {
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets[i],
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &ub->descriptor_sets[i],
 							0, NULL);
 }
