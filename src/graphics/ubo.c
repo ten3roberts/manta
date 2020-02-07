@@ -3,9 +3,16 @@
 #include "graphics/vulkan_internal.h"
 #include "graphics/vertexbuffer.h"
 
+VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+
 VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 
 VkDescriptorSet* descriptor_sets = VK_NULL_HANDLE;
+
+VkDescriptorSetLayout* ub_get_layouts()
+{
+	return &descriptorSetLayout;
+}
 
 typedef struct
 {
@@ -13,16 +20,20 @@ typedef struct
 	uint32_t filled_size;
 	// Describes the total size of the buffer/memory that was allocated
 	uint32_t alloc_size;
-	VkBuffer buffers;
+	VkBuffer buffer;
 	VkDeviceMemory memory;
 } UniformBufferPool;
+
+UniformBufferPool* pools = NULL;
+uint32_t pool_count = 0;
 
 typedef struct
 {
 	Head head;
 	uint32_t size;
-	VkBuffer* buffers;
-	VkDeviceMemory* memories;
+	uint32_t offset[3];
+	VkBuffer buffers[3];
+	VkDeviceMemory memories[3];
 } UniformBuffer;
 
 int ub_create_descriptor_set_layout(uint32_t binding)
@@ -61,7 +72,7 @@ int ub_create_descriptor_pool()
 	poolInfo.poolSizeCount = 1;
 	poolInfo.pPoolSizes = &poolSize;
 
-	poolInfo.maxSets = swapchain_image_count;
+	poolInfo.maxSets = swapchain_image_count * 100;
 
 	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &descriptor_pool);
 	if (result != VK_SUCCESS)
@@ -111,6 +122,23 @@ int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t size)
 	return 0;
 }
 
+void ub_pool_create(uint32_t size)
+{
+	LOG_S("Creating new uniform buffer pool");
+	pools = realloc(pools, ++pool_count * sizeof(UniformBufferPool));
+	UniformBufferPool* pool = &pools[pool_count - 1];
+	if (pools == NULL)
+	{
+		LOG_E("Failed to allocate uniform buffer pool");
+		return;
+	}
+	buffer_create(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				  &pool->buffer, &pool->memory);
+	pool->filled_size = 0;
+	pool->alloc_size = size;
+}
+
 UniformBuffer* ub_create(uint32_t size)
 {
 	LOG_S("Creating uniform buffer");
@@ -119,37 +147,50 @@ UniformBuffer* ub_create(uint32_t size)
 	ub->head.id = 0;
 	ub->size = size;
 
-	ub->buffers = malloc(swapchain_image_count * sizeof(VkBuffer));
-	ub->memories = malloc(swapchain_image_count * sizeof(VkDeviceMemory));
+	// ub->buffers = malloc(swapchain_image_count * sizeof(VkBuffer));
+	// ub->memories = malloc(swapchain_image_count * sizeof(VkDeviceMemory));
 
-	for (size_t i = 0; i < swapchain_image_count; i++)
+	// No pools have yet been created
+	if (pool_count == 0)
 	{
-		buffer_create(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-					  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &ub->buffers[i],
-					  &ub->memories[i]);
+		ub_pool_create(size * 3);
+	}
+	// Find a free pool
+	for (int i = 0; i < swapchain_image_count; i++)
+	{
+		for (int j = 0; j < pool_count; j++)
+		{
+			// Pool is full or not large enough
+			if (pools[j].filled_size + size > pools[j].alloc_size)
+			{
+				// At last pool
+				if (j == pool_count - 1)
+				{
+					ub_pool_create(size * 3);
+				}
+				continue;
+			};
+
+			// Occupy space
+			ub->offset[i] = pools[j].filled_size;
+			ub->buffers[i] = pools[j].buffer;
+			ub->memories[i] = pools[j].memory;
+			pools[j].filled_size += size;
+		}
 	}
 	return ub;
 }
 
-void ub_update(UniformBuffer* ub, void* data, uint32_t size, uint32_t offset, uint32_t i)
+void ub_update(UniformBuffer* ub, void* data, uint32_t i)
 {
-	if (size == (uint32_t)-1)
-	{
-		size = ub->size;
-	}
-	else if (size > ub->size)
-	{
-		size = ub->size;
-		LOG_W("Request to update uniform buffer of %d bytes with %d bytes of data", ub->size, size);
-	}
 	void* data_map = NULL;
-	vkMapMemory(device, ub->memories[i], offset, size, 0, &data_map);
+	vkMapMemory(device, ub->memories[i], ub->offset[i], ub->size, 0, &data_map);
 	if (data_map == NULL)
 	{
 		LOG_E("Failed to map memory for uniform buffer");
 		return;
 	}
-	memcpy(data_map, data, size);
+	memcpy(data_map, data, ub->size);
 	vkUnmapMemory(device, ub->memories[i]);
 }
 
@@ -158,11 +199,9 @@ void ub_destroy(UniformBuffer* ub)
 	LOG_S("Destroying uniform buffer");
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
-		vkDestroyBuffer(device, ub->buffers[i], NULL);
-		vkFreeMemory(device, ub->memories[i], NULL);
+		//vkDestroyBuffer(device, ub->buffers[i], NULL);
+		//vkFreeMemory(device, ub->memories[i], NULL);
 	}
-	free(ub->buffers);
-	free(ub->memories);
 	free(ub);
 }
 

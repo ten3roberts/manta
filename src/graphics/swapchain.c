@@ -78,6 +78,7 @@ int swapchain_create()
 	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, NULL);
 	swapchain_images = malloc(swapchain_image_count * sizeof(VkImage));
 	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
+	LOG("Swapchain contains %d images", swapchain_image_count);
 	return 0;
 }
 int swapchain_recreate()

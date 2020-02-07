@@ -28,7 +28,7 @@ void renderer_draw()
 	
 	transform_buffer.view = mat4_identity;
 	transform_buffer.proj = mat4_identity;
-	ub_update(ub, &transform_buffer, sizeof(TransformType), 0, image_index);
+	ub_update(ub, &transform_buffer, image_index);
 
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
 	if (images_in_flight[image_index] != VK_NULL_HANDLE)

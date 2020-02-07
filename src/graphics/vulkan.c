@@ -672,7 +672,7 @@ int create_graphics_pipeline()
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 1;				   // Optional
-	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
+	pipelineLayoutInfo.pSetLayouts = ub_get_layouts(); // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0;		   // Optional
 	pipelineLayoutInfo.pPushConstantRanges = NULL;		   // Optional
 	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &pipeline_layout);
@@ -909,6 +909,7 @@ int vulkan_init()
 		return -9;
 	}
 	ub = ub_create(sizeof(TransformType));
+	ub2 = ub_create(sizeof(TransformType));
 	if (ub_create_descriptor_pool())
 	{
 		return -10;
@@ -951,7 +952,7 @@ void vulkan_terminate()
 	vkDeviceWaitIdle(device);
 	swapchain_destroy();
 	//free(descriptor_sets);
-	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, NULL);
+	vkDestroyDescriptorSetLayout(device, *ub_get_layouts(), NULL);
 	vb_destroy(vb);
 	vb_destroy(vb2);
 	ib_destroy(ib);
