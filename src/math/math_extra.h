@@ -56,5 +56,6 @@ int ftos_fixed(double num, char * buf, int length);
 // Precision indicates the max digits to include after the comma
 // Prints up to precision digits after the comma, can write less. Can be used to print integers, where the comma is not written
 // Writes a minimum of pad characters
+// pad_length is recommended to be 2 less than precisio nto fit 0.
 // Returns how many characters were written
-int ftos_pad(double num, char * buf, int precision, int padding, char padchar);
+int ftos_pad(double num, char * buf, int precision, int pad_length, char pad_char);

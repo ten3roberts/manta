@@ -195,7 +195,7 @@ int ftos_fixed(double num, char* buf, int length)
 	return return_value;
 }
 
-int ftos_pad(double num, char* buf, int precision, int padding, char padchar)
+int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char)
 {
 	if (isinf(num))
 	{
@@ -241,25 +241,22 @@ int ftos_pad(double num, char* buf, int precision, int padding, char padchar)
 		return 1;
 	}
 
-	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0) + neg;
-	int64_t pad_needed = padding - buf_index;
-	if (pad_needed > 0)
-		buf_index += pad_needed;
-
-	int return_value = buf_index;
-
-	buf[buf_index] = '\0';
+	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0);
+	int pad = max(pad_length - buf_index, 0);
+	int return_value = buf_index + pad;
+	buf += buf_index + neg;
+	*buf-- = '\0';
 	while (buf_index)
 	{
-		buf[--buf_index] = numerals[a % base];
+		*buf-- = numerals[a % base];
+		buf_index--;
 		if (dec_pos == 1)
-			buf[--buf_index] = '.';
+		{
+			*buf-- = '.';
+			buf_index--;
+		}
 		dec_pos--;
 		a /= base;
-	}
-	while (pad_needed > 0)
-	{
-		buf[--pad_needed] = padchar;
 	}
 	if (neg)
 		*buf = '-';
