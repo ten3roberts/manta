@@ -100,7 +100,3 @@ extern const size_t device_extensions_count;
 extern const int enable_validation_layers;
 
 extern void* ub;
-
-extern VkDescriptorPool descriptor_pool;
-
-extern VkDescriptorSet* descriptor_sets;

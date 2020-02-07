@@ -95,14 +95,14 @@ int swapchain_recreate()
 	create_graphics_pipeline();
 	create_framebuffers();
 	ub = ub_create(sizeof(TransformType));
-	create_descriptor_pool();
+	//create_descriptor_pool();
 	create_command_buffers();
 	return 0;
 }
 int swapchain_destroy()
 {
 	ub_destroy(ub);
-	vkDestroyDescriptorPool(device, descriptor_pool, NULL);
+	//vkDestroyDescriptorPool(device, descriptor_pool, NULL);
 	for (size_t i = 0; i < framebuffer_count; i++)
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);
 
