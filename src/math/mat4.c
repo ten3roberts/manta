@@ -42,6 +42,24 @@ mat4 mat4_translate(vec3 v)
 	return result;
 }
 
+mat4 mat4_scale(vec3 v)
+{
+	mat4 result;
+	for (size_t i = 0; i < 4; i++)
+	{
+		for (size_t j = 0; j < 4; j++)
+		{
+			if (i == j && i < 3)
+				result.raw[i][j] = *(&v.x + i);
+			else if (i == j)
+				result.raw[i][j] = 1;
+			else
+				result.raw[i][j] = 0;
+		}
+	}
+	return result;
+}
+
 mat4 mat4_mul(const mat4* a, const mat4* b)
 {
 	mat4 result = mat4_zero;
@@ -87,7 +105,7 @@ mat4 mat4_transpose(const mat4* a)
 }
 
 // Performs a matrix vector column multiplication
-vec4 mat4_vec4_mul(const mat4* m, vec4 v)
+vec4 mat4_transform_vec4(const mat4* m, vec4 v)
 {
 	return (vec4){m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0] * v.w,
 				  m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1] * v.w,
@@ -96,7 +114,7 @@ vec4 mat4_vec4_mul(const mat4* m, vec4 v)
 }
 
 // Performs a matrix vector column multiplication
-vec3 mat4_vec3_mul(const mat4* m, vec3 v)
+vec3 mat4_transform_vec3(const mat4* m, vec3 v)
 {
 	return (vec3){m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0],
 				  m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1],

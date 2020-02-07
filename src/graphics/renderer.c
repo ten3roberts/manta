@@ -24,13 +24,16 @@ void renderer_draw()
 	
 	mat4 rot = quat_to_mat4(rotation);
 	mat4 pos = mat4_translate((vec3){0, sinf(time_elapsed()), 0});
+	mat4 scale = mat4_scale((vec3){1,1,1});
 	transform_buffer.model = mat4_mul(&rot, &pos);
 	
 	transform_buffer.view = mat4_identity;
 	transform_buffer.proj = mat4_identity;
 	ub_update(ub, &transform_buffer, image_index);
-	pos = mat4_translate((vec3){0, 0, 0});
-	transform_buffer.model = mat4_mul(&rot, &pos);
+	pos = mat4_translate((vec3){0, -sinf(time_elapsed()), 0});
+	scale = mat4_scale((vec3){0.5,0.5,0.5});
+	transform_buffer.model = mat4_mul(&scale, &pos);
+	
 	ub_update(ub2, &transform_buffer, image_index);
 
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)

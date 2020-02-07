@@ -822,6 +822,7 @@ int create_command_buffers()
 		ib_bind(ib, command_buffers[i]);
 
 		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
+		
 		vb_bind(vb2, command_buffers[i]);
 		ib_bind(ib, command_buffers[i]);
 		ub_bind(ub2, command_buffers[i], i);
