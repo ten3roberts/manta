@@ -35,6 +35,10 @@ int application_start()
 	char buf[2048];
 	ftos_pad(-0.0397856534, buf, 4, 4, '=');
 	puts(buf);
+	ftos_pad(0.99999999, buf, 4, 4, '=');
+	puts(buf);
+	ftos_pad(0.09999999, buf, 4, 4, '=');
+	puts(buf);
 	ftos_pad(1.3, buf, 4, 4, '=');
 	puts(buf);
 	ftos_pad(0.1, buf, 4, 4, '=');

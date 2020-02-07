@@ -240,11 +240,11 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 		*buf = '\0';
 		return 1;
 	}
-
+	memset(buf, 'I', 10);
 	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0);
-	int pad = max(pad_length - buf_index, 0);
-	int return_value = buf_index + pad;
-	buf += buf_index + neg;
+	int pad = max(pad_length - (int)buf_index - neg, 0);
+	int return_value = buf_index + neg + pad;
+	buf += buf_index + neg + pad;
 	*buf-- = '\0';
 	while (buf_index)
 	{
@@ -259,6 +259,10 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 		a /= base;
 	}
 	if (neg)
-		*buf = '-';
+		*buf-- = '-';
+	for(int i = 0; i < pad; i++)
+	{
+		*buf-- = pad_char;
+	}
 	return return_value;
 }
