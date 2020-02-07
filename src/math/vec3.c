@@ -1,5 +1,5 @@
 #include "vec.h"
-#include "math_extra.h"
+#include "math.h"
 
 #include <stdlib.h>
 

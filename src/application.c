@@ -1,7 +1,7 @@
 #include "application.h"
 #include "cr_time.h"
 #include "log.h"
-#include "math/math_extra.h"
+#include "math/math.h"
 #include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,7 +13,7 @@
 #include "timer.h"
 #include "graphics/renderer.h"
 #include "settings.h"
-#include "math/math_extra.h"
+#include "math/math.h"
 
 Window* main_window = NULL;
 

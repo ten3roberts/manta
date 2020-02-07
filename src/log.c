@@ -1,6 +1,6 @@
 #include "log.h"
 #include "cr_time.h"
-#include "math/math_extra.h"
+#include "math/math.h"
 #include "utils.h"
 #include <stdarg.h>
 #include <stdio.h>

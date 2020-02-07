@@ -1,5 +1,5 @@
 #include "vulkan_internal.h"
-#include "math/math_extra.h"
+#include "math/math.h"
 #include "settings.h"
 #include "log.h"
 #include "stdlib.h"

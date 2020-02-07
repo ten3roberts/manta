@@ -5,6 +5,17 @@
 
 typedef struct
 {
+	// Describes the currents used size of the buffer/memory
+	uint32_t filled_size;
+	// Describes the total size of the buffer/memory that was allocated
+	uint32_t alloc_size;
+	VkBuffer buffers;
+	VkDeviceMemory memory;
+} UniformBufferPool;
+
+
+typedef struct
+{
 	Head head;
 	uint32_t size;
 	VkBuffer* buffers;

@@ -4,7 +4,7 @@
 #include "application.h"
 #include "log.h"
 #include "utils.h"
-#include "math/math_extra.h"
+#include "math/math.h"
 #include "vulkan.h"
 #include "swapchain.h"
 #include "ubo.h"
