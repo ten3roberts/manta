@@ -19,12 +19,13 @@ uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties
 
 VertexBuffer* vb_generate_triangle()
 {
-Vertex vertices[4];
+	Vertex vertices[4];
 	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}};
 	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){1, 0, 1}};
 	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 0}};
 	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 0, 1}};
-	return vb_create(vertices, 4);}
+	return vb_create(vertices, 4);
+}
 
 VertexBuffer* vb_generate_square()
 {
@@ -48,14 +49,14 @@ VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 	// Create the buffer and memory
 
 	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vb->buffer, &vb->memory);
+				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vb->buffer, &vb->memory, NULL);
 	vb_copy_data(vb);
 
 	return vb;
 }
 
 int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer,
-				  VkDeviceMemory* buffer_memory)
+				  VkDeviceMemory* buffer_memory, uint32_t* alignment)
 {
 	// Create the vertex buffer
 	VkBufferCreateInfo bufferInfo = {0};
@@ -73,6 +74,8 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 	}
 	VkMemoryRequirements memRequirements;
 	vkGetBufferMemoryRequirements(device, *buffer, &memRequirements);
+	if (alignment)
+		*alignment = memRequirements.alignment;
 
 	VkMemoryAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -135,7 +138,7 @@ void vb_copy_data(VertexBuffer* vb)
 	VkDeviceMemory staging_buffer_memory;
 	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
-				  &staging_buffer_memory);
+				  &staging_buffer_memory, NULL);
 	// Copy the vertex data to the buffer
 	void* data = NULL;
 	vkMapMemory(device, staging_buffer_memory, 0, buffer_size, 0, &data);

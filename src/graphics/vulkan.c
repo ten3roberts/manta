@@ -916,10 +916,6 @@ int vulkan_init()
 	{
 		return -9;
 	}
-	if (ub_create_descriptor_pool())
-	{
-		return -10;
-	}
 	ub = ub_create(sizeof(TransformType));
 	ub2 = ub_create(sizeof(TransformType));
 	if (create_graphics_pipeline())

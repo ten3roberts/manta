@@ -5,8 +5,6 @@
 
 VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
 
-VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
-
 VkDescriptorSetLayout* ub_get_layouts()
 {
 	return &descriptorSetLayout;
@@ -14,7 +12,20 @@ VkDescriptorSetLayout* ub_get_layouts()
 
 typedef struct
 {
-	// Describes the currents used size of the buffer/memory
+	// Describes the currently used count of allocated descriptors
+	uint32_t filled_count;
+	// Describes the total count that was allocated
+	uint32_t alloc_count;
+	VkDescriptorPool pool;
+} DescriptorPool;
+
+DescriptorPool* descriptor_pools = NULL;
+uint32_t descriptor_pool_count = 0;
+
+typedef struct
+{
+	uint32_t alignment;
+	// Describes the currently used size of the buffer/memory
 	uint32_t filled_size;
 	// Describes the total size of the buffer/memory that was allocated
 	uint32_t alloc_size;
@@ -61,20 +72,26 @@ int ub_create_descriptor_set_layout(uint32_t binding)
 	return 0;
 }
 
-int ub_create_descriptor_pool()
+int ub_descriptor_pool_create()
 {
+	// Resize array
+	LOG_S("Creating new descriptor pool");
+	descriptor_pools = realloc(descriptor_pools, ++descriptor_pool_count * sizeof(DescriptorPool));
+	DescriptorPool* descriptor_pool = &descriptor_pools[descriptor_pool_count - 1];
+	descriptor_pool->filled_count = 0;
+	descriptor_pool->alloc_count = swapchain_image_count * 100;
 	VkDescriptorPoolSize poolSize = {0};
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = swapchain_image_count * 100;
+	poolSize.descriptorCount = descriptor_pool->alloc_count;
 
 	VkDescriptorPoolCreateInfo poolInfo = {0};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = 1;
 	poolInfo.pPoolSizes = &poolSize;
 
-	poolInfo.maxSets = swapchain_image_count * 100;
+	poolInfo.maxSets = descriptor_pool->alloc_count;
 
-	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &descriptor_pool);
+	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &descriptor_pool->pool);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create descriptor pool - code %d", result);
@@ -91,16 +108,37 @@ int ub_create_descriptor_sets(UniformBuffer* ub)
 
 	VkDescriptorSetAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptor_pool;
+
+	if (descriptor_pool_count == 0)
+	{
+		ub_descriptor_pool_create();
+	}
+	// Iterate and find a pool that is not full
+	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+	{
+		if (descriptor_pools[i].filled_count + 3 >= descriptor_pools[i].alloc_count)
+		{
+			// At last pool
+			if (i == descriptor_pool_count - 1)
+			{
+				ub_descriptor_pool_create();
+			}
+			continue;
+		}
+		// Found a good pool
+		allocInfo.descriptorPool = descriptor_pools[i].pool;
+		descriptor_pools[i].filled_count+=3;
+	}
+
 	allocInfo.descriptorSetCount = swapchain_image_count;
 	allocInfo.pSetLayouts = layouts;
-	//descriptor_sets = malloc(swapchain_image_count * sizeof(VkDescriptorSet));
+	// descriptor_sets = malloc(swapchain_image_count * sizeof(VkDescriptorSet));
 	vkAllocateDescriptorSets(device, &allocInfo, ub->descriptor_sets);
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
 		VkDescriptorBufferInfo bufferInfo = {0};
 		bufferInfo.buffer = ub->buffers[i];
-		bufferInfo.offset = 0;
+		bufferInfo.offset = ub->offset[i];
 		bufferInfo.range = ub->size;
 
 		VkWriteDescriptorSet descriptorWrite = {0};
@@ -133,9 +171,8 @@ void ub_pool_create(uint32_t size)
 		return;
 	}
 	buffer_create(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				  &pool->buffer, &pool->memory);
-	pool->filled_size = 0;
+				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &pool->buffer,
+				  &pool->memory, &pool->alignment);
 	pool->alloc_size = size;
 }
 
@@ -153,7 +190,7 @@ UniformBuffer* ub_create(uint32_t size)
 	// No pools have yet been created
 	if (pool_count == 0)
 	{
-		ub_pool_create(size * 3);
+		ub_pool_create(size * 10);
 	}
 	// Find a free pool
 	for (int i = 0; i < swapchain_image_count; i++)
@@ -166,7 +203,7 @@ UniformBuffer* ub_create(uint32_t size)
 				// At last pool
 				if (j == pool_count - 1)
 				{
-					ub_pool_create(size * 3);
+					ub_pool_create(size * 10);
 				}
 				continue;
 			};
@@ -175,7 +212,7 @@ UniformBuffer* ub_create(uint32_t size)
 			ub->offset[i] = pools[j].filled_size;
 			ub->buffers[i] = pools[j].buffer;
 			ub->memories[i] = pools[j].memory;
-			pools[j].filled_size += size;
+			pools[j].filled_size += ceil(size / (float)pools[j].alignment)*pools[j].alignment;
 		}
 	}
 
@@ -202,14 +239,14 @@ void ub_destroy(UniformBuffer* ub)
 	LOG_S("Destroying uniform buffer");
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
-		//vkDestroyBuffer(device, ub->buffers[i], NULL);
-		//vkFreeMemory(device, ub->memories[i], NULL);
+		// vkDestroyBuffer(device, ub->buffers[i], NULL);
+		// vkFreeMemory(device, ub->memories[i], NULL);
 	}
 	free(ub);
 }
 
 void ub_bind(UniformBuffer* ub, VkCommandBuffer command_buffer, int i)
 {
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &ub->descriptor_sets[i],
-							0, NULL);
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+							&ub->descriptor_sets[i], 0, NULL);
 }

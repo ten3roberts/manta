@@ -31,7 +31,7 @@ VertexBuffer* vb_generate_square();
 
 // Creates and allocates memory for a buffer
 int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer,
-				  VkDeviceMemory* buffer_memory);
+				  VkDeviceMemory* buffer_memory, uint32_t* alignment);
 
 // Can be used to copy data to staging buffers
 void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size);

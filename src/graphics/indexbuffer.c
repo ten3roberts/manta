@@ -21,7 +21,7 @@ IndexBuffer* ib_create()
 	VkDeviceMemory stagingBufferMemory;
 	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer,
-				 &stagingBufferMemory);
+				 &stagingBufferMemory, NULL);
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, buffer_size, 0, &data);
@@ -29,7 +29,7 @@ IndexBuffer* ib_create()
 	vkUnmapMemory(device, stagingBufferMemory);
 
 	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &ib->buffer, &ib->memory);
+				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &ib->buffer, &ib->memory, NULL);
 
 	buffer_copy(stagingBuffer, ib->buffer, buffer_size);
 
