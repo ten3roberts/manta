@@ -6,7 +6,7 @@
 
 void buffer_pool_array_add(BufferPoolArray* array, uint32_t size)
 {
-	LOG_S("Creating new buffer pool");
+	LOG_S("Creating new buffer pool with usage %d", array->usage);
 	array->pools = realloc(array->pools, ++array->count * sizeof(BufferPool));
 	BufferPool* pool = &array->pools[array->count - 1];
 	if (array->pools == NULL)
@@ -16,6 +16,7 @@ void buffer_pool_array_add(BufferPoolArray* array, uint32_t size)
 	}
 	buffer_create(size, array->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				  &pool->buffer, &pool->memory, &pool->alignment, NULL);
+	pool->filled_size = 0;
 	pool->alloc_size = size;
 }
 
@@ -25,7 +26,7 @@ void buffer_pool_array_get(BufferPoolArray* array, uint32_t size, VkBuffer* buff
 	// No pool has been created yet
 	if (array->count == 0)
 	{
-		buffer_pool_array_add(array, size * array->preferred_unit_count);
+		buffer_pool_array_add(array, (array->preferred_size > size ? array->preferred_size : size));
 	}
 
 	for (int i = 0; i < array->count; i++)
@@ -36,7 +37,7 @@ void buffer_pool_array_get(BufferPoolArray* array, uint32_t size, VkBuffer* buff
 			// At last pool
 			if (i == array->count - 1)
 			{
-				buffer_pool_array_add(array, size * array->preferred_unit_count);
+				buffer_pool_array_add(array, size * (array->preferred_size > size ? array->preferred_size : size));
 			}
 			continue;
 		};
@@ -119,7 +120,7 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 	return 0;
 }
 
-void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size)
+void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset)
 {
 	VkCommandBufferAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -137,8 +138,8 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size)
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
 	VkBufferCopy copyRegion = {0};
-	copyRegion.srcOffset = 0; // Optional
-	copyRegion.dstOffset = 0; // Optional
+	copyRegion.srcOffset = src_offset; // Optional
+	copyRegion.dstOffset = dst_offset; // Optional
 	copyRegion.size = size;
 	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
 	vkEndCommandBuffer(commandBuffer);

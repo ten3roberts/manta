@@ -23,7 +23,7 @@ typedef struct
 DescriptorPool* descriptor_pools = NULL;
 uint32_t descriptor_pool_count = 0;
 
-BufferPoolArray pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 10, 0, NULL};
+static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3*256*10, 0, NULL};
 
 typedef struct
 {
@@ -160,7 +160,7 @@ UniformBuffer* ub_create(uint32_t size)
 	// Find a free pool
 	for (int i = 0; i < swapchain_image_count; i++)
 	{
-		buffer_pool_array_get(&pools, size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
+		buffer_pool_array_get(&ub_pools, size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
 	}
 
 	// Create descriptor sets

@@ -19,11 +19,12 @@ typedef struct
 typedef struct
 {
 	VkBufferUsageFlagBits usage;
-	// Indicates how many time larger a new pool will be than the requested size
+	// Indicates the minimum size of a new pool
+	// If smaller than requested size, requested size is use
 	// Is used when a buffer is created implictly with 'get'
 	// New size of the allocated pool will be requested size * preferred_unit_count
 	// This is to avoid allocating one pool per request
-	uint32_t preferred_unit_count;
+	uint32_t preferred_size;
 	uint32_t count;
 	BufferPool* pools;
 } BufferPoolArray;
@@ -49,4 +50,4 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 				  VkDeviceMemory* buffer_memory, uint32_t* alignment, uint32_t* corrected_size);
 
 // Can be used to copy data to staging buffers
-void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size);
+void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset);

@@ -3,6 +3,8 @@
 #include "buffer.h"
 #include "log.h"
 
+static BufferPoolArray vb_pools = {VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 1024, 0, NULL};
+
 VertexBuffer* vb_generate_triangle()
 {
 	Vertex vertices[4];
@@ -34,14 +36,12 @@ VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 
 	// Create the buffer and memory
 
-	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &vb->buffer, &vb->memory, NULL, NULL);
+	buffer_pool_array_get(&vb_pools, buffer_size, &vb->buffer, &vb->memory, &vb->offset);
+
 	vb_copy_data(vb);
 
 	return vb;
 }
-
-
 
 // Copies the CPU side data to the GPU
 void vb_copy_data(VertexBuffer* vb)
@@ -65,7 +65,7 @@ void vb_copy_data(VertexBuffer* vb)
 	vkUnmapMemory(device, staging_buffer_memory);
 
 	// Copy the data from the staging buffer to the local vertex buffer
-	buffer_copy(staging_buffer, vb->buffer, buffer_size);
+	buffer_copy(staging_buffer, vb->buffer, buffer_size, 0, vb->offset);
 	vkDestroyBuffer(device, staging_buffer, NULL);
 	vkFreeMemory(device, staging_buffer_memory, NULL);
 }
@@ -73,7 +73,7 @@ void vb_copy_data(VertexBuffer* vb)
 void vb_bind(VertexBuffer* vb, VkCommandBuffer command_buffer)
 {
 	VkBuffer vertex_buffers[] = {vb->buffer};
-	VkDeviceSize offsets[] = {0};
+	VkDeviceSize offsets[] = {vb->offset};
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 }
 

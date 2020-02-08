@@ -32,7 +32,7 @@ IndexBuffer* ib_create()
 	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &ib->buffer, &ib->memory, NULL, NULL);
 
-	buffer_copy(stagingBuffer, ib->buffer, buffer_size);
+	buffer_copy(stagingBuffer, ib->buffer, buffer_size, 0, 0);
 
 	vkDestroyBuffer(device, stagingBuffer, NULL);
 	vkFreeMemory(device, stagingBufferMemory, NULL);
