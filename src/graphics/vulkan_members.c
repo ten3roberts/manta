@@ -65,3 +65,5 @@ const int enable_validation_layers = 1;
 
 void* ub = NULL;
 void* ub2 = NULL;
+
+void* tex = NULL;

@@ -122,7 +122,21 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 
 void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset)
 {
-	VkCommandBufferAllocateInfo allocInfo = {0};
+	VkCommandBuffer command_buffer = single_use_commands_begin();
+
+	VkBufferCopy copyRegion = {0};
+	copyRegion.srcOffset = src_offset;
+	copyRegion.dstOffset = dst_offset;
+	copyRegion.size = size;
+	vkCmdCopyBuffer(command_buffer, src, dst, 1, &copyRegion);
+
+	single_use_commands_end(command_buffer);
+}
+
+// Command Buffers
+VkCommandBuffer single_use_commands_begin()
+{
+	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandPool = command_pool;
@@ -131,26 +145,26 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 	VkCommandBuffer commandBuffer;
 	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
-	VkCommandBufferBeginInfo beginInfo = {0};
+	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-	VkBufferCopy copyRegion = {0};
-	copyRegion.srcOffset = src_offset; // Optional
-	copyRegion.dstOffset = dst_offset; // Optional
-	copyRegion.size = size;
-	vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
-	vkEndCommandBuffer(commandBuffer);
+	return commandBuffer;
+}
 
-	// Execute command buffer
-	VkSubmitInfo submitInfo = {0};
+void single_use_commands_end(VkCommandBuffer command_buffer)
+{
+	vkEndCommandBuffer(command_buffer);
+
+	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = &command_buffer;
 
 	vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(graphics_queue);
-	vkFreeCommandBuffers(device, command_pool, 1, &commandBuffer);
+
+	vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
 }

@@ -25,3 +25,7 @@ UniformBuffer* ub_create(uint32_t size);
 void ub_update(UniformBuffer* ub, void* data, uint32_t i);
 void ub_bind(UniformBuffer* ub, VkCommandBuffer command_buffer, int i);
 void ub_destroy(UniformBuffer* ub);
+
+// Destroys all UniformBuffer pools in the end of the programs
+// The pool was first created implicitly when a UniformBuffer was created
+void ub_pools_destroy();

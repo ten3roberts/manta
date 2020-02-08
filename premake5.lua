@@ -18,8 +18,10 @@ project "crescent"
 
 	-- sets the compiler include directories for the source files and glfw
     includedirs { "src", "vendor/glfw/include" }
+    includedirs { "src", "vendor/" }
 
     files {"src/**.h", "src/**.c"}
+    
 
 	-- links glfw with crescent
     links {"GLFW"}

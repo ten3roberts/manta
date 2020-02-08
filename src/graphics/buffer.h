@@ -38,10 +38,13 @@ void buffer_pool_array_add(BufferPoolArray* array, uint32_t size);
 // Populates buffer, memory, and offset
 // If no pool in array is free, the pool array is extended
 // Satisfies alignment requirements
-void buffer_pool_array_get(BufferPoolArray* array, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset);
+void buffer_pool_array_get(BufferPoolArray* array, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory,
+						   uint32_t* offset);
 
 // Destroys and frees all pools and buffers
 void buffer_pool_array_destroy(BufferPoolArray* array);
+
+uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties);
 
 // Creates and allocates memory for a buffer
 // If alignment != NULL, alignment will be filled with the required buffer alignment
@@ -51,3 +54,9 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 
 // Can be used to copy data to staging buffers
 void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset);
+
+// Command buffers
+// Allocates and starts a single use command buffer
+VkCommandBuffer single_use_commands_begin();
+// Ends and frees a single time command buffer
+void single_use_commands_end(VkCommandBuffer command_buffer);

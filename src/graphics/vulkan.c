@@ -9,6 +9,7 @@
 #include "swapchain.h"
 #include "ubo.h"
 #include "cr_time.h"
+#include "texture.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -933,6 +934,7 @@ int vulkan_init()
 	vb = vb_generate_triangle();
 	vb2 = vb_generate_square();
 	ib = ib_create();
+	tex = texture_create("./assets/textures/statue.jpg");
 	if (create_command_buffers())
 	{
 		return -13;
@@ -950,6 +952,7 @@ void vulkan_terminate()
 	LOG_S("Terminating vulkan");
 
 	vkDeviceWaitIdle(device);
+	ub_pools_destroy();
 	swapchain_destroy();
 	//free(descriptor_sets);
 	vkDestroyDescriptorSetLayout(device, *ub_get_layouts(), NULL);

@@ -99,3 +99,5 @@ extern const int enable_validation_layers;
 
 extern void* ub;
 extern void* ub2;
+
+extern void* tex;

@@ -80,8 +80,8 @@ void vb_bind(VertexBuffer* vb, VkCommandBuffer command_buffer)
 void vb_destroy(VertexBuffer* vb)
 {
 	LOG_S("Destroying vertex buffer");
-	vkDestroyBuffer(device, vb->buffer, NULL);
-	vkFreeMemory(device, vb->memory, NULL);
+	//vkDestroyBuffer(device, vb->buffer, NULL);
+	//vkFreeMemory(device, vb->memory, NULL);
 	vb->vertex_count = 0;
 	free(vb->vertices);
 	free(vb);

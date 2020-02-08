@@ -15,7 +15,7 @@
 #include "settings.h"
 #include "math/math.h"
 
-Window* main_window = NULL;
+static Window* window = NULL;
 
 void draw()
 {
@@ -46,20 +46,20 @@ int application_start()
 	ftos_pad(-1, buf, 4, 4, '=');
 	puts(buf);
 
-	main_window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
+	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 								settings_get_window_style());
-	if (main_window == NULL)
+	if (window == NULL)
 		return -1;
 
-	input_init(main_window);
+	input_init(window);
 	vulkan_init();
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);
 	swapchain_resize = 0;
-	while (!window_get_close(main_window))
+	while (!window_get_close(window))
 	{
-		if (window_get_minimized(main_window))
+		if (window_get_minimized(window))
 		{
 			SLEEP(0.1);
 		}
@@ -68,7 +68,7 @@ int application_start()
 		// Don't resize every frame
 		if (swapchain_resize == 2)
 			swapchain_resize = 1;
-		window_update(main_window);
+		window_update(window);
 		if (swapchain_resize == 1)
 		{
 			swapchain_recreate();
@@ -88,7 +88,7 @@ int application_start()
 	}
 	vulkan_terminate();
 	LOG_S("Terminating");
-	window_destroy(main_window);
+	window_destroy(window);
 	settings_save();
 
 	return 0;
@@ -110,5 +110,5 @@ void application_send_event(Event event)
 
 void* application_get_window()
 {
-	return main_window;
+	return window;
 }

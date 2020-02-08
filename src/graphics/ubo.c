@@ -23,7 +23,7 @@ typedef struct
 DescriptorPool* descriptor_pools = NULL;
 uint32_t descriptor_pool_count = 0;
 
-static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3*256*10, 0, NULL};
+static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3 * 256 * 10, 0, NULL};
 
 typedef struct
 {
@@ -196,4 +196,15 @@ void ub_bind(UniformBuffer* ub, VkCommandBuffer command_buffer, int i)
 {
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
 							&ub->descriptor_sets[i], 0, NULL);
+}
+
+void ub_pools_destroy()
+{
+	buffer_pool_array_destroy(&ub_pools);
+	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+	{
+		vkDestroyDescriptorPool(device, descriptor_pools[i].pool, NULL);
+	}
+	free(descriptor_pools);
+	descriptor_pool_count = 0;
 }
