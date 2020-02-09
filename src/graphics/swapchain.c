@@ -95,7 +95,7 @@ int swapchain_recreate()
 	create_render_pass();
 	create_graphics_pipeline();
 	create_framebuffers();
-	ub = ub_create(sizeof(TransformType));
+	ub = ub_create(sizeof(TransformType), 0);
 	//create_descriptor_pool();
 	create_command_buffers();
 	return 0;

@@ -10,6 +10,7 @@
 #include "ubo.h"
 #include "cr_time.h"
 #include "texture.h"
+#include "buffer.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -299,6 +300,12 @@ int pick_physical_device()
 		if (!(indices.queue_validity & QUEUE_FAMILIES_COMLPLETE))
 			continue;
 
+		// Does not support anisotropic filtering
+		if (deviceFeatures.samplerAnisotropy == VK_FALSE)
+		{
+			continue;
+		}
+
 		// Check to see if swap chain support is adequate
 		bool swapchain_adequate = false;
 		SwapchainSupportDetails swapchain_support = get_swapchain_support(devices[i]);
@@ -375,6 +382,7 @@ int create_logical_device()
 	}
 
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	VkDeviceCreateInfo createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -421,32 +429,7 @@ int create_image_views()
 	size_t i = 0;
 	for (i = 0; i < swapchain_image_count; i++)
 	{
-		VkImageViewCreateInfo createInfo = {0};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = swapchain_images[i];
-
-		// What type of image we are storing
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = swapchain_image_format;
-
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-		// How the images should be accessed
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		VkResult result = vkCreateImageView(device, &createInfo, NULL, &swapchain_image_views[i]);
-		if (result != VK_SUCCESS)
-		{
-			LOG_E("Failed to create image view for swapchain image %d - code %d", i, result);
-			return -1;
-		}
+		swapchain_image_views[i] = image_view_create(swapchain_images[i], swapchain_image_format);
 	}
 	return 0;
 }
@@ -672,10 +655,10 @@ int create_graphics_pipeline()
 	// Pipeline layout
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;				   // Optional
-	pipelineLayoutInfo.pSetLayouts = ub_get_layouts(); // Optional
-	pipelineLayoutInfo.pushConstantRangeCount = 0;		   // Optional
-	pipelineLayoutInfo.pPushConstantRanges = NULL;		   // Optional
+	pipelineLayoutInfo.setLayoutCount = ub_get_layout_count(); // Optional
+	pipelineLayoutInfo.pSetLayouts = ub_get_layouts();		   // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0;			   // Optional
+	pipelineLayoutInfo.pPushConstantRanges = NULL;			   // Optional
 	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &pipeline_layout);
 	if (result != VK_SUCCESS)
 	{
@@ -823,12 +806,11 @@ int create_command_buffers()
 		ib_bind(ib, command_buffers[i]);
 
 		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
-		
+
 		vb_bind(vb2, command_buffers[i]);
 		ib_bind(ib, command_buffers[i]);
 		ub_bind(ub2, command_buffers[i], i);
 		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
-
 
 		vkCmdEndRenderPass(command_buffers[i]);
 		result = vkEndCommandBuffer(command_buffers[i]);
@@ -913,12 +895,18 @@ int vulkan_init()
 	{
 		return -8;
 	}
-	if (ub_create_descriptor_set_layout(0))
+	if (ub_create_descriptor_set_layout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT))
 	{
 		return -9;
 	}
-	ub = ub_create(sizeof(TransformType));
-	ub2 = ub_create(sizeof(TransformType));
+
+	// Create sampler layout
+	if (ub_create_descriptor_set_layout(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT))
+	{
+		return -10;
+	}
+	ub = ub_create(sizeof(TransformType), 0);
+	ub2 = ub_create(sizeof(TransformType), 0);
 	if (create_graphics_pipeline())
 	{
 		return -10;
@@ -953,12 +941,14 @@ void vulkan_terminate()
 
 	vkDeviceWaitIdle(device);
 	ub_pools_destroy();
+	vb_pools_destroy();
 	swapchain_destroy();
-	//free(descriptor_sets);
+	// free(descriptor_sets);
 	vkDestroyDescriptorSetLayout(device, *ub_get_layouts(), NULL);
 	vb_destroy(vb);
 	vb_destroy(vb2);
 	ib_destroy(ib);
+	texture_destroy(tex);
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{

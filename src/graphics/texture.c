@@ -14,7 +14,10 @@ typedef struct Texture
 	stbi_uc* pixels;
 	VkImage image;
 	VkDeviceMemory memory;
+	VkImageView view;
+	VkSampler sampler;
 } Texture;
+
 void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory)
 {
@@ -110,7 +113,7 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 		LOG_E("Unsupported layout transition");
 	}
 
-	vkCmdPipelineBarrier(command_buffer, sourceStage, destinationStage /* TODO */, 0, 0, NULL, 0, NULL, 1, &barrier);
+	vkCmdPipelineBarrier(command_buffer, sourceStage, destinationStage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
 	single_use_commands_end(command_buffer);
 }
@@ -137,6 +140,49 @@ void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32
 	single_use_commands_end(command_buffer);
 }
 
+VkSampler sampler_create()
+{
+	VkSamplerCreateInfo samplerInfo = {0};
+
+	// Linear of pixel art, downscaling; upscaling
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+
+	// Tiling
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+	// Anisotropic filtering
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = 16;
+
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+	// Texels are adrees using 0 - 1, not 0 - texWidth
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+	// Can be used for precentage-closer filtering
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+	// Mipmapping
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+	VkSampler sampler;
+	// Samplers are not combined with one specific image
+	VkResult result = vkCreateSampler(device, &samplerInfo, NULL, &sampler);
+	if(result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create image sampler - code %d", result);
+		return NULL;
+	}
+	return sampler;
+}
+
 Texture* texture_create(const char* file)
 {
 	LOG_S("Loading texture %s", file);
@@ -151,17 +197,17 @@ Texture* texture_create(const char* file)
 	}
 
 	// Create a staging bufer
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
+	VkBuffer staging_buffer;
+	VkDeviceMemory staging_buffer_memory;
 	buffer_create(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer,
-				  &stagingBufferMemory, NULL, NULL);
+				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
+				  &staging_buffer_memory, NULL, NULL);
 
 	// Transfer image data to host visible staging buffer
 	void* data;
-	vkMapMemory(device, stagingBufferMemory, 0, image_size, 0, &data);
+	vkMapMemory(device, staging_buffer_memory, 0, image_size, 0, &data);
 	memcpy(data, tex->pixels, image_size);
-	vkUnmapMemory(device, stagingBufferMemory);
+	vkUnmapMemory(device, staging_buffer_memory);
 
 	// Delete raw pixels
 	stbi_image_free(tex->pixels);
@@ -174,14 +220,19 @@ Texture* texture_create(const char* file)
 	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
 							VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	copy_buffer_to_image(stagingBuffer, tex->image, tex->width, tex->height);
+	copy_buffer_to_image(staging_buffer, tex->image, tex->width, tex->height);
 
 	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 							VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	// Clean up stagin buffers
-	vkDestroyBuffer(device, stagingBuffer, NULL);
-	vkFreeMemory(device, stagingBufferMemory, NULL);
+	// Clean up staging buffers
+	vkDestroyBuffer(device, staging_buffer, NULL);
+	vkFreeMemory(device, staging_buffer_memory, NULL);
+
+	// Create image view
+	tex->view = image_view_create(tex->image, VK_FORMAT_R8G8B8A8_SRGB);
+
+	tex->sampler = sampler_create();
 	return tex;
 }
 
@@ -189,5 +240,7 @@ void texture_destroy(Texture* tex)
 {
 	vkDestroyImage(device, tex->image, NULL);
 	vkFreeMemory(device, tex->memory, NULL);
+	vkDestroyImageView(device, tex->view, NULL);
+	vkDestroySampler(device, tex->sampler, NULL);
 	free(tex);
 }

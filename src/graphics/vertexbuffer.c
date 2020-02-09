@@ -8,20 +8,20 @@ static BufferPoolArray vb_pools = {VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_
 VertexBuffer* vb_generate_triangle()
 {
 	Vertex vertices[4];
-	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}};
-	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){1, 0, 1}};
-	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 0}};
-	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 0, 1}};
+	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}, (vec2){1, 0}};
+	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){1, 0, 1}, (vec2){0, 0}};
+	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 0}, (vec2){0, 1}};
+	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 0, 1}, (vec2){1, 1}};
 	return vb_create(vertices, 4);
 }
 
 VertexBuffer* vb_generate_square()
 {
 	Vertex vertices[4];
-	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}};
-	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){0, 1, 0}};
-	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 0}};
-	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 1, 1}};
+	vertices[0] = (Vertex){(vec2){-0.5, -0.5f}, (vec3){0, 0, 1}, (vec2){1, 0}};
+	vertices[1] = (Vertex){(vec2){0.5, -0.5f}, (vec3){0, 1, 0}, (vec2){0, 0}};
+	vertices[2] = (Vertex){(vec2){0.5, 0.5f}, (vec3){1, 0, 0}, (vec2){0, 1}};
+	vertices[3] = (Vertex){(vec2){-0.5, 0.5f}, (vec3){0, 1, 1}, (vec2){1, 1}};
 	return vb_create(vertices, 4);
 }
 VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
@@ -87,6 +87,11 @@ void vb_destroy(VertexBuffer* vb)
 	free(vb);
 }
 
+void vb_pools_destroy()
+{
+	buffer_pool_array_destroy(&vb_pools);
+}
+
 VertexInputDescription vertex_get_description()
 {
 	VertexInputDescription description;
@@ -94,7 +99,7 @@ VertexInputDescription vertex_get_description()
 	description.binding_description.stride = sizeof(Vertex);
 	description.binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	description.attribute_count = 2;
+	description.attribute_count = 3;
 	// Position
 	description.attributes[0].binding = 0;
 	description.attributes[0].location = 0;
@@ -106,6 +111,12 @@ VertexInputDescription vertex_get_description()
 	description.attributes[1].location = 1;
 	description.attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 	description.attributes[1].offset = offsetof(Vertex, color);
+	// UV
+
+	description.attributes[2].binding = 0;
+	description.attributes[2].location = 2;
+	description.attributes[2].format = VK_FORMAT_R32G32_SFLOAT;
+	description.attributes[2].offset = offsetof(Vertex, uv);
 
 	return description;
 }

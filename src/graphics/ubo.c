@@ -1,14 +1,36 @@
 #include "head.h"
 #include "log.h"
 #include "graphics/vulkan_internal.h"
+#include "texture.h"
 #include "graphics/buffer.h"
 #include <stdlib.h>
+#include <stb_image.h>
+// Tmp
 
-VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+typedef struct Texture
+{
+	int width;
+	int height;
+	int channels;
+	stbi_uc* pixels;
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView view;
+	VkSampler sampler;
+} Texture;
+
+VkDescriptorSetLayout* descriptor_layouts = NULL;
+uint32_t* layout_binding_map = NULL;
+VkDescriptorType* layout_type_map = NULL;
+uint32_t descriptor_layout_count = 0;
 
 VkDescriptorSetLayout* ub_get_layouts()
 {
-	return &descriptorSetLayout;
+	return descriptor_layouts;
+}
+uint32_t ub_get_layout_count()
+{
+	return descriptor_layout_count;
 }
 
 typedef struct
@@ -23,6 +45,9 @@ typedef struct
 DescriptorPool* descriptor_pools = NULL;
 uint32_t descriptor_pool_count = 0;
 
+DescriptorPool* sampler_descriptor_pools = NULL;
+uint32_t sampler_descriptor_pool_count = 0;
+
 static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3 * 256 * 10, 0, NULL};
 
 typedef struct
@@ -36,14 +61,20 @@ typedef struct
 	VkDescriptorSet descriptor_sets[3];
 } UniformBuffer;
 
-int ub_create_descriptor_set_layout(uint32_t binding)
+int ub_create_descriptor_set_layout(uint32_t binding, VkDescriptorType type, VkShaderStageFlags stage)
 {
+	descriptor_layouts = realloc(descriptor_layouts, ++descriptor_layout_count * sizeof(VkDescriptorSetLayout));
+	layout_binding_map = realloc(layout_binding_map, descriptor_layout_count * sizeof(uint32_t));
+	layout_type_map = realloc(layout_type_map, descriptor_layout_count * sizeof(VkDescriptorType));
+	layout_type_map[descriptor_layout_count - 1] = type;
+	// Update the map that corresponds the binding with the layout
+	layout_binding_map[descriptor_layout_count - 1] = binding;
 	VkDescriptorSetLayoutBinding uboLayoutBinding = {0};
 	uboLayoutBinding.binding = binding;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorType = type;
 	uboLayoutBinding.descriptorCount = 1;
 
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.stageFlags = stage;
 
 	uboLayoutBinding.pImmutableSamplers = NULL; // Optional
 
@@ -52,7 +83,8 @@ int ub_create_descriptor_set_layout(uint32_t binding)
 	layoutInfo.bindingCount = 1;
 	layoutInfo.pBindings = &uboLayoutBinding;
 
-	VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &descriptorSetLayout);
+	VkResult result =
+		vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &descriptor_layouts[descriptor_layout_count - 1]);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create descriptor set layout - code %d", result);
@@ -61,14 +93,26 @@ int ub_create_descriptor_set_layout(uint32_t binding)
 	return 0;
 }
 
-int ub_descriptor_pool_create()
+int ub_descriptor_pool_create(VkDescriptorType type)
 {
 	// Resize array
 	LOG_S("Creating new descriptor pool");
-	descriptor_pools = realloc(descriptor_pools, ++descriptor_pool_count * sizeof(DescriptorPool));
-	DescriptorPool* descriptor_pool = &descriptor_pools[descriptor_pool_count - 1];
+
+	DescriptorPool* descriptor_pool = NULL;
+	if (type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+	{
+		descriptor_pools = realloc(descriptor_pools, ++descriptor_pool_count * sizeof(DescriptorPool));
+		descriptor_pool = &descriptor_pools[descriptor_pool_count - 1];
+	}
+	else if (type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+	{
+		sampler_descriptor_pools =
+			realloc(sampler_descriptor_pools, ++sampler_descriptor_pool_count * sizeof(DescriptorPool));
+		descriptor_pool = &sampler_descriptor_pools[sampler_descriptor_pool_count - 1];
+	}
 	descriptor_pool->filled_count = 0;
 	descriptor_pool->alloc_count = swapchain_image_count * 100;
+
 	VkDescriptorPoolSize poolSize = {0};
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSize.descriptorCount = descriptor_pool->alloc_count;
@@ -89,18 +133,33 @@ int ub_descriptor_pool_create()
 	return 0;
 }
 
-int ub_create_descriptor_sets(UniformBuffer* ub)
+int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t binding)
 {
 	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
+	VkDescriptorSetLayout layout = NULL;
+	VkDescriptorType type = 0;
+	for (uint32_t i = 0; i < descriptor_layout_count; i++)
+	{
+		if (layout_binding_map[i] == binding)
+		{
+			layout = descriptor_layouts[i];
+			type = layout_type_map[i];
+			break;
+		}
+	}
+	if (layout == NULL)
+	{
+		LOG_E("Attempting to create descriptor set from binding %d which has not been created", binding);
+	}
 	for (size_t i = 0; i < swapchain_image_count; i++)
-		layouts[i] = descriptorSetLayout;
+		layouts[i] = layout;
 
 	VkDescriptorSetAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 
 	if (descriptor_pool_count == 0)
 	{
-		ub_descriptor_pool_create();
+		ub_descriptor_pool_create(type);
 	}
 	// Iterate and find a pool that is not full
 	for (uint32_t i = 0; i < descriptor_pool_count; i++)
@@ -110,7 +169,7 @@ int ub_create_descriptor_sets(UniformBuffer* ub)
 			// At last pool
 			if (i == descriptor_pool_count - 1)
 			{
-				ub_descriptor_pool_create();
+				ub_descriptor_pool_create(type);
 			}
 			continue;
 		}
@@ -131,17 +190,39 @@ int ub_create_descriptor_sets(UniformBuffer* ub)
 		bufferInfo.range = ub->size;
 
 		VkWriteDescriptorSet descriptorWrite = {0};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = ub->descriptor_sets[i];
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
+		if (type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
 
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1;
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = ub->descriptor_sets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
 
-		descriptorWrite.pBufferInfo = &bufferInfo;
-		descriptorWrite.pImageInfo = NULL;		 // Optional
-		descriptorWrite.pTexelBufferView = NULL; // Optional
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pImageInfo = NULL;		 // Optional
+			descriptorWrite.pTexelBufferView = NULL; // Optional
+		}
+		else if (VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			VkDescriptorImageInfo imageInfo = {0};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = ((Texture*)tex)->view;
+			imageInfo.sampler = ((Texture*)tex)->sampler;
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = ub->descriptor_sets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorCount = 1;
+
+			descriptorWrite.pBufferInfo = NULL;
+			descriptorWrite.pImageInfo = &imageInfo; // Optional
+			descriptorWrite.pTexelBufferView = NULL; // Optional
+		}
 		vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, NULL);
 	}
 
@@ -149,7 +230,7 @@ int ub_create_descriptor_sets(UniformBuffer* ub)
 	return 0;
 }
 
-UniformBuffer* ub_create(uint32_t size)
+UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 {
 	LOG_S("Creating uniform buffer");
 	UniformBuffer* ub = malloc(sizeof(UniformBuffer));
@@ -164,7 +245,7 @@ UniformBuffer* ub_create(uint32_t size)
 	}
 
 	// Create descriptor sets
-	ub_create_descriptor_sets(ub);
+	ub_create_descriptor_sets(ub, binding);
 	return ub;
 }
 
@@ -205,6 +286,15 @@ void ub_pools_destroy()
 	{
 		vkDestroyDescriptorPool(device, descriptor_pools[i].pool, NULL);
 	}
+
 	free(descriptor_pools);
 	descriptor_pool_count = 0;
+
+	/*for (uint32_t i = 0; i < descriptor_layout_count; i++)
+	{
+		vkDestroyDescriptorSetLayout(device, descriptor_layouts[i], NULL);
+	}
+	free(descriptor_layouts);
+	free(layout_binding_map);
+	descriptor_layout_count = 0;*/
 }

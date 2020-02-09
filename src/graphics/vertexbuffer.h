@@ -9,13 +9,14 @@ typedef struct
 {
 	vec2 position;
 	vec3 color;
+	vec2 uv;
 } Vertex;
 
 typedef struct
 {
 	VkVertexInputBindingDescription binding_description;
 	uint32_t attribute_count;
-	VkVertexInputAttributeDescription attributes[2];
+	VkVertexInputAttributeDescription attributes[3];
 } VertexInputDescription;
 
 typedef struct
@@ -38,5 +39,9 @@ void vb_copy_data(VertexBuffer* vb);
 void vb_bind(VertexBuffer* vb, VkCommandBuffer command_buffer);
 
 void vb_destroy(VertexBuffer* vb);
+
+// Destroys all VertexBuffer pools in the end of the programs
+// The pools were first created implicitly when a UniformBuffer was created
+void vb_pools_destroy();
 
 VertexInputDescription vertex_get_description();

@@ -60,3 +60,5 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 VkCommandBuffer single_use_commands_begin();
 // Ends and frees a single time command buffer
 void single_use_commands_end(VkCommandBuffer command_buffer);
+
+VkImageView image_view_create(VkImage image, VkFormat format);
