@@ -6,22 +6,22 @@
 #include <stdio.h>
 
 // Returns a 4x4 matrix initialized with zero
-const mat4 mat4_zero = {{{0, 0, 0, 0},
+const mat4 mat4_zero = { {{0, 0, 0, 0},
 
 						 {0, 0, 0, 0},
 
 						 {0, 0, 0, 0},
 
-						 {0, 0, 0, 0}}};
+						 {0, 0, 0, 0}} };
 
 // Returns a 4x4 identity matrix
-const mat4 mat4_identity = {{{1, 0, 0, 0},
+const mat4 mat4_identity = { {{1, 0, 0, 0},
 
 							 {0, 1, 0, 0},
 
 							 {0, 0, 1, 0},
 
-							 {0, 0, 0, 1}}};
+							 {0, 0, 0, 1}} };
 
 // Returns a translation matrix
 mat4 mat4_translate(vec3 v)
@@ -57,6 +57,28 @@ mat4 mat4_scale(vec3 v)
 				result.raw[i][j] = 0;
 		}
 	}
+	return result;
+}
+
+mat4 mat4_perspective(float aspect, float fov, float near, float far)
+{
+	mat4 result = mat4_identity;
+	result.raw[0][0] = 1 / (aspect * tan(fov / 2));
+	result.raw[1][1] = 1 / tan(fov / 2);
+	result.raw[2][2] = -(far + near) / (far - near);
+	result.raw[3][2] = -2 * (far * near) / (far - near);
+	result.raw[2][3] = -1;
+	return result;
+}
+
+mat4 mat4_ortho(float width, float height, float near, float far)
+{
+	mat4 result = mat4_identity;
+	result.raw[0][0] = 2 / (width);
+	result.raw[1][1] = 2 / (height);
+	result.raw[2][2] = -2 / (far - near);
+	result.raw[2][3] = -(far + near) / (far - near);
+	result.raw[3][3] = 1;
 	return result;
 }
 
@@ -107,18 +129,22 @@ mat4 mat4_transpose(const mat4* a)
 // Performs a matrix vector column multiplication
 vec4 mat4_transform_vec4(const mat4* m, vec4 v)
 {
-	return (vec4){m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0] * v.w,
-				  m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1] * v.w,
-				  m->raw[0][2] * v.x + m->raw[1][2] * v.y + m->raw[2][2] * v.z + m->raw[3][2] * v.w,
-				  m->raw[0][3] * v.x + m->raw[1][3] * v.y + m->raw[2][3] * v.z + m->raw[3][3] * v.w};
+	return (vec4) {
+		m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0] * v.w,
+			m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1] * v.w,
+			m->raw[0][2] * v.x + m->raw[1][2] * v.y + m->raw[2][2] * v.z + m->raw[3][2] * v.w,
+			m->raw[0][3] * v.x + m->raw[1][3] * v.y + m->raw[2][3] * v.z + m->raw[3][3] * v.w
+	};
 }
 
 // Performs a matrix vector column multiplication
 vec3 mat4_transform_vec3(const mat4* m, vec3 v)
 {
-	return (vec3){m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0],
-				  m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1],
-				  m->raw[0][2] * v.x + m->raw[1][2] * v.y + m->raw[2][2] * v.z + m->raw[3][2]};
+	return (vec3) {
+		m->raw[0][0] * v.x + m->raw[1][0] * v.y + m->raw[2][0] * v.z + m->raw[3][0],
+			m->raw[0][1] * v.x + m->raw[1][1] * v.y + m->raw[2][1] * v.z + m->raw[3][1],
+			m->raw[0][2] * v.x + m->raw[1][2] * v.y + m->raw[2][2] * v.z + m->raw[3][2]
+	};
 }
 
 void mat4_string(mat4* a, char* buf, int precision)

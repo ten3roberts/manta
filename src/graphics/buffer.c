@@ -136,7 +136,7 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 // Command Buffers
 VkCommandBuffer single_use_commands_begin()
 {
-	VkCommandBufferAllocateInfo allocInfo = {};
+	VkCommandBufferAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandPool = command_pool;
@@ -145,7 +145,7 @@ VkCommandBuffer single_use_commands_begin()
 	VkCommandBuffer commandBuffer;
 	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
 
-	VkCommandBufferBeginInfo beginInfo = {};
+	VkCommandBufferBeginInfo beginInfo = {0};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
@@ -158,7 +158,7 @@ void single_use_commands_end(VkCommandBuffer command_buffer)
 {
 	vkEndCommandBuffer(command_buffer);
 
-	VkSubmitInfo submitInfo = {};
+	VkSubmitInfo submitInfo = {0};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &command_buffer;
@@ -171,7 +171,7 @@ void single_use_commands_end(VkCommandBuffer command_buffer)
 
 VkImageView image_view_create(VkImage image, VkFormat format)
 {
-	VkImageViewCreateInfo viewInfo = {};
+	VkImageViewCreateInfo viewInfo = {0};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;

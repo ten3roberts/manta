@@ -193,13 +193,18 @@ void window_update(Window * window)
 }
 
 
-float window_get_width(Window * window)
+int window_get_width(Window * window)
 {
 	return window->width;
 }
-float window_get_height(Window * window)
+int window_get_height(Window * window)
 {
 	return window->height;
+}
+
+float window_get_aspect(Window* window)
+{
+	return window->width / (float)window->height;
 }
 int window_get_minimized(Window* window)
 {

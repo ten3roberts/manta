@@ -18,6 +18,14 @@ mat4 mat4_translate(vec3 v);
 //Returns a scaling matrix
 mat4 mat4_scale(vec3 v);
 
+// Generates a perspective projection matrix
+mat4 mat4_perspective(float aspect, float fov, float near, float far);
+
+// Generates a orthographic projection matrix
+// Such that if width is window aspect and height is 1, a 2 units wide quad will cover the screen
+// Maps the coordinates to x : {-width, width} and y = {-height, height}
+mat4 mat4_ortho(float width, float height, float near, float far);
+
 mat4 mat4_mul(const mat4* a, const mat4* b);
 
 // Multiplies a scalar pairwise on the matrix

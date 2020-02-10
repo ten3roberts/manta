@@ -6,18 +6,21 @@
 
 typedef void Window;
 
-Window * window_create(char * title, int width, int height, int style);
+Window* window_create(char* title, int width, int height, int style);
 
 // Destroys a window and frees all resources
-void window_destroy(Window * window);
+void window_destroy(Window* window);
 
-void window_update(Window * window);
+void window_update(Window* window);
 
-float window_get_width(Window * window);
-float window_get_height(Window * window);
+int window_get_width(Window* window);
+int window_get_height(Window* window);
+
+// Returns the window aspect ratio calculated by width/height
+float window_get_aspect(Window* window);
 
 // Returns true if the window should close
-int window_get_close(Window * window);
+int window_get_close(Window* window);
 
 int window_get_minimized(Window* window);
 
