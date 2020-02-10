@@ -114,7 +114,7 @@ int ub_descriptor_pool_create(VkDescriptorType type)
 	descriptor_pool->alloc_count = swapchain_image_count * 100;
 
 	VkDescriptorPoolSize poolSize = {0};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.type = type;
 	poolSize.descriptorCount = descriptor_pool->alloc_count;
 
 	VkDescriptorPoolCreateInfo poolInfo = {0};
@@ -133,7 +133,8 @@ int ub_descriptor_pool_create(VkDescriptorType type)
 	return 0;
 }
 
-int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t binding)
+int ub_create_descriptor_sets(VkDescriptorSet* dst_descriptors, uint32_t binding, VkBuffer* buffers, uint32_t* offsets,
+							  uint32_t size, VkImageView image_view, VkSampler sampler)
 {
 	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
 	VkDescriptorSetLayout layout = NULL;
@@ -156,47 +157,72 @@ int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t binding)
 
 	VkDescriptorSetAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-
 	if (descriptor_pool_count == 0)
 	{
-		ub_descriptor_pool_create(type);
+		ub_descriptor_pool_create(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+	}
+
+	if (sampler_descriptor_pool_count == 0)
+	{
+		ub_descriptor_pool_create(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 	}
 	// Iterate and find a pool that is not full
-	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+	if (type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 	{
-		if (descriptor_pools[i].filled_count + 3 >= descriptor_pools[i].alloc_count)
+		for (uint32_t i = 0; i < sampler_descriptor_pool_count; i++)
 		{
-			// At last pool
-			if (i == descriptor_pool_count - 1)
+			if (sampler_descriptor_pools[i].filled_count + 3 >= sampler_descriptor_pools[i].alloc_count)
 			{
-				ub_descriptor_pool_create(type);
+				// At last pool
+				if (i == sampler_descriptor_pool_count - 1)
+				{
+					ub_descriptor_pool_create(type);
+				}
+				continue;
 			}
-			continue;
+			// Found a good pool
+			allocInfo.descriptorPool = sampler_descriptor_pools[i].pool;
+			descriptor_pools[i].filled_count += 3;
 		}
-		// Found a good pool
-		allocInfo.descriptorPool = descriptor_pools[i].pool;
-		descriptor_pools[i].filled_count += 3;
 	}
+	if (type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+	{
 
+		for (uint32_t i = 0; i < descriptor_pool_count; i++)
+		{
+			if (descriptor_pools[i].filled_count + 3 >= descriptor_pools[i].alloc_count)
+			{
+				// At last pool
+				if (i == descriptor_pool_count - 1)
+				{
+					ub_descriptor_pool_create(type);
+				}
+				continue;
+			}
+			// Found a good pool
+			allocInfo.descriptorPool = descriptor_pools[i].pool;
+			descriptor_pools[i].filled_count += 3;
+		}
+	}
 	allocInfo.descriptorSetCount = swapchain_image_count;
 	allocInfo.pSetLayouts = layouts;
-	// descriptor_sets = malloc(swapchain_image_count * sizeof(VkDescriptorSet));
-	vkAllocateDescriptorSets(device, &allocInfo, ub->descriptor_sets);
+
+	vkAllocateDescriptorSets(device, &allocInfo, dst_descriptors);
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
-		VkDescriptorBufferInfo bufferInfo = {0};
-		bufferInfo.buffer = ub->buffers[i];
-		bufferInfo.offset = ub->offsets[i];
-		bufferInfo.range = ub->size;
 
 		VkWriteDescriptorSet descriptorWrite = {0};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = dst_descriptors[i];
+		descriptorWrite.dstBinding = binding;
+		descriptorWrite.dstArrayElement = 0;
+
 		if (type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = ub->descriptor_sets[i];
-			descriptorWrite.dstBinding = 0;
-			descriptorWrite.dstArrayElement = 0;
+			VkDescriptorBufferInfo bufferInfo = {0};
+			bufferInfo.buffer = buffers[i];
+			bufferInfo.offset = offsets[i];
+			bufferInfo.range = size;
 
 			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrite.descriptorCount = 1;
@@ -205,18 +231,14 @@ int ub_create_descriptor_sets(UniformBuffer* ub, uint32_t binding)
 			descriptorWrite.pImageInfo = NULL;		 // Optional
 			descriptorWrite.pTexelBufferView = NULL; // Optional
 		}
-		else if (VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		else if (type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		{
 			VkDescriptorImageInfo imageInfo = {0};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = ((Texture*)tex)->view;
-			imageInfo.sampler = ((Texture*)tex)->sampler;
-			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrite.dstSet = ub->descriptor_sets[i];
-			descriptorWrite.dstBinding = 0;
-			descriptorWrite.dstArrayElement = 0;
+			imageInfo.imageView = image_view;
+			imageInfo.sampler = sampler;
 
-			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrite.descriptorCount = 1;
 
 			descriptorWrite.pBufferInfo = NULL;
@@ -245,7 +267,7 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 	}
 
 	// Create descriptor sets
-	ub_create_descriptor_sets(ub, binding);
+	ub_create_descriptor_sets(ub->descriptor_sets, binding, ub->buffers, ub->offsets, ub->size, NULL, NULL);
 	return ub;
 }
 

@@ -13,7 +13,8 @@ typedef struct
 typedef void UniformBuffer;
 
 int ub_create_descriptor_set_layout(uint32_t binding, VkDescriptorType type, VkShaderStageFlags stage);
-
+int ub_create_descriptor_sets(VkDescriptorSet* dst_descriptors, uint32_t binding, VkBuffer* buffers, uint32_t* offsets,
+							  uint32_t size, VkImageView image_view, VkSampler sampler);
 VkDescriptorSetLayout* ub_get_layouts();
 uint32_t ub_get_layout_count();
 

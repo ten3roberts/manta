@@ -2,6 +2,7 @@
 #include "buffer.h"
 #include "log.h"
 #include "vulkan_members.h"
+#include "ubo.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <stdlib.h>
@@ -16,7 +17,9 @@ typedef struct Texture
 	VkDeviceMemory memory;
 	VkImageView view;
 	VkSampler sampler;
+	VkDescriptorSet descriptors[3];
 } Texture;
+
 
 void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory)
@@ -175,7 +178,7 @@ VkSampler sampler_create()
 	VkSampler sampler;
 	// Samplers are not combined with one specific image
 	VkResult result = vkCreateSampler(device, &samplerInfo, NULL, &sampler);
-	if(result != VK_SUCCESS)
+	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create image sampler - code %d", result);
 		return NULL;
@@ -233,8 +236,16 @@ Texture* texture_create(const char* file)
 	tex->view = image_view_create(tex->image, VK_FORMAT_R8G8B8A8_SRGB);
 
 	tex->sampler = sampler_create();
+
+	ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
 	return tex;
 }
+
+void texture_bind(Texture* tex, VkCommandBuffer command_buffer, int i)
+{
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &tex->descriptors[i], 0, NULL);
+}
+
 
 void texture_destroy(Texture* tex)
 {

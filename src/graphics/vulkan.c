@@ -680,7 +680,7 @@ int create_graphics_pipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = NULL; // Optional
 
-	// Reference pipelin layout
+	// Reference pipeline layout
 	pipelineInfo.layout = pipeline_layout;
 
 	// Render passes
@@ -804,7 +804,7 @@ int create_command_buffers()
 
 		vb_bind(vb, command_buffers[i]);
 		ib_bind(ib, command_buffers[i]);
-
+		texture_bind(tex, command_buffers, i);
 		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
 
 		vb_bind(vb2, command_buffers[i]);
@@ -895,12 +895,15 @@ int vulkan_init()
 	{
 		return -8;
 	}
+
+	// Create uniform buffer layout
 	if (ub_create_descriptor_set_layout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT))
 	{
 		return -9;
 	}
 
 	// Create sampler layout
+
 	if (ub_create_descriptor_set_layout(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT))
 	{
 		return -10;
