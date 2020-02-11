@@ -23,15 +23,15 @@ void renderer_draw()
 	quaternion rotation = quat_axis_angle((vec3) { 0, 0, 1 }, time_elapsed());
 
 	mat4 rot = quat_to_mat4(rotation);
-	mat4 pos = mat4_translate((vec3) { 0, sinf(time_elapsed()), -time_elapsed() });
+	mat4 pos = mat4_translate((vec3) { 0, sinf(time_elapsed()) * 0.1, -time_elapsed() });
 	mat4 scale = mat4_scale((vec3) { 1, 1, 1 });
 	transform_buffer.model = mat4_mul(&rot, &pos);
 
 	transform_buffer.view = mat4_identity;
-	transform_buffer.proj = mat4_perspective(window_get_width(window) / window_get_height(window), 1, 0, 10);
+	//transform_buffer.proj = mat4_perspective(window_get_width(window) / window_get_height(window), 1, 0, 10);
 	transform_buffer.proj = mat4_ortho(window_get_aspect(window), 1, 0, 10);
 	ub_update(ub, &transform_buffer, image_index);
-	pos = mat4_translate((vec3) { 0, -sinf(time_elapsed()), 0 });
+	pos = mat4_translate((vec3) { 0, -sinf(time_elapsed()) * 0.5, 0 });
 	scale = mat4_scale((vec3) { 0.5, 0.5, 0.5 });
 	transform_buffer.model = mat4_mul(&scale, &pos);
 

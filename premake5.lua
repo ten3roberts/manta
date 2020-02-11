@@ -22,7 +22,6 @@ project "crescent"
 
     files {"src/**.h", "src/**.c"}
     
-
 	-- links glfw with crescent
     links {"GLFW"}
 

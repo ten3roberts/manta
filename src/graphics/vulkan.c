@@ -902,14 +902,6 @@ int vulkan_init()
 		return -9;
 	}
 
-	// Create sampler layout
-
-	if (ub_create_descriptor_set_layout(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT))
-	{
-		return -10;
-	}
-	ub = ub_create(sizeof(TransformType), 0);
-	ub2 = ub_create(sizeof(TransformType), 0);
 	if (create_graphics_pipeline())
 	{
 		return -10;
@@ -922,10 +914,16 @@ int vulkan_init()
 	{
 		return -12;
 	}
+
+	// Create sampler layout
+	tex = texture_create("./assets/textures/statue.jpg");
+
+	ub = ub_create(sizeof(TransformType), 0);
+	ub2 = ub_create(sizeof(TransformType), 0);
+
 	vb = vb_generate_triangle();
 	vb2 = vb_generate_square();
 	ib = ib_create();
-	tex = texture_create("./assets/textures/statue.jpg");
 	if (create_command_buffers())
 	{
 		return -13;

@@ -20,7 +20,6 @@ typedef struct Texture
 	VkDescriptorSet descriptors[3];
 } Texture;
 
-
 void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory)
 {
@@ -34,14 +33,14 @@ void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTilin
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
 
-	imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+	imageInfo.format = format;
 
-	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.tiling = tiling;
 
 	// Initial image layout is undefined
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageInfo.usage = usage;
 
 	// Image will only be used by one queue
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -63,7 +62,7 @@ void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTilin
 	VkMemoryAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	allocInfo.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(device, &allocInfo, NULL, memory) != VK_SUCCESS)
 	{
@@ -211,19 +210,22 @@ Texture* texture_create(const char* file)
 	vkMapMemory(device, staging_buffer_memory, 0, image_size, 0, &data);
 	memcpy(data, tex->pixels, image_size);
 	vkUnmapMemory(device, staging_buffer_memory);
+	const stbi_uc* p = tex->pixels + (4 * (10 * tex->width + 15));
+	int r = p[0];
+	int g = p[1];
+	int b = p[2];
+	int a = p[3];
 
-	// Delete raw pixels
-	stbi_image_free(tex->pixels);
-	tex->pixels = NULL;
+	LOG("%d, %d, %d", r, g, b);
 
 	image_create(tex->width, tex->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
 				 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				 &tex->image, &tex->memory);
 
+	copy_buffer_to_image(staging_buffer, tex->image, tex->width, tex->height);
+
 	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
 							VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	copy_buffer_to_image(staging_buffer, tex->image, tex->width, tex->height);
 
 	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 							VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -237,15 +239,19 @@ Texture* texture_create(const char* file)
 
 	tex->sampler = sampler_create();
 
-	//ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
+	// Delete raw pixels
+	stbi_image_free(tex->pixels);
+	tex->pixels = NULL;
+
+	// ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
 	return tex;
 }
 
 void texture_bind(Texture* tex, VkCommandBuffer command_buffer, int i)
 {
-	//vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &tex->descriptors[i], 0, NULL);
+	// vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+	// &tex->descriptors[i], 0, NULL);
 }
-
 
 void texture_destroy(Texture* tex)
 {
@@ -254,4 +260,14 @@ void texture_destroy(Texture* tex)
 	vkDestroyImageView(device, tex->view, NULL);
 	vkDestroySampler(device, tex->sampler, NULL);
 	free(tex);
+}
+
+void* texture_get_image_view(Texture* tex)
+{
+	return tex->view;
+}
+
+void* texture_get_sampler(Texture* tex)
+{
+	return tex->sampler;
 }
