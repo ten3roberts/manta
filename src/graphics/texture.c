@@ -2,7 +2,7 @@
 #include "buffer.h"
 #include "log.h"
 #include "vulkan_members.h"
-#include "ubo.h"
+#include "uniformbuffer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <stdlib.h>
@@ -237,13 +237,13 @@ Texture* texture_create(const char* file)
 
 	tex->sampler = sampler_create();
 
-	ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
+	//ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
 	return tex;
 }
 
 void texture_bind(Texture* tex, VkCommandBuffer command_buffer, int i)
 {
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &tex->descriptors[i], 0, NULL);
+	//vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &tex->descriptors[i], 0, NULL);
 }
 
 

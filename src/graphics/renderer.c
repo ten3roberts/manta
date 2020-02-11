@@ -2,7 +2,7 @@
 #include "vulkan_members.h"
 #include "swapchain.h"
 #include "cr_time.h"
-#include "graphics/ubo.h"
+#include "graphics/uniformbuffer.h"
 #include "math/quaternion.h"
 
 void renderer_draw()

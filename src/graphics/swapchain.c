@@ -4,7 +4,7 @@
 #include "vulkan.h"
 #include <stdlib.h>
 #include "log.h"
-#include "graphics/ubo.h"
+#include "graphics/uniformbuffer.h"
 
 int swapchain_create()
 {

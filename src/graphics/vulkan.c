@@ -7,7 +7,7 @@
 #include "math/math.h"
 #include "vulkan.h"
 #include "swapchain.h"
-#include "ubo.h"
+#include "uniformbuffer.h"
 #include "cr_time.h"
 #include "texture.h"
 #include "buffer.h"
@@ -804,7 +804,7 @@ int create_command_buffers()
 
 		vb_bind(vb, command_buffers[i]);
 		ib_bind(ib, command_buffers[i]);
-		texture_bind(tex, command_buffers, i);
+		texture_bind(tex, command_buffers[i], i);
 		vkCmdDrawIndexed(command_buffers[i], ib->index_count, 1, 0, 0, 0);
 
 		vb_bind(vb2, command_buffers[i]);
