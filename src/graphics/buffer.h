@@ -61,4 +61,12 @@ VkCommandBuffer single_use_commands_begin();
 // Ends and frees a single time command buffer
 void single_use_commands_end(VkCommandBuffer command_buffer);
 
-VkImageView image_view_create(VkImage image, VkFormat format);
+void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory);
+
+VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags);
+
+void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout);
+

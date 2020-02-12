@@ -7,8 +7,7 @@
 
 typedef struct
 {
-	vec2 position;
-	vec3 color;
+	vec3 position;
 	vec2 uv;
 } Vertex;
 
@@ -16,7 +15,7 @@ typedef struct
 {
 	VkVertexInputBindingDescription binding_description;
 	uint32_t attribute_count;
-	VkVertexInputAttributeDescription attributes[3];
+	VkVertexInputAttributeDescription attributes[2];
 } VertexInputDescription;
 
 typedef struct

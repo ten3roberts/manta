@@ -94,6 +94,7 @@ int swapchain_recreate()
 	create_image_views();
 	create_render_pass();
 	create_graphics_pipeline();
+	create_depth_buffer();
 	create_framebuffers();
 	ub = ub_create(sizeof(TransformType), 0);
 	//create_descriptor_pool();
@@ -103,6 +104,12 @@ int swapchain_recreate()
 int swapchain_destroy()
 {
 	ub_destroy(ub);
+
+	// Destroy depth buffer
+	vkDestroyImageView(device, depth_image_view, NULL);
+	vkDestroyImage(device, depth_image, NULL);
+	vkFreeMemory(device, depth_image_memory, NULL);
+
 	//vkDestroyDescriptorPool(device, descriptor_pool, NULL);
 	for (size_t i = 0; i < framebuffer_count; i++)
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);

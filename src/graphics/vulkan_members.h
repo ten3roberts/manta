@@ -69,6 +69,11 @@ extern VkPipeline graphics_pipeline;
 extern VkFramebuffer* framebuffers;
 extern size_t framebuffer_count;
 
+extern VkImage depth_image;
+extern VkDeviceMemory depth_image_memory;
+extern VkImageView depth_image_view;
+extern VkFormat depth_image_format;
+
 extern VkCommandPool command_pool;
 
 extern VkCommandBuffer* command_buffers;

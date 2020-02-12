@@ -429,7 +429,8 @@ int create_image_views()
 	size_t i = 0;
 	for (i = 0; i < swapchain_image_count; i++)
 	{
-		swapchain_image_views[i] = image_view_create(swapchain_images[i], swapchain_image_format);
+		swapchain_image_views[i] =
+			image_view_create(swapchain_images[i], swapchain_image_format, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 	return 0;
 }
@@ -451,6 +452,7 @@ VkShaderModule create_shader_module(char* code, size_t size)
 
 int create_render_pass()
 {
+	// Frame buffer
 	VkAttachmentDescription color_attachment = {0};
 	color_attachment.format = swapchain_image_format;
 	color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -468,17 +470,27 @@ int create_render_pass()
 	color_attachment_ref.attachment = 0;
 	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	//  Depth buffer
+	VkAttachmentDescription depth_attachment = {0};
+	depth_attachment.format = find_depth_format();
+	depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depth_attachment_ref = {0};
+	depth_attachment_ref.attachment = 1;
+	depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	// Subpasses
 	VkSubpassDescription subpass = {0};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &color_attachment_ref;
-
-	VkRenderPassCreateInfo renderPassInfo = {0};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &color_attachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
+	subpass.pDepthStencilAttachment = &depth_attachment_ref;
 
 	// Subpass dependencies
 	VkSubpassDependency dependency = {0};
@@ -491,6 +503,15 @@ int create_render_pass()
 
 	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	// Render pass info
+	VkAttachmentDescription attachments[] = {color_attachment, depth_attachment};
+	VkRenderPassCreateInfo renderPassInfo = {0};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
+	renderPassInfo.pAttachments = attachments;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
@@ -598,7 +619,7 @@ int create_graphics_pipeline()
 	rasterizer.lineWidth = 1.0f;
 
 	// Cull mode
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.cullMode = VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
 	rasterizer.depthBiasEnable = VK_FALSE;
@@ -644,6 +665,23 @@ int create_graphics_pipeline()
 	colorBlending.blendConstants[2] = 0.0f; // Optional
 	colorBlending.blendConstants[3] = 0.0f; // Optional
 
+	// Depth buffer
+	VkPipelineDepthStencilStateCreateInfo depthStencil = {0};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+
+	// Don't use bounds
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f; // Optional
+	depthStencil.maxDepthBounds = 1.0f; // Optional
+
+	// Disable stencil
+	depthStencil.stencilTestEnable = VK_FALSE;
+	depthStencil.front = (VkStencilOpState){0};				   // Optional
+	depthStencil.back = (VkStencilOpState){0}; // Optional
+
 	// Dynamic states
 	VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
 
@@ -676,7 +714,7 @@ int create_graphics_pipeline()
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = NULL; // Optional
+	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = NULL; // Optional
 
@@ -715,12 +753,12 @@ int create_framebuffers()
 
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
 	{
-		VkImageView attachments[] = {swapchain_image_views[i]};
+		VkImageView attachments[] = {swapchain_image_views[i], depth_image_view};
 
 		VkFramebufferCreateInfo framebufferInfo = {0};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
 		framebufferInfo.pAttachments = attachments;
 		framebufferInfo.width = swapchain_extent.width;
 		framebufferInfo.height = swapchain_extent.height;
@@ -795,9 +833,10 @@ int create_command_buffers()
 		render_pass_info.framebuffer = framebuffers[i];
 		render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 		render_pass_info.renderArea.extent = swapchain_extent;
-		VkClearValue clearColor = {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}};
-		render_pass_info.clearValueCount = 1;
-		render_pass_info.pClearValues = &clearColor;
+		VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
+										{.depthStencil = {1.0f, 0.0f}}};
+		render_pass_info.clearValueCount = 2;
+		render_pass_info.pClearValues = clear_values;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 		ub_bind(ub, command_buffers[i], i);
@@ -906,14 +945,19 @@ int vulkan_init()
 	{
 		return -10;
 	}
-	if (create_framebuffers())
-	{
-		return -11;
-	}
 	if (create_command_pool())
 	{
 		return -12;
 	}
+	if (create_depth_buffer())
+	{
+		return -13;
+	}
+	if (create_framebuffers())
+	{
+		return -11;
+	}
+	
 
 	// Create sampler layout
 	tex = texture_create("./assets/textures/statue.jpg");

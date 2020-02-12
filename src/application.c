@@ -32,20 +32,6 @@ int application_start()
 
 	settings_load();
 
-	char buf[2048];
-	ftos_pad(-0.0397856534, buf, 4, 4, '=');
-	puts(buf);
-	ftos_pad(0.99999999, buf, 4, 4, '=');
-	puts(buf);
-	ftos_pad(0.09999999, buf, 4, 4, '=');
-	puts(buf);
-	ftos_pad(1.3, buf, 4, 4, '=');
-	puts(buf);
-	ftos_pad(0.1, buf, 4, 4, '=');
-	puts(buf);
-	ftos_pad(-1, buf, 4, 4, '=');
-	puts(buf);
-
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 								settings_get_window_style());
 	if (window == NULL)
@@ -80,7 +66,7 @@ int application_start()
 		}
 		time_update();
 		draw();
-		if (timer_duration(&timer) > 1.0f)
+		if (timer_duration(&timer) > 5.0f)
 		{
 			timer_reset(&timer);
 			LOG("Framerate %d %f", time_framecount(), time_framerate());

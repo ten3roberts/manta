@@ -33,6 +33,12 @@ VkPipeline graphics_pipeline = VK_NULL_HANDLE;
 VkFramebuffer* framebuffers = NULL;
 size_t framebuffer_count = 0;
 
+VkImage depth_image = NULL;
+VkDeviceMemory depth_image_memory = NULL;
+VkImageView depth_image_view = NULL;
+VkFormat depth_image_format = VK_FORMAT_UNDEFINED;
+
+
 VkCommandPool command_pool;
 
 VkCommandBuffer* command_buffers = NULL;
