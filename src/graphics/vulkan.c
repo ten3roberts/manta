@@ -795,7 +795,7 @@ int create_command_buffers()
 		render_pass_info.framebuffer = framebuffers[i];
 		render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 		render_pass_info.renderArea.extent = swapchain_extent;
-		VkClearValue clearColor = {{{0.0f, 0.0f, 0.1f, 1.0f}}};
+		VkClearValue clearColor = {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}};
 		render_pass_info.clearValueCount = 1;
 		render_pass_info.pClearValues = &clearColor;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);

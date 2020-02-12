@@ -34,7 +34,7 @@ VkSurfaceFormatKHR pick_swap_surface_format(VkSurfaceFormatKHR* formats, size_t 
 	for (size_t i = 0; i < count; i++)
 	{
 		// The best format exists and is returned
-		if (formats[i].format == VK_FORMAT_B8G8R8_UNORM && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+		if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 		{
 			LOG_OK("The best swapchain surface format was available");
 			return formats[i];
