@@ -170,7 +170,8 @@ void single_use_commands_end(VkCommandBuffer command_buffer)
 }
 
 void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory)
+				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory,
+				  VkSampleCountFlagBits num_samples)
 {
 	// Create the VKImage
 	VkImageCreateInfo imageInfo = {0};
@@ -195,7 +196,7 @@ void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTilin
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 	// Samples is irrelevant for images not used as frambuffer attachments
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.samples = num_samples;
 	imageInfo.flags = 0; // Optional
 
 	VkResult result = vkCreateImage(device, &imageInfo, NULL, image);

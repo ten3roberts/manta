@@ -94,6 +94,7 @@ int swapchain_recreate()
 	create_image_views();
 	create_render_pass();
 	create_graphics_pipeline();
+	create_color_buffer();
 	create_depth_buffer();
 	create_framebuffers();
 	ub = ub_create(sizeof(TransformType), 0);
@@ -105,6 +106,10 @@ int swapchain_destroy()
 {
 	ub_destroy(ub);
 
+	// Destroy color buffer
+	vkDestroyImageView(device, color_image_view, NULL);
+	vkDestroyImage(device, color_image, NULL);
+	vkFreeMemory(device, color_image_memory, NULL);
 	// Destroy depth buffer
 	vkDestroyImageView(device, depth_image_view, NULL);
 	vkDestroyImage(device, depth_image, NULL);

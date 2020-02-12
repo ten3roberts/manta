@@ -5,6 +5,7 @@
 ivec2 resolution = {800, 600};
 int window_style = WS_WINDOWED;
 VsyncMode vsync = VSYNC_NONE;
+int msaa = 1;
 
 #define STRING(s) #s
 
@@ -44,6 +45,10 @@ void settings_load()
 		{
 			vsync = atoi(rh);
 		}
+		else if (strcmp(lh, "msaa") == 0)
+		{
+			msaa = atoi(rh);
+		}
 	}
 	fclose(file);
 }
@@ -61,7 +66,7 @@ void settings_save()
 	fprintf(file, "resolution %d,%d\n", resolution.x, resolution.y);
 	fprintf(file, "window_style %d\n", window_style);
 	fprintf(file, "vsync %d\n", vsync);
-	
+	fprintf(file, "msaa %d\n", msaa);
 
 	fclose(file);
 }
@@ -71,21 +76,27 @@ ivec2 settings_get_resolution()
 	return resolution;
 }
 
-void settings_set_resolution(ivec2 res)
-{
-	resolution = res;
-}
 int settings_get_window_style()
 {
 	return window_style;
 }
-void settings_set_window_style(int ws)
-{
-	window_style = ws;
-}
+
 VsyncMode settings_get_vsync()
 {
 	return vsync;
+}
+int settings_get_msaa()
+{
+	return msaa;
+}
+
+void settings_set_resolution(ivec2 res)
+{
+	resolution = res;
+}
+void settings_set_window_style(int ws)
+{
+	window_style = ws;
 }
 void settings_set_vsync(VsyncMode mode)
 {

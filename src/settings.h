@@ -11,8 +11,11 @@ void settings_load();
 void settings_save();
 
 ivec2 settings_get_resolution();
-void settings_set_resolution(ivec2 res);
 int settings_get_window_style();
-void settings_set_window_style(int ws);
 VsyncMode settings_get_vsync();
+int settings_get_msaa();
+
+void settings_set_resolution(ivec2 res);
+void settings_set_window_style(int ws);
 void settings_set_vsync(VsyncMode mode);
+void settings_set_msaa(int samples);

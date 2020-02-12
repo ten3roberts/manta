@@ -33,11 +33,16 @@ VkPipeline graphics_pipeline = VK_NULL_HANDLE;
 VkFramebuffer* framebuffers = NULL;
 size_t framebuffer_count = 0;
 
+VkImage color_image = NULL;
+VkDeviceMemory color_image_memory = NULL;
+VkImageView color_image_view = NULL;
+
 VkImage depth_image = NULL;
 VkDeviceMemory depth_image_memory = NULL;
 VkImageView depth_image_view = NULL;
 VkFormat depth_image_format = VK_FORMAT_UNDEFINED;
 
+VkSampleCountFlagBits msaa_samples = VK_SAMPLE_COUNT_1_BIT;
 
 VkCommandPool command_pool;
 

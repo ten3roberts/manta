@@ -52,11 +52,11 @@ VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
 	VkPresentModeKHR preferred_mode = VSYNC_NONE;
 	VsyncMode mode = settings_get_vsync();
 
-	if(mode == VSYNC_NONE)
+	if (mode == VSYNC_NONE)
 		preferred_mode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-	else if(mode == VSYNC_DOUBLE)
+	else if (mode == VSYNC_DOUBLE)
 		preferred_mode = VK_PRESENT_MODE_FIFO_KHR;
-	else if(mode == VSYNC_TRIPLE)
+	else if (mode == VSYNC_TRIPLE)
 		preferred_mode = VK_PRESENT_MODE_MAILBOX_KHR;
 
 	for (size_t i = 0; i < count; i++)
@@ -167,18 +167,28 @@ VkFormat find_depth_format()
 								 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-int create_depth_buffer()
+VkSampleCountFlagBits get_max_sample_count(VkPhysicalDevice device)
 {
-	depth_image_format = find_depth_format();
+	VkPhysicalDeviceProperties physicalDeviceProperties;
+	vkGetPhysicalDeviceProperties(device, &physicalDeviceProperties);
 
-	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image,
-				 &depth_image_memory);
+	VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+								physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+	if (counts & VK_SAMPLE_COUNT_64_BIT)
+		return VK_SAMPLE_COUNT_64_BIT;
+	if (counts & VK_SAMPLE_COUNT_32_BIT)
+		return VK_SAMPLE_COUNT_32_BIT;
+	if (counts & VK_SAMPLE_COUNT_16_BIT)
+		return VK_SAMPLE_COUNT_16_BIT;
+	if (counts & VK_SAMPLE_COUNT_8_BIT)
+		return VK_SAMPLE_COUNT_8_BIT;
 
-	depth_image_view = image_view_create(depth_image, depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
+	if (counts & VK_SAMPLE_COUNT_4_BIT)
+		return VK_SAMPLE_COUNT_4_BIT;
 
-	// Transition image layout explicitely
-	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED,
-							VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	return 0;
+	if (counts & VK_SAMPLE_COUNT_2_BIT)
+		return VK_SAMPLE_COUNT_2_BIT;
+
+	// Msaa not supported
+	return VK_SAMPLE_COUNT_1_BIT;
 }

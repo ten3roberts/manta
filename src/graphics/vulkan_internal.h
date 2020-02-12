@@ -13,7 +13,11 @@ int has_stencil_component(VkFormat format);
 VkFormat find_supported_format(VkFormat* formats, uint32_t format_count, VkImageTiling tiling,
 							   VkFormatFeatureFlags features);
 VkFormat find_depth_format();
+
+int create_color_buffer();
 int create_depth_buffer();
+
+VkSampleCountFlagBits get_max_sample_count(VkPhysicalDevice device);
 
 // Defined in vulkan.c
 int create_image_views();
