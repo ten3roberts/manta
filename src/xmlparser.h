@@ -1,8 +1,10 @@
+#include <stdint.h>
+
 typedef struct XMLNode
 {
 	struct XMLNode* parent;
 	char* content;
-	size_t child_count;
+	uint32_t child_count;
 	struct XMLNode* children;
 } XMLNode;
 

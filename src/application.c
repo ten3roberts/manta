@@ -14,6 +14,7 @@
 #include "graphics/renderer.h"
 #include "settings.h"
 #include "math/math.h"
+#include "strmap.h"
 
 static Window* window = NULL;
 
@@ -32,6 +33,17 @@ int application_start()
 
 	settings_load();
 
+	strmap* map = strmap_create();
+	int a = 1;
+	int b = 56;
+	int c = 10;
+	strmap_insert(map, "hello", &a, sizeof (int));
+	strmap_insert(map, "there", &b, sizeof (int));
+	strmap_insert(map, "general", &c, sizeof (int));
+	LOG("%d", strmap_find(map, "there"));
+	strmap_destroy(map);
+
+	return 0;
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 								settings_get_window_style());
 	if (window == NULL)

@@ -6,7 +6,7 @@
 
 XMLNode* xml_loadfile(const char* filepath)
 {
-	FILE* file = fopen(file, "r");
+	FILE* file = fopen(filepath, "r");
 	if (file == NULL)
 	{
 		LOG_E("Failed to open file %s", filepath);
