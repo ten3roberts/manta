@@ -487,7 +487,7 @@ int create_render_pass()
 	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
 	// Resolve msaa
-	VkAttachmentDescription colorAttachmentResolve = {};
+	VkAttachmentDescription colorAttachmentResolve = {0};
 	colorAttachmentResolve.format = swapchain_image_format;
 	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -497,7 +497,7 @@ int create_render_pass()
 	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkAttachmentReference colorAttachmentResolveRef = {};
+	VkAttachmentReference colorAttachmentResolveRef = {0};
 	colorAttachmentResolveRef.attachment = 2;
 	colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
