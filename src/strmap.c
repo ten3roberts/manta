@@ -206,77 +206,24 @@ void strmap_destroy(strmap* map)
 	free(map);
 }
 
-/*
-struct Map
+strmap_item* strmap_index(strmap* map, uint32_t index)
 {
-	uint32_t (*hash_func)(void* in, uint32_t prime, uint32_t num_buckets);
-	uint32_t size;
-	uint32_t count;
-	map_item** items;
-};
-
-map_item* map_item_create(void* key, void* data, uint32_t size)
-{
-	map_item* item = malloc(sizeof(map_item));
-item->data = malloc(size);
-	memcpy(item->key, data, size);
-	item->key = malloc(size);
-	memcpy(item->data, data, size);
+	if (index >= map->count)
+		return NULL;
+	strmap_item* item = map->items[index];
+	while (item != NULL && item != &STRMAP_DELETED_ITEM)
+	{	
+		if (index >= map->count - 1)
+		{
+			return NULL;
+		}
+		item = map->items[++index];
+	}
 	return item;
 }
 
-void map_item_destroy(map_item* item)
+// Returns the amount of items in the map
+uint32_t strmap_count(strmap* map)
 {
-	free(item->data);
-	free(item);
+	return map->count;
 }
-
-Map* map_create(uint32_t (*hash_func)(void* key, uint32_t prime, uint32_t num_buckets))
-{
-	Map* map = malloc(sizeof(Map));
-	map->hash_func = hash_func;
-	map->size = 53;
-	map->count = 0;
-	map->items = calloc(map->size, sizeof(map_item));
-	return map;
-}
-
-void map_insert(Map* map, void* data)
-{
-	// Attempt to insert
-	for (uint32_t i = 0;; i++)
-	{
-
-		uint32_t hash_a = map->hash_func(data, 163, map->size);
-		uint32_t hash_b = map->hash_func(data, 173, map->size);
-		(hash_a + (i * (hash_b + 1))) % map->size;
-	}
-}
-
-void map_destroy(Map* map)
-{
-	for (uint32_t i = 0; i < map->size; i++)
-	{
-		if (map->items[i] != NULL)
-		{
-			map_item_destroy(map->items[i]);
-		}
-	}
-	free(map->items);
-	map->size = 0;
-	map->count = 0;
-	map->items = NULL;
-	free(map);
-}
-
-uint32_t map_hash_string(void* key, uint32_t prime, uint32_t num_buckets)
-{
-	uint32_t hash = 0;
-	const int s_len = strlen((char*)key);
-	for (uint32_t i = 0; i < s_len; i++)
-	{
-		hash += (uint32_t)pow(prime, s_len - (i + 1) * ((char*)key)[i]);
-		hash = hash % num_buckets;
-	}
-	return hash;
-}*/

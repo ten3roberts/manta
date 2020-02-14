@@ -16,6 +16,7 @@
 #include "math/math.h"
 #include "strmap.h"
 #include "math/prime.h"
+#include "xmlparser.h"
 
 static Window* window = NULL;
 
@@ -33,7 +34,11 @@ int application_start()
 	time_init();
 
 	settings_load();
-	
+
+	XMLNode* node = xml_loadfile("./assets/example.xml");
+	xml_destroy(node);
+	SLEEP(10);
+
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 		settings_get_window_style());
 	if (window == NULL)
