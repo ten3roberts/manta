@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define GIGABYTE 1073741824
 #define MEGABYTE 1048576
@@ -24,6 +25,22 @@ static inline int clampi(int f, int min, int max)
 static float logn(float base, float x)
 {
 	return log(x) / log(base);
+}
+
+// A faster but less accurate sqrt
+static int32_t sqrti(int32_t n)
+{
+	unsigned int c = 0x8000;
+	unsigned int g = 0x8000;
+
+	for (;;) {
+		if (g * g > n)
+			g ^= c;
+		c >>= 1;
+		if (c == 0)
+			return g;
+		g |= c;
+	}
 }
 
 #define DEG_360 (2 * M_PI)
