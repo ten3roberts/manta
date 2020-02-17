@@ -211,7 +211,7 @@ strmap_item* strmap_index(strmap* map, uint32_t index)
 	if (index >= map->count)
 		return NULL;
 	strmap_item* item = map->items[index];
-	while (item != NULL && item != &STRMAP_DELETED_ITEM)
+	while (item == NULL || item == &STRMAP_DELETED_ITEM)
 	{	
 		if (index >= map->count - 1)
 		{

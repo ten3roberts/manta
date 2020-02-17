@@ -37,6 +37,7 @@ int application_start()
 
 	XMLNode* node = xml_loadfile("./assets/example.xml");
 	xml_destroy(node);
+
 	SLEEP(10);
 
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
