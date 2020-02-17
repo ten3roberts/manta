@@ -70,7 +70,8 @@ strmap* strmap_create()
 	return strmap_create_sized(STRMAP_BASE_SIZE);
 }
 
-static strmap* strmap_resize(strmap* map, uint32_t new_size)
+// Resizes the map passed as argument
+static void strmap_resize(strmap* map, uint32_t new_size)
 {
 	if (new_size < STRMAP_BASE_SIZE)
 		return;

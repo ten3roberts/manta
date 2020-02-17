@@ -69,6 +69,11 @@ XMLNode* xml_loadfile(const char* filepath)
 			i -= 4;
 			buf[i] = '\"';
 		}
+		if(i > size-1)
+		{
+			size*=2;
+			buf = realloc(buf, size);
+		}
 		i++;
 	}
 
@@ -89,7 +94,7 @@ char* xml_load(XMLNode* node, char* str)
 		str = strchr(str, '<');
 
 		if (str == NULL)
-			return;
+			return NULL;
 		if (str[1] == '?')
 		{
 			str++;
@@ -149,7 +154,7 @@ char* xml_load(XMLNode* node, char* str)
 void xml_destroy(XMLNode* node)
 {
 	uint32_t size = strmap_count(node->children);
-
+	LOG("%s", *((XMLNode**)strmap_find(node->children, "from"))->tag);
 	// Destroy the children
 	for (uint32_t i = 0; i < size; i++)
 	{

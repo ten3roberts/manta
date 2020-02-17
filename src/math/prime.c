@@ -1,5 +1,6 @@
 #include "prime.h"
 #include "math/mat4.h"
+#include "log.h"
 
 /* This function calculates (ab)%c */
 int modulo(int a, int b, int c) {
@@ -61,4 +62,6 @@ uint64_t prime_next(uint64_t n)
 		if (prime_test(i, 5))
 			return i;
 	}
+	LOG_E("Failed to find prime following %d", n);
+	return n;
 }
