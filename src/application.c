@@ -34,10 +34,13 @@ int application_start()
 	time_init();
 
 	settings_load();
-
-	XMLNode* node = xml_loadfile("./assets/example.xml");
-	xml_destroy(node);
-
+	for (uint32_t i = 0;; i++)
+	{
+		XMLNode* node = xml_loadfile("./assets/example.xml");
+		
+		LOG("%d", i);
+		xml_destroy(node);
+	}
 	SLEEP(10);
 
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,

@@ -4,7 +4,7 @@
 #include "math/prime.h"
 #include <math.h>
 
-static strmap_item STRMAP_DELETED_ITEM = {NULL, NULL};
+static strmap_item STRMAP_DELETED_ITEM = { NULL, NULL };
 #define STRMAP_BASE_SIZE 53
 
 struct strmap
@@ -21,7 +21,7 @@ struct strmap
 strmap_item* strmap_item_create(const char* key, void* data, uint32_t data_size)
 {
 	strmap_item* item = malloc(sizeof(strmap_item));
-	item->key = malloc(strlen(key)+1);
+	item->key = malloc(strlen(key) + 1);
 	strcpy(item->key, key);
 	item->data = malloc(data_size);
 	memcpy(item->data, data, data_size);
@@ -42,7 +42,7 @@ static uint32_t hash_string(const char* key, uint32_t prime, uint32_t num_bucket
 	const int s_len = strlen((char*)key);
 	for (uint32_t i = 0; i < s_len; i++)
 	{
-		hash += (uint32_t)pow(prime, s_len - (i + 1) )* key[i];
+		hash += (uint32_t)pow(prime, s_len - (i + 1)) * key[i];
 		hash = hash % num_buckets;
 	}
 	return hash;
@@ -125,7 +125,7 @@ void strmap_insert(strmap* map, const char* key, void* data, uint32_t size)
 	while (curr_item != NULL && curr_item != &STRMAP_DELETED_ITEM)
 	{
 		// Key is duplicate - update
-		if(strcmp(curr_item->key, key) == 0)
+		if (strcmp(curr_item->key, key) == 0)
 		{
 			strmap_item_destroy(curr_item);
 			map->items[index] = item;
@@ -211,14 +211,18 @@ strmap_item* strmap_index(strmap* map, uint32_t index)
 {
 	if (index >= map->count)
 		return NULL;
-	strmap_item* item = map->items[index];
-	while (item == NULL || item == &STRMAP_DELETED_ITEM)
-	{	
-		if (index >= map->count - 1)
+	strmap_item* item = map->items[0];
+	uint32_t i = 0, j = 0;
+	while (item == NULL || item == &STRMAP_DELETED_ITEM || j <= index)
+	{
+		if (map->items[i] == NULL || map->items[i] == &STRMAP_DELETED_ITEM)
 		{
-			return NULL;
+			i++;
+			continue;
 		}
-		item = map->items[++index];
+		j++;
+		item = map->items[i];
+		i++;
 	}
 	return item;
 }

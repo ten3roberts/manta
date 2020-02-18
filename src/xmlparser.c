@@ -1,5 +1,6 @@
 #include "xmlparser.h"
 #include "log.h"
+#include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,52 +31,7 @@ XMLNode* xml_loadfile(const char* filepath)
 	fseek(file, 0L, SEEK_SET);
 	size_t i = 0;
 	// Loads the xml file into memory, taking escaping into account
-	while (1)
-	{
-		char c = fgetc(file);
-		if (feof(file))
-		{
-			buf[i] = '\0';
-			break;
-		}
-
-		// Don't include new lines and tabs
-		if (c == '\n') continue;
-		if (c == '\t') continue;
-		buf[i] = c;
-		// Control character escape codes
-		if (strncmp(buf + i - 2, "&lt", 2) == 0)
-		{
-			i -= 2;
-			buf[i] = '<';
-		}
-		else if (strncmp(buf + i - 2, "&gt", 2) == 0)
-		{
-			i -= 2;
-			buf[i] = '>';
-		}
-		else if (strncmp(buf + i - 3, "&amp", 3) == 0)
-		{
-			i -= 3;
-			buf[i] = '&';
-		}
-		else if (strncmp(buf + i - 4, "&apos", 4) == 0)
-		{
-			i -= 4;
-			buf[i] = '\'';
-		}
-		else if (strncmp(buf + i - 4, "&quot", 4) == 0)
-		{
-			i -= 4;
-			buf[i] = '\"';
-		}
-		if(i > size-1)
-		{
-			size*=2;
-			buf = realloc(buf, size);
-		}
-		i++;
-	}
+	fread(buf, 1, size, file);
 
 	// Loads the root node
 	XMLNode* root = malloc(sizeof(XMLNode));
@@ -109,10 +65,16 @@ char* xml_load(XMLNode* node, char* str)
 	node->tag = malloc(tag_end);
 	memcpy(node->tag, str + 1, tag_end - 1);
 	node->tag[tag_end - 1] = '\0';
-	LOG("Tag : %s", node->tag);
 
+	// Empty node
+	if (node->tag[tag_end - 2] == '/')
+	{
+		node->content = NULL;
+		node->children = NULL;
+		return str + tag_end + 1;
+	}
 	// Move str to the start of the body
-	str += tag_end+1;
+	str += tag_end + 1;
 	char* tmp_tag = malloc(tag_end + 3);
 	tmp_tag[0] = '<';
 	tmp_tag[1] = '/';
@@ -120,15 +82,20 @@ char* xml_load(XMLNode* node, char* str)
 	tmp_tag[tag_end + 1] = '>';
 	tmp_tag[tag_end + 2] = '\0';
 
-
+	// Find the closing match of the tag
 	char* tmp = strstr(str, tmp_tag);
 	free(tmp_tag);
-	if(tmp == NULL)
+	// No closing part was found
+	if (tmp == NULL)
+	{
+		free(node->tag);
 		return NULL;
+
+	}
 	size_t tag_close = tmp - str;
 
-	node->content = malloc(tag_close+1);
-	memcpy(node->content, str, tag_close+1);
+	node->content = malloc(tag_close + 1);
+	memcpy(node->content, str, tag_close + 1);
 	node->content[tag_close] = '\0';
 
 	// Load children
@@ -147,22 +114,24 @@ char* xml_load(XMLNode* node, char* str)
 		strmap_insert(node->children, new_node->tag, &new_node, sizeof(XMLNode*));
 	}
 
-	str += tag_close + 1 + tag_end+1;
+	str += tag_close + 1 + tag_end + 1;
 	return str;
 }
 
 void xml_destroy(XMLNode* node)
 {
-	uint32_t size = strmap_count(node->children);
-	LOG("%s", *((XMLNode**)strmap_find(node->children, "from"))->tag);
-	// Destroy the children
-	for (uint32_t i = 0; i < size; i++)
+	if (node->children)
 	{
-		xml_destroy(*(XMLNode**)strmap_index(node->children, i)->data);
-	}
+		uint32_t size = strmap_count(node->children);
+		// Destroy the children
+		for (uint32_t i = 0; i < size; i++)
+		{
+			xml_destroy(*(XMLNode**)strmap_index(node->children, i)->data);
+		}
 
-	// Free the children
-	strmap_destroy(node->children);
+		// Free the children
+		strmap_destroy(node->children);
+	}
 	free(node->tag);
 	free(node->content);
 	free(node);
