@@ -34,13 +34,14 @@ int application_start()
 	time_init();
 
 	settings_load();
-	for (uint32_t i = 0;; i++)
-	{
+
 		XMLNode* node = xml_loadfile("./assets/example.xml");
 		
-		LOG("%d", i);
+		XMLNode* to = xml_get_child(node, "to");
+		LOG("%s", xml_get_content(to));
+		
 		xml_destroy(node);
-	}
+	
 	SLEEP(10);
 
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,

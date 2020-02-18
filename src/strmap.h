@@ -15,6 +15,8 @@ strmap* strmap_create();
 // Will insert an entry in the map associated with key
 // If key already exists, exisiting data will be replaced
 void strmap_insert(strmap* map, const char* key, void* data, uint32_t data_size);
+
+// Will return the item associated with key
 void* strmap_find(strmap* map, const char* key);
 void strmap_remove(strmap* map, const char* key);
 void strmap_destroy(strmap* map);

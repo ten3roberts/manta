@@ -140,6 +140,7 @@ void strmap_insert(strmap* map, const char* key, void* data, uint32_t size)
 	map->items[index] = item;
 	map->count++;
 }
+
 void* strmap_find(strmap* map, const char* key)
 {
 	int index = get_hash(key, map->size, 0);

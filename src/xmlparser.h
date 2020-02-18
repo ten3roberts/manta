@@ -11,5 +11,9 @@ XMLNode* xml_loadfile(const char* filepath);
 // Using the function again will thus read the next tag
 char* xml_load(XMLNode* node, char* str);
 
+XMLNode* xml_get_child(XMLNode* parent, char* node_name);
+char* xml_get_attribute(XMLNode* node, char* attribute_name);
+char* xml_get_content(XMLNode* node);
+void xml_set_content(XMLNode* node, char* new_content);
 // Destroys and frees all memory of a xml structure recursively
 void xml_destroy(XMLNode* node);
