@@ -91,6 +91,10 @@ char* xml_load(XMLNode* node, char* str)
 				strmap_insert(node->attributes, tmp_attr[0], tmp_attr[1], strlen(tmp_attr[1]) + 1);
 				after_equal = 0;
 			}
+			else
+			{
+				node->tag[j] = '\0';
+			}
 
 			j = 0;
 			in_attributes = 1;
@@ -131,7 +135,6 @@ char* xml_load(XMLNode* node, char* str)
 		// If loop body reaches bottom, increment j
 		j++;
 	}
-	LOG("Tag : %s", node->tag);
 	free(tmp_attr[0]);
 	free(tmp_attr[1]);
 	// Empty node
@@ -185,14 +188,97 @@ char* xml_load(XMLNode* node, char* str)
 	return str;
 }
 
-XMLNode* xml_get_child(XMLNode* parent, char* node_name)
+void xml_save_internal(XMLNode* node, FILE* file)
 {
-	return strmap_find(parent->children, node_name);
+	// Tag and attributes
+	fputc('<', file);
+	fputs(node->tag, file);
+	uint32_t attr_count = strmap_count(node->attributes);
+	for (uint32_t i = 0; i < attr_count; i++)
+	{
+		fputs(strmap_index(node->attributes, i)->key, file);
+		fputc('=', file);
+		fputc('"', file);
+		fputs(strmap_index(node->attributes, i)->data, file);
+		fputc('"', file);
+		if (i < attr_count - 1)
+			fputc(' ', file);
+	}
+	fputc('>', file);
+	fputs(node->content, file);
+	// Children
+	uint32_t child_count = strmap_count(node->children);
+	for (uint32_t i = 0; i < child_count; i++)
+	{
+		xml_save_internal(*(XMLNode**)strmap_index(node->children, i)->data, file);
+	}
+
+	// Closing tag
+	fputc('/', file);
+	fputc('<', file);
+	fputs(node->tag, file);
+	fputc('>', file);
 }
 
-char* xml_get_attribute(XMLNode* node, char* attribute_name)
+void xml_savefile(XMLNode* root, const char* filepath)
 {
-	return (char*)strmap_find(node->attributes, attribute_name);
+	FILE* file = NULL;
+	file = fopen(filepath, "w");
+	if (file == NULL)
+		return;
+	xml_save_internal(root, stdout);
+	fclose(file);
+}
+
+
+XMLNode* xml_create(char* tag, char* content)
+{
+	XMLNode* node = malloc(sizeof(XMLNode));
+	if (node == NULL) return NULL;
+	if (tag)
+	{
+		node->tag = malloc(strlen(tag) + 1);
+		if (node->tag == NULL) return NULL;
+		strcpy(node->tag, tag);
+	}
+	else
+	{
+		node->tag = NULL;
+	}
+	if (content)
+	{
+		node->content = malloc(strlen(content) + 1);
+		if (node->content == NULL) return NULL;
+		strcpy(node->content, content);
+	}
+	else
+	{
+		node->content = NULL;
+	}
+	node->children = strmap_create();
+	node->attributes = strmap_create();
+	node->parent = NULL;
+	return node;
+}
+
+XMLNode* xml_get_child(XMLNode* node, char* node_name)
+{
+	return *(XMLNode**)strmap_find(node->children, node_name);
+}
+
+void xml_add_child(XMLNode* node, XMLNode* child)
+{
+	strmap_insert(node->children, child->tag, &node, sizeof(XMLNode*));
+}
+
+char* xml_get_attribute(XMLNode* node, char* key)
+{
+	return (char*)strmap_find(node->attributes, key);
+}
+
+void xml_set_attribute(XMLNode* node, char* key, char* val)
+{
+	strmap_insert(node->attributes, key, val, strlen(val) + 1);
 }
 
 char* xml_get_content(XMLNode* node)
@@ -203,7 +289,7 @@ void xml_set_content(XMLNode* node, char* new_content)
 {
 	if (node->content)
 		free(node->content);
-	node->content = malloc(strlen(new_content+1));
+	node->content = malloc(strlen(new_content + 1));
 	strcpy(node->content, new_content);
 }
 

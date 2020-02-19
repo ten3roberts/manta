@@ -35,14 +35,12 @@ int application_start()
 
 	settings_load();
 
-		XMLNode* node = xml_loadfile("./assets/example.xml");
-		
-		XMLNode* to = xml_get_child(node, "to");
-		LOG("%s", xml_get_content(to));
-		
-		xml_destroy(node);
-	
-	SLEEP(10);
+	XMLNode* node = xml_loadfile("./assets/example.xml");
+
+	XMLNode* to = xml_get_child(node, "to");
+	LOG("%s", xml_get_content(to));
+	xml_savefile(node, "./assets/save.xml");
+	xml_destroy(node);
 
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 		settings_get_window_style());
