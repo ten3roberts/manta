@@ -54,3 +54,7 @@ void posix_path(const char * path, char * result, size_t size);
 
 // Will replace
 void replace_string(const char * src, char * result, size_t size, char find, char replace);
+
+// Copies and allocates a string
+// Same behaviour as non-standard strdup
+char* string_dup (const char* s);

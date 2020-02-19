@@ -441,3 +441,16 @@ void replace_string(const char* src, char* result, size_t size, char find, char 
 			*p = replace;
 	}
 }
+
+char* string_dup (const char* s)
+{
+  size_t slen = strlen(s);
+  char* result = malloc(slen + 1);
+  if(result == NULL)
+  {
+    return NULL;
+  }
+
+  memcpy(result, s, slen+1);
+  return result;
+}
