@@ -8,12 +8,14 @@
 
 struct XMLNode
 {
-	struct XMLNode* parent;
+	XMLNode* parent;
+	XMLNode* next;
 	char* tag;
 	char* content;
 	// The attributes for the tag
 	strmap* attributes;
-	strmap* children;
+	// Linked list to children
+	XMLNode* children;
 };
 
 XMLNode* xml_loadfile(const char* filepath)
@@ -46,6 +48,12 @@ XMLNode* xml_loadfile(const char* filepath)
 
 char* xml_load(XMLNode* node, char* str)
 {
+	node->attributes = NULL;
+	node->children = NULL;
+	node->next = NULL;
+	node->content = NULL;
+	node->parent = NULL;
+	node->tag = NULL;
 	// Step pointer so that the tag opening is at pos 0
 	do
 	{
@@ -142,6 +150,8 @@ char* xml_load(XMLNode* node, char* str)
 	{
 		node->content = NULL;
 		node->children = NULL;
+		// Remove slash
+		node->tag[tag_end - 2] = '\0';
 		return str + tag_end + 1;
 	}
 	// Move str to the start of the body
@@ -164,27 +174,67 @@ char* xml_load(XMLNode* node, char* str)
 	}
 	size_t tag_close = tmp - str;
 
-	node->content = malloc(tag_close + 1);
-	memcpy(node->content, str, tag_close + 1);
-	node->content[tag_close] = '\0';
+	// Node is valid
 
 	// Load children
-	node->children = strmap_create();
 	while (1)
 	{
 		XMLNode* new_node = malloc(sizeof(XMLNode));
-		new_node->parent = node;
 		char* buf = xml_load(new_node, str);
+		new_node->parent = node;
 		if (buf == NULL)
 		{
 			free(new_node);
 			break;
 		}
+		tag_close -= buf - str;
 		str = buf;
-		strmap_insert(node->children, new_node->tag, &new_node, sizeof(XMLNode*));
+
+		// Insert into linked list
+		XMLNode* it = node->children;
+		XMLNode* prev = NULL;
+		// No children yet
+		if (it == NULL)
+		{
+			node->children = new_node;
+		}
+		else
+		{ // Follow linked list until name sorting lower is found
+			while (1)
+			{
+				// Insert before
+				if (strcmp(new_node->tag, it->tag) < 0)
+				{
+					if (prev == NULL)
+					{
+						new_node->next = it;
+						node->children = new_node;
+					}
+					else
+					{
+						prev->next = new_node;
+						new_node->next = it;
+					}
+					break;
+				}
+				// Insert after end
+				if (it->next == NULL)
+				{
+					it->next = new_node;
+					new_node->next = NULL;
+					break;
+				}
+				prev = it;
+				it = it->next;
+			}
+		}
 	}
 
-	str += tag_close + tag_end;
+	node->content = malloc(tag_close + 1);
+	memcpy(node->content, str, tag_close + 1);
+	node->content[tag_close] = '\0';
+
+	str += tag_close + strlen(node->tag) + 3;
 	return str;
 }
 
@@ -205,17 +255,21 @@ void xml_save_internal(XMLNode* node, FILE* file)
 			fputc(' ', file);
 	}
 	fputc('>', file);
-	fputs(node->content, file);
+	if (node->content)
+		fputs(node->content, file);
+
 	// Children
-	uint32_t child_count = strmap_count(node->children);
-	for (uint32_t i = 0; i < child_count; i++)
+	XMLNode* it = node->children;
+	while (it != NULL)
 	{
-		xml_save_internal(*(XMLNode**)strmap_index(node->children, i)->data, file);
+		xml_save_internal(it, file);
+
+		it = it->next;
 	}
 
 	// Closing tag
-	fputc('/', file);
 	fputc('<', file);
+	fputc('/', file);
 	fputs(node->tag, file);
 	fputc('>', file);
 }
@@ -226,19 +280,20 @@ void xml_savefile(XMLNode* root, const char* filepath)
 	file = fopen(filepath, "w");
 	if (file == NULL)
 		return;
-	xml_save_internal(root, stdout);
+	xml_save_internal(root, file);
 	fclose(file);
 }
-
 
 XMLNode* xml_create(char* tag, char* content)
 {
 	XMLNode* node = malloc(sizeof(XMLNode));
-	if (node == NULL) return NULL;
+	if (node == NULL)
+		return NULL;
 	if (tag)
 	{
 		node->tag = malloc(strlen(tag) + 1);
-		if (node->tag == NULL) return NULL;
+		if (node->tag == NULL)
+			return NULL;
 		strcpy(node->tag, tag);
 	}
 	else
@@ -248,27 +303,71 @@ XMLNode* xml_create(char* tag, char* content)
 	if (content)
 	{
 		node->content = malloc(strlen(content) + 1);
-		if (node->content == NULL) return NULL;
+		if (node->content == NULL)
+			return NULL;
 		strcpy(node->content, content);
 	}
 	else
 	{
 		node->content = NULL;
 	}
-	node->children = strmap_create();
+	// NO children
+	node->children = NULL;
 	node->attributes = strmap_create();
 	node->parent = NULL;
 	return node;
 }
 
-XMLNode* xml_get_child(XMLNode* node, char* node_name)
+XMLNode* xml_get_next(XMLNode* node)
 {
-	return *(XMLNode**)strmap_find(node->children, node_name);
+	return node->next;
+}
+
+XMLNode* xml_get_children(XMLNode* node)
+{
+	return node->children;
+}
+
+XMLNode* xml_get_child(XMLNode* node, char* node_tag)
+{
+	XMLNode* it = node->children;
+	while (it != NULL)
+	{
+		if (strcmp(it->tag, node_tag) == 0)
+			return it;
+		it = it->next;
+	}
+	return NULL;
 }
 
 void xml_add_child(XMLNode* node, XMLNode* child)
 {
-	strmap_insert(node->children, child->tag, &node, sizeof(XMLNode*));
+	XMLNode* it = node->children;
+
+	// Follow linked list until name sorting lower is found
+	while (1)
+	{
+		if (strcmp(node->tag, it->tag) > 0)
+		{
+			XMLNode* tmp = it->next;
+			it->next = child;
+			child->next = tmp;
+			break;
+		}
+	}
+}
+
+char* xml_get_tag(XMLNode* node)
+{
+	return node->tag;
+}
+
+void xml_set_tag(XMLNode* node, char* new_tag)
+{
+	if (node->tag)
+		free(node->tag);
+	node->tag = malloc(strlen(new_tag + 1));
+	strcpy(node->tag, new_tag);
 }
 
 char* xml_get_attribute(XMLNode* node, char* key)
@@ -295,18 +394,14 @@ void xml_set_content(XMLNode* node, char* new_content)
 
 void xml_destroy(XMLNode* node)
 {
-	if (node->children)
+	XMLNode* it = node->children;
+	while (it != NULL)
 	{
-		uint32_t size = strmap_count(node->children);
-		// Destroy the children
-		for (uint32_t i = 0; i < size; i++)
-		{
-			xml_destroy(*(XMLNode**)strmap_index(node->children, i)->data);
-		}
-
-		// Free the children
-		strmap_destroy(node->children);
+		XMLNode* next = it->next;
+		xml_destroy(it);
+		it = next;
 	}
+
 	strmap_destroy(node->attributes);
 	free(node->tag);
 	free(node->content);

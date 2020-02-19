@@ -18,10 +18,26 @@ void xml_savefile(XMLNode* root, const char* filepath);
 // tag and content can be NULL
 XMLNode* xml_create(char* tag, char* content);
 
-XMLNode* xml_get_child(XMLNode* node, char* node_name);
+// Returns the next child from the node's parent
+XMLNode* xml_get_next(XMLNode* node);
+
+// Returns the first item in the linked list of children
+XMLNode* xml_get_children(XMLNode* node);
+
+XMLNode* xml_get_child(XMLNode* node, char* node_tag);
+
 
 // Adds a child to node
+// Will be sorted alphabetically
+// Duplicate tag names are allowed and are after one another in the list
 void xml_add_child(XMLNode* node, XMLNode* child);
+
+// Returns the pointer to the internal tag of the node
+// Changing this changes the node's tag
+char* xml_get_tag(XMLNode* node);
+
+// Copies a new string into content and deletes the old one
+void xml_set_tag(XMLNode* node, char* new_tag);
 
 char* xml_get_attribute(XMLNode* node, char* key);
 // Sets or updates a nodes attribute
