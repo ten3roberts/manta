@@ -17,6 +17,7 @@
 #include "model.h"
 
 Model* model;
+Model* model1;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -909,7 +910,7 @@ int create_command_buffers()
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 		ub_bind(ub, command_buffers[i], i);
 
-		model_bind(model, command_buffers[i]);
+		model_bind(model1, command_buffers[i]);
 		texture_bind(tex, command_buffers[i], i);
 		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model), 1, 0, 0, 0);
 
@@ -1029,12 +1030,13 @@ int vulkan_init()
 	}
 
 	// Create sampler layout
-	tex = texture_create("./assets/textures/statue.jpg");
+	tex = texture_create("./assets/textures/grid.png");
 
 	ub = ub_create(sizeof(TransformType), 0);
 	ub2 = ub_create(sizeof(TransformType), 0);
 
-	model = model_load_collada("./assets/models/plane.dae");
+	model = model_load_collada("./assets/models/blender.dae");
+	model1 = model_load_collada("./assets/models/cube.dae");
 	if (create_command_buffers())
 	{
 		return -13;

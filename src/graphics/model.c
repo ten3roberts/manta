@@ -57,10 +57,15 @@ Model* model_load_collada(const char* filepath)
 	// Load all sources
 	while (sources != NULL)
 	{
-		// Vertex positions
+
 		char* attribute = xml_get_attribute(sources, "id");
 		if (attribute == NULL)
-			break;
+		{
+			sources = xml_get_next(sources);
+			continue;
+		};
+
+		// Positions
 		if (strcmp(attribute, source_names[0]) == 0)
 		{
 			XMLNode* array = xml_get_child(sources, "float_array");
@@ -73,6 +78,8 @@ Model* model_load_collada(const char* filepath)
 				cont = strchr(cont + 1, ' ');
 			}
 		}
+
+		// Uvs
 		else if (strcmp(attribute, source_names[1]) == 0)
 		{
 			XMLNode* array = xml_get_child(sources, "float_array");
@@ -85,6 +92,8 @@ Model* model_load_collada(const char* filepath)
 				cont = strchr(cont + 1, ' ');
 			}
 		}
+
+		// Normals
 		if (strcmp(attribute, source_names[2]) == 0)
 		{
 			XMLNode* array = xml_get_child(sources, "float_array");
@@ -98,6 +107,18 @@ Model* model_load_collada(const char* filepath)
 			}
 		}
 		sources = xml_get_next(sources);
+	}
+	if (positions == NULL)
+	{
+		LOG_W("Model %s contains no vertex position data", filepath);
+	}
+	if (normals == NULL)
+	{
+		LOG_W("Model %s contains no normal data", filepath);
+	}
+	if (uvs == NULL)
+	{
+		LOG_W("Model %s contains no uv data", filepath);
 	}
 
 	// Triangles
@@ -114,7 +135,6 @@ Model* model_load_collada(const char* filepath)
 	// Max number of indices expected if no reusage
 	uint32_t* indices = malloc(triangle_count * sizeof(uint32_t) * 3);
 
-	// How many indices currently exist if no reusage
 	uint32_t index_count = 0;
 
 	for (uint32_t i = 0; i < triangle_count * 3; i++)
@@ -137,6 +157,7 @@ Model* model_load_collada(const char* filepath)
 				// Reuse index
 				indices[index_count++] = j;
 				found = 1;
+				LOG("Reusing index");
 				break;
 			}
 		}
@@ -151,14 +172,14 @@ Model* model_load_collada(const char* filepath)
 	// Create the vertices
 	Vertex* vertices = malloc(set_count * sizeof(Vertex));
 
-	// Loop throught all unique faces
+	// Loop through all unique faces
 	for (uint32_t i = 0; i < set_count; i++)
 	{
 		vertices[i].position = *(vec3*)&positions[3 * sets[i].pos_index];
-		vertices[i].uv = *(vec2*)&positions[2 * sets[i].uv_index];
+		vertices[i].uv = *(vec2*)&uvs[2 * sets[i].uv_index];
 	}
 
-	// Print indices
+	/*// Print indices
 	LOG("Indices %d : ", index_count);
 	for (uint32_t i = 0; i < index_count; i++)
 	{
@@ -169,7 +190,7 @@ Model* model_load_collada(const char* filepath)
 	for (uint32_t i = 0; i < set_count; i++)
 	{
 		LOG_CONT("(%3v : %2v),", vertices[i].position, vertices[i].uv);
-	}
+	}*/
 
 	model->vb = vb_create(vertices, set_count);
 	model->ib = ib_create(indices, index_count);
