@@ -17,6 +17,7 @@
 #include "strmap.h"
 #include "math/prime.h"
 #include "xmlparser.h"
+#include "graphics/model.h"
 
 static Window* window = NULL;
 
@@ -46,7 +47,6 @@ int application_start()
 	}
 	xml_destroy(node);
 
-	return 0;
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 						   settings_get_window_style());
 	if (window == NULL)

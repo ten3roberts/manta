@@ -146,7 +146,7 @@ char* xml_load(XMLNode* node, char* str)
 	free(tmp_attr[0]);
 	free(tmp_attr[1]);
 	// Empty node
-	if (node->tag[tag_end - 2] == '/')
+	if (str[tag_end-1] == '/')
 	{
 		node->content = NULL;
 		node->children = NULL;

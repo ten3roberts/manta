@@ -11,6 +11,6 @@ typedef struct
 } IndexBuffer;
 
 // Creates and allocates an index buffer
-IndexBuffer* ib_create();
+IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count);
 void ib_bind(IndexBuffer* ib, VkCommandBuffer command_buffer);
 void ib_destroy(IndexBuffer* ib);

@@ -23,7 +23,7 @@ void renderer_draw()
 	quaternion rotation = quat_axis_angle((vec3){0, 0.1, 1}, time_elapsed());
 
 	mat4 rot = quat_to_mat4(rotation);
-	mat4 pos = mat4_translate((vec3){time_elapsed(), sinf(time_elapsed()) * 0.5, -time_elapsed()*2 + -2});
+	mat4 pos = mat4_translate((vec3){time_elapsed(), sinf(time_elapsed()) * 0.5, -time_elapsed()*0 + -2});
 	mat4 scale = mat4_scale((vec3){1, 1, 1});
 	transform_buffer.model = mat4_mul(&rot, &pos);
 
@@ -36,7 +36,7 @@ void renderer_draw()
 	rotation = quat_axis_angle((vec3){1, 1, 0}, time_elapsed());
 	rot = quat_to_mat4(rotation);
 
-	pos = mat4_translate((vec3){0, -sinf(time_elapsed()) * 0.5, -time_elapsed()});
+	pos = mat4_translate((vec3){0, -sinf(time_elapsed()) * 0.5, -time_elapsed()*0.1});
 	scale = mat4_scale((vec3){0.5, 0.5, 0.5});
 	transform_buffer.model = mat4_mul(&rot, &pos);
 	transform_buffer.model = mat4_mul(&transform_buffer.model, &scale);
