@@ -11,7 +11,7 @@ IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count)
 	size_t buffer_size = sizeof(*ib->indices) * ib->index_count;
 
 	ib->indices = malloc(buffer_size);
-	memcpy(ib->indices, indices, index_count * sizeof(uint32_t));
+	memcpy(ib->indices, indices, buffer_size);
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;

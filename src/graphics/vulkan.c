@@ -16,8 +16,8 @@
 #include <stdbool.h>
 #include "model.h"
 
-Model* model;
-Model* model1;
+Model* model_cube;
+Model* model_blender;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -910,13 +910,13 @@ int create_command_buffers()
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 		ub_bind(ub, command_buffers[i], i);
 
-		model_bind(model1, command_buffers[i]);
+		/*model_bind(model_cube, command_buffers[i]);
 		texture_bind(tex, command_buffers[i], i);
-		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model), 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model_cube), 1, 0, 0, 0);*/
 
-		model_bind(model, command_buffers[i]);
+		model_bind(model_blender, command_buffers[i]);
 		ub_bind(ub2, command_buffers[i], i);
-		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model), 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model_blender), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(command_buffers[i]);
 		result = vkEndCommandBuffer(command_buffers[i]);
@@ -1035,8 +1035,8 @@ int vulkan_init()
 	ub = ub_create(sizeof(TransformType), 0);
 	ub2 = ub_create(sizeof(TransformType), 0);
 
-	model = model_load_collada("./assets/models/blender.dae");
-	model1 = model_load_collada("./assets/models/cube.dae");
+	//model_cube = model_load_collada("./assets/models/cube.dae");
+	model_blender = model_load_collada("./assets/models/plane.dae");
 	if (create_command_buffers())
 	{
 		return -13;
@@ -1059,7 +1059,8 @@ void vulkan_terminate()
 	swapchain_destroy();
 	// free(descriptor_sets);
 	vkDestroyDescriptorSetLayout(device, *ub_get_layouts(), NULL);
-	model_destroy(model);
+	model_destroy(model_cube);
+	model_destroy(model_blender);
 	texture_destroy(tex);
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)

@@ -23,6 +23,7 @@ struct Face
 Model* model_load_collada(const char* filepath)
 {
 	Model* model = malloc(sizeof(Model));
+	LOG("Loading model %s", filepath);
 	XMLNode* root = xml_loadfile(filepath);
 	if (root == NULL)
 	{
@@ -108,6 +109,11 @@ Model* model_load_collada(const char* filepath)
 		}
 		sources = xml_get_next(sources);
 	}
+	free(source_names[0]);
+	free(source_names[1]);
+	free(source_names[2]);
+
+	// Check what got loaded
 	if (positions == NULL)
 	{
 		LOG_W("Model %s contains no vertex position data", filepath);
@@ -149,10 +155,10 @@ Model* model_load_collada(const char* filepath)
 		triangle_cont = strchr(triangle_cont + 1, ' ');
 
 		int found = 0;
-		for (uint32_t j = 0; j < set_count; j++)
+		for (uint32_t j = 0; j < 1; j++)
 		{
 			// Already existing pair found
-			if (sets[j].pos_index == pos_index && sets[j].normal_index == normal_index && sets[j].uv_index == uv_index)
+			if (sets[j].pos_index == pos_index && sets[j].uv_index == uv_index)
 			{
 				// Reuse index
 				indices[index_count++] = j;
@@ -165,7 +171,7 @@ Model* model_load_collada(const char* filepath)
 		{
 			// Add new unique index
 			indices[index_count++] = set_count;
-			sets[set_count++] = (struct Face){ pos_index, normal_index, uv_index };
+			sets[set_count++] = (struct Face){pos_index, normal_index, uv_index};
 		}
 	}
 
@@ -179,27 +185,12 @@ Model* model_load_collada(const char* filepath)
 		vertices[i].uv = *(vec2*)&uvs[2 * sets[i].uv_index];
 	}
 
-	/*// Print indices
-	LOG("Indices %d : ", index_count);
-	for (uint32_t i = 0; i < index_count; i++)
-	{
-		LOG_CONT("%d, ", indices[i]);
-	}
-
-	LOG("Vertices %d : ", set_count);
-	for (uint32_t i = 0; i < set_count; i++)
-	{
-		LOG_CONT("(%3v : %2v),", vertices[i].position, vertices[i].uv);
-	}*/
-
 	model->vb = vb_create(vertices, set_count);
 	model->ib = ib_create(indices, index_count);
 	model->index_count = index_count;
 	model->vertex_count = set_count;
 	xml_destroy(root);
-	free(source_names[0]);
-	free(source_names[1]);
-	free(source_names[2]);
+
 	free(positions);
 	free(uvs);
 	free(normals);

@@ -36,17 +36,6 @@ int application_start()
 
 	settings_load();
 
-	XMLNode* node = xml_loadfile("./assets/models/cube.dae");
-
-	xml_savefile(node, "./assets/save.xml");
-	XMLNode* it = xml_get_children(node);
-	while(it != NULL)
-	{
-		LOG("%s", xml_get_tag(it));
-		it = xml_get_next(it);
-	}
-	xml_destroy(node);
-
 	window = window_create("crescent", settings_get_resolution().x, settings_get_resolution().y,
 						   settings_get_window_style());
 	if (window == NULL)
