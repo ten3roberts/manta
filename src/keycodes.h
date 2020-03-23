@@ -2,7 +2,7 @@
 // Mouse buttons are included and do not have spearate keycodes
 
 /* The unknown key */
-#define CR_KEY_UNKNOWN -1
+#define CS_KEY_UNKNOWN -1
 
 /* Printable keys */
 #define CS_KEY_SPACE		 32
