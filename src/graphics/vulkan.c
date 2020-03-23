@@ -1032,7 +1032,7 @@ int vulkan_init()
 	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	descriptorlayout_create(bindings, 2, &descriptor_layout);
-	descriptorset_create(descriptor_layout, bindings, 2, &ub, (Texture**)&tex, descriptors);
+	descriptorset_create(descriptor_layout, bindings, 2, (UniformBuffer**)&ub, (Texture**)&tex, descriptors);
 
 	struct PipelineCreateInfo pipeline_create_info = {0};
 	pipeline_create_info.vertexshader = "./assets/shaders/standard.vert.spv";

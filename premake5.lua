@@ -27,11 +27,11 @@ project "crescent"
 
 	-- specifies configuration specific options
     filter "configurations:Debug"
-      defines { "DEBUG=1", "RELEASE=0" }
+      defines { "DEBUG=1" }
       symbols "On"
 
    filter "configurations:Release"
-      defines { "DEBUG=0", "RELEASE=1" }
+      defines { "RELEASE=1" }
       optimize "On"
 
 	-- sets platform specific includes

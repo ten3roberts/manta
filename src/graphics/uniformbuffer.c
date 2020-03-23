@@ -1,8 +1,9 @@
-#include "head.h"
 #include "log.h"
 #include "graphics/vulkan_internal.h"
 #include "texture.h"
+#include "uniformbuffer.h"
 #include "graphics/buffer.h"
+#include "graphics/renderer.h"
 #include <stdlib.h>
 #include <stb_image.h>
 
@@ -21,15 +22,14 @@ uint32_t descriptor_pool_count;
 
 static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3 * 256 * 10, 0, NULL};
 
-typedef struct
+struct UniformBuffer
 {
-	Head head;
 	// The size of one frame of the command buffer
 	uint32_t size;
 	uint32_t offsets[3];
 	VkBuffer buffers[3];
 	VkDeviceMemory memories[3];
-} UniformBuffer;
+};
 
 // Attempts to find and return a descriptor pool with a minimum of the supplied descriptor types remaining
 // If no qualifying pool was found, a new one is created
@@ -212,8 +212,6 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 {
 	LOG_S("Creating uniform buffer");
 	UniformBuffer* ub = malloc(sizeof(UniformBuffer));
-	ub->head.type = RT_UNIFORMBUFFER;
-	ub->head.id = 0;
 	ub->size = size;
 
 	// Find a free pool
@@ -225,17 +223,29 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 	return ub;
 }
 
-void ub_update(UniformBuffer* ub, void* data, uint32_t i)
+void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, uint32_t frame)
 {
+	if (frame == CS_WHOLE_SIZE)
+		frame = renderer_get_frameindex();
+	if (size == -1)
+		size = ub->size - offset;
+
+#if DEBUG
+	if (offset + size > ub->size)
+		LOG_W("Size and offset of uniform update exceeds capacity. Uniform buffer of %d bytes is being updated with %d "
+			  "bytes at an offset of %d",
+			  ub->size, size, offset);
+#endif
+
 	void* data_map = NULL;
-	vkMapMemory(device, ub->memories[i], ub->offsets[i], ub->size, 0, &data_map);
+	vkMapMemory(device, ub->memories[frame], ub->offsets[frame] + offset, size, 0, &data_map);
 	if (data_map == NULL)
 	{
 		LOG_E("Failed to map memory for uniform buffer");
 		return;
 	}
-	memcpy(data_map, data, ub->size);
-	vkUnmapMemory(device, ub->memories[i]);
+	memcpy(data_map, data, size);
+	vkUnmapMemory(device, ub->memories[frame]);
 }
 
 void ub_destroy(UniformBuffer* ub)

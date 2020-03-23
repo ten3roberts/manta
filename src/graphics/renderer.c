@@ -5,44 +5,36 @@
 #include "graphics/uniformbuffer.h"
 #include "math/quaternion.h"
 
+uint32_t image_index;
+
 void renderer_draw()
 {
-	// Skip rendering if window is minimized
-	if (window_get_minimized(window))
-	{
-		return;
-	}
-	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
-
-	uint32_t image_index;
-	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE,
-						  &image_index);
-
 	// Update uniform buffer
 	TransformType transform_buffer;
 	quaternion rotation = quat_axis_angle((vec3){0, 0.1, 1}, time_elapsed());
 
 	mat4 rot = quat_to_mat4(rotation);
-	mat4 pos = mat4_translate((vec3){time_elapsed()*-0.5, sinf(time_elapsed()) * 0.5, -time_elapsed() + -2});
+	mat4 pos = mat4_translate((vec3){time_elapsed() * -0.5, sinf(time_elapsed()) * 0.5, -time_elapsed() + -2});
 	mat4 scale = mat4_scale((vec3){1, 1, 1});
 	transform_buffer.model = mat4_mul(&rot, &pos);
 
 	transform_buffer.view = mat4_identity;
 	// transform_buffer.proj = mat4_perspective(window_get_width(window) / window_get_height(window), 1, 0, 10);
 	transform_buffer.proj = mat4_ortho(window_get_aspect(window), 1, 0, 10);
-	ub_update(ub, &transform_buffer, image_index);
+	ub_update(ub, &transform_buffer, 0, CS_WHOLE_SIZE, -1);
 
 	// Second
 	rotation = quat_axis_angle((vec3){1, 1, 0}, time_elapsed());
 	rot = quat_to_mat4(rotation);
 
-	pos = mat4_translate((vec3){time_elapsed()*0.1, -sinf(time_elapsed()) * 0.5, -time_elapsed()*0.5});
+	pos = mat4_translate((vec3){time_elapsed() * 0.1, -sinf(time_elapsed()) * 0.5, -time_elapsed() * 0.5});
 	scale = mat4_scale((vec3){0.5, 0.5, 0.5});
 	transform_buffer.model = mat4_mul(&rot, &pos);
 	transform_buffer.model = mat4_mul(&transform_buffer.model, &scale);
 
-	ub_update(ub2, &transform_buffer, image_index);
+	ub_update(ub2, &transform_buffer, 0, CS_WHOLE_SIZE, -1);
 
+	// Submit render queue
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
 	if (images_in_flight[image_index] != VK_NULL_HANDLE)
 	{
@@ -109,4 +101,22 @@ void renderer_draw()
 	}
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void renderer_begin()
+{
+	// Skip rendering if window is minimized
+	if (window_get_minimized(window))
+	{
+		return;
+	}
+	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
+
+	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE,
+						  &image_index);
+}
+
+int renderer_get_frameindex()
+{
+	return image_index;
 }

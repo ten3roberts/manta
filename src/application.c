@@ -21,11 +21,6 @@
 
 static Window* window = NULL;
 
-void draw()
-{
-	renderer_draw();
-}
-
 int swapchain_resize = 0;
 int application_start()
 {
@@ -49,6 +44,7 @@ int application_start()
 	swapchain_resize = 0;
 	while (!window_get_close(window))
 	{
+		renderer_begin();
 		if (window_get_minimized(window))
 		{
 			SLEEP(0.1);
@@ -69,8 +65,9 @@ int application_start()
 			continue;
 		}
 		time_update();
-		draw();
-		if (timer_duration(&timer) > 5.0f)
+		renderer_draw();
+
+			if (timer_duration(&timer) > 5.0f)
 		{
 			timer_reset(&timer);
 			LOG("Framerate %d %f", time_framecount(), time_framerate());
