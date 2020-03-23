@@ -26,7 +26,6 @@ XMLNode* xml_get_children(XMLNode* node);
 
 XMLNode* xml_get_child(XMLNode* node, char* node_tag);
 
-
 // Adds a child to node
 // Will be sorted alphabetically
 // Duplicate tag names are allowed and are after one another in the list

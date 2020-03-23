@@ -5,7 +5,7 @@
 #include "math/vec.h"
 #include "application.h"
 
-Window * _window;
+Window* _window;
 
 int keys[CR_KEY_LAST + 1];
 int prev_keys[CR_KEY_LAST + 1];
@@ -15,7 +15,7 @@ vec2 mouse_pos;
 vec2 scroll;
 vec2 rel_scroll;
 
-void input_init(Window * window)
+void input_init(Window* window)
 {
 	memset(keys, 0, sizeof(keys));
 	memset(prev_keys, 0, sizeof(prev_keys));
@@ -27,7 +27,7 @@ void input_init(Window * window)
 	_window = window;
 }
 
-void input_send_event(Event * event)
+void input_send_event(Event* event)
 {
 	if (event->type == EVENT_KEY)
 	{

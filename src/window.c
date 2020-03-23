@@ -10,7 +10,7 @@
 
 #include <GLFW/glfw3.h>
 
-#define WS_WINDOWED 1
+#define WS_WINDOWED	  1
 #define WS_BORDERLESS 2
 #define WS_FULLSCREEN 4
 
@@ -20,37 +20,37 @@ typedef struct
 	int width, height;
 	int in_focus;
 	int should_close;
-	GLFWwindow * raw_window;
+	GLFWwindow* raw_window;
 } Window;
 
 int glfw_initialized = 0;
 size_t window_count = 0;
 
-void window_size_callback(GLFWwindow * raw_window, int width, int height)
+void window_size_callback(GLFWwindow* raw_window, int width, int height)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	window->width = width;
 	window->height = height;
 	application_send_event((Event){EVENT_WINDOW_RESIZE, .idata = {width, height}, 0});
 }
 
-void window_focus_callback(GLFWwindow * raw_window, int focus)
+void window_focus_callback(GLFWwindow* raw_window, int focus)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	window->in_focus = focus;
 	application_send_event((Event){EVENT_WINDOW_FOCUS, .idata = {focus, 0}, 0});
 }
 
-void window_close_callback(GLFWwindow * raw_window)
+void window_close_callback(GLFWwindow* raw_window)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	window->should_close = 1;
 	application_send_event((Event){EVENT_WINDOW_CLOSE, .idata = {1, 0}, 0});
 }
 
-void key_callback(GLFWwindow * raw_window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow* raw_window, int key, int scancode, int action, int mods)
 {
-	Window * window = glfwGetWindowUserPointer(raw_window);
+	Window* window = glfwGetWindowUserPointer(raw_window);
 	switch (action)
 	{
 	case GLFW_PRESS: {
@@ -70,12 +70,12 @@ void key_callback(GLFWwindow * raw_window, int key, int scancode, int action, in
 	}
 }
 
-void mouse_button_callback(GLFWwindow * raw_window, int key, int action, int mods)
+void mouse_button_callback(GLFWwindow* raw_window, int key, int action, int mods)
 {
 	switch (action)
 	{
 	case GLFW_PRESS: {
-		application_send_event((Event){EVENT_KEY, .idata = {CR_MOUSE_1 + key, 1 }, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {CR_MOUSE_1 + key, 1}, 0});
 		break;
 	}
 	case GLFW_RELEASE: {
@@ -87,25 +87,25 @@ void mouse_button_callback(GLFWwindow * raw_window, int key, int action, int mod
 	}
 }
 
-void scroll_callback(GLFWwindow * raw_window, double xScroll, double yScroll)
+void scroll_callback(GLFWwindow* raw_window, double xScroll, double yScroll)
 {
 	application_send_event((Event){EVENT_MOUSE_SCROLLED, .fdata = {xScroll, yScroll}, 0});
 }
 
-void mouse_moved_callback(GLFWwindow * raw_window, double x, double y)
+void mouse_moved_callback(GLFWwindow* raw_window, double x, double y)
 {
 	application_send_event((Event){EVENT_MOUSE_MOVED, .fdata = {x, y}, 0});
 }
 
-Window * window_create(char * title, int width, int height, int style)
+Window* window_create(char* title, int width, int height, int style)
 {
 	// Make sure to initialize glfw once
 	if (!glfw_initialized && glfwInit())
 		glfw_initialized = 1;
 
 	// Sets the resolution to native if res is set to -1
-	GLFWmonitor * primary = glfwGetPrimaryMonitor();
-	const GLFWvidmode * mode = glfwGetVideoMode(primary);
+	GLFWmonitor* primary = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(primary);
 	width = width > 0 ? width : mode->width;
 	height = height > 0 ? height : mode->height;
 
@@ -113,7 +113,7 @@ Window * window_create(char * title, int width, int height, int style)
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 	LOG("Creating window %d %d", width, height);
-	Window * window = malloc(sizeof(Window));
+	Window* window = malloc(sizeof(Window));
 	if (window == NULL)
 	{
 		return NULL;
@@ -124,7 +124,7 @@ Window * window_create(char * title, int width, int height, int style)
 	window->should_close = 0;
 	strcpy(window->title, title);
 
-	if(style == 0)
+	if (style == 0)
 	{
 		LOG_E("Error empty window style");
 	}
@@ -177,7 +177,7 @@ Window * window_create(char * title, int width, int height, int style)
 	return window;
 }
 
-void window_destroy(Window * window)
+void window_destroy(Window* window)
 {
 	glfwDestroyWindow(window->raw_window);
 	window->raw_window = NULL;
@@ -187,17 +187,16 @@ void window_destroy(Window * window)
 	free(window);
 }
 
-void window_update(Window * window)
+void window_update(Window* window)
 {
 	glfwPollEvents();
 }
 
-
-int window_get_width(Window * window)
+int window_get_width(Window* window)
 {
 	return window->width;
 }
-int window_get_height(Window * window)
+int window_get_height(Window* window)
 {
 	return window->height;
 }
@@ -211,7 +210,7 @@ int window_get_minimized(Window* window)
 	return window->width == 0 || window->height == 0;
 }
 
-int window_get_close(Window * window)
+int window_get_close(Window* window)
 {
 	return window->should_close;
 }

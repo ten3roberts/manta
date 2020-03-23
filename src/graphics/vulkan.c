@@ -913,7 +913,8 @@ int create_command_buffers()
 		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
 		// Bind the descriptors
-		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptors[i], 0, NULL);
+		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+								&descriptors[i], 0, NULL);
 		/*model_bind(model_cube, command_buffers[i]);
 		texture_bind(tex, command_buffers[i], i);
 		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model_cube), 1, 0, 0, 0);*/

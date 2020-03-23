@@ -227,6 +227,7 @@ void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, ui
 {
 	if (frame == CS_WHOLE_SIZE)
 		frame = renderer_get_frameindex();
+
 	if (size == -1)
 		size = ub->size - offset;
 

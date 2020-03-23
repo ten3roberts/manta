@@ -15,10 +15,10 @@ typedef enum
 
 	// Window resize event
 	// { new width, new height }
-    EVENT_WINDOW_RESIZE,
+	EVENT_WINDOW_RESIZE,
 	// Window focus or lost focus event
 	// { 0 = unfocused : 1 = focused, NULL }
-    EVENT_WINDOW_FOCUS,
+	EVENT_WINDOW_FOCUS,
 	// Window X, or closed event
 	EVENT_WINDOW_CLOSE
 
@@ -32,7 +32,7 @@ typedef struct
 	// A union representing the event data in either integer or float form
 	union {
 		int idata[2];
-        float fdata[2];
+		float fdata[2];
 	};
 	int handled;
 } Event;

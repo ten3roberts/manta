@@ -62,11 +62,11 @@ VkCommandBuffer single_use_commands_begin();
 void single_use_commands_end(VkCommandBuffer command_buffer);
 
 void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory, VkSampleCountFlagBits num_samples);
+				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory,
+				  VkSampleCountFlagBits num_samples);
 
 VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags);
 
 void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout);
-

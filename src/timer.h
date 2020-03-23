@@ -4,14 +4,14 @@
 typedef enum
 {
 	// Measures the CPU execution time
-	CT_EXECUTION_TICKS, 
+	CT_EXECUTION_TICKS,
 	// Measures the monotonic wall clock
 	CT_WALL_TICKS
 } ClockType;
 
 // Defines a timer which can be used to time functions and create intervals
 // There are two modes
-// CT_EXECUTION_TICKS times the time taken executing a function. 
+// CT_EXECUTION_TICKS times the time taken executing a function.
 // CT_WALL_TICKS
 // timer_start starts a timer
 // timer_duration() reads the current elapsed timer from the timer

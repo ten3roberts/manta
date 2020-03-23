@@ -67,7 +67,7 @@ int application_start()
 		time_update();
 		renderer_draw();
 
-			if (timer_duration(&timer) > 5.0f)
+		if (timer_duration(&timer) > 5.0f)
 		{
 			timer_reset(&timer);
 			LOG("Framerate %d %f", time_framecount(), time_framerate());

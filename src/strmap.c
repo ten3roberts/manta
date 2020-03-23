@@ -4,7 +4,7 @@
 #include "math/prime.h"
 #include <math.h>
 
-static strmap_item STRMAP_DELETED_ITEM = { NULL, NULL };
+static strmap_item STRMAP_DELETED_ITEM = {NULL, NULL};
 #define STRMAP_BASE_SIZE 53
 
 struct strmap

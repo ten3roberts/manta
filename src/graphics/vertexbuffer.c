@@ -26,7 +26,7 @@ VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 	size_t buffer_size = sizeof(*vb->vertices) * vertex_count;
 
 	vb->vertex_count = vertex_count;
-	vb->vertices	 = malloc(buffer_size);
+	vb->vertices = malloc(buffer_size);
 	memcpy(vb->vertices, vertices, sizeof(*vb->vertices) * vb->vertex_count);
 
 	// Create the buffer and memory
@@ -68,7 +68,7 @@ void vb_copy_data(VertexBuffer* vb)
 void vb_bind(VertexBuffer* vb, VkCommandBuffer command_buffer)
 {
 	VkBuffer vertex_buffers[] = {vb->buffer};
-	VkDeviceSize offsets[]	  = {vb->offset};
+	VkDeviceSize offsets[] = {vb->offset};
 	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 }
 
@@ -90,21 +90,21 @@ void vb_pools_destroy()
 VertexInputDescription vertex_get_description()
 {
 	VertexInputDescription description;
-	description.binding_description.binding	  = 0;
-	description.binding_description.stride	  = sizeof(Vertex);
+	description.binding_description.binding = 0;
+	description.binding_description.stride = sizeof(Vertex);
 	description.binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 	// Position
-	description.attributes[0].binding  = 0;
+	description.attributes[0].binding = 0;
 	description.attributes[0].location = 0;
-	description.attributes[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
-	description.attributes[0].offset   = offsetof(Vertex, position);
+	description.attributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	description.attributes[0].offset = offsetof(Vertex, position);
 
 	// UV
-	description.attributes[1].binding  = 0;
+	description.attributes[1].binding = 0;
 	description.attributes[1].location = 1;
-	description.attributes[1].format   = VK_FORMAT_R32G32_SFLOAT;
-	description.attributes[1].offset   = offsetof(Vertex, uv);
+	description.attributes[1].format = VK_FORMAT_R32G32_SFLOAT;
+	description.attributes[1].offset = offsetof(Vertex, uv);
 
 	description.attribute_count = sizeof(description.attributes) / sizeof(*description.attributes);
 

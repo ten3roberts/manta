@@ -28,9 +28,9 @@ size_t time_framecount();
 #if PL_LINUX
 #include <unistd.h>
 // Sleeps for (float) seconds
-#define SLEEP(s) usleep(s*1000000)	
+#define SLEEP(s) usleep(s * 1000000)
 #elif PL_WINDOWS
 #include <Windows.h>
 // Sleeps for (float) seconds
-#define SLEEP(s) Sleep(s*1000);
+#define SLEEP(s) Sleep(s * 1000);
 #endif

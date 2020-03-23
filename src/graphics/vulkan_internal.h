@@ -39,4 +39,5 @@ int create_graphics_pipeline();
 int create_framebuffers();
 int create_command_buffers();
 int create_descriptor_pool();
-int create_graphics_pipeline(struct PipelineCreateInfo createinfo, VkPipelineLayout* dst_pipeline_layout, VkPipeline* dst_pipeline);
+int create_graphics_pipeline(struct PipelineCreateInfo createinfo, VkPipelineLayout* dst_pipeline_layout,
+							 VkPipeline* dst_pipeline);

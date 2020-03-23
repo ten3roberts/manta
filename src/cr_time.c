@@ -15,7 +15,7 @@ typedef struct
 	struct timespec now;
 } _Time;
 
-_Time _time = { 0,0,0,0, {0,0}, {0,0}, {0,0} };
+_Time _time = {0, 0, 0, 0, {0, 0}, {0, 0}, {0, 0}};
 
 void time_init()
 {
@@ -35,11 +35,10 @@ void time_update()
 
 	// Update now
 	clock_gettime(CLOCK_MONOTONIC_RAW, &_time.now);
-	_time.deltatime = (_time.now.tv_sec - _time.prev.tv_sec) + (_time.now.tv_nsec - _time.prev.tv_nsec) /
-		1000000000.0;
+	_time.deltatime = (_time.now.tv_sec - _time.prev.tv_sec) + (_time.now.tv_nsec - _time.prev.tv_nsec) / 1000000000.0;
 
-	_time.elapsedtime = (_time.now.tv_sec - _time.init_time.tv_sec) + (_time.now.tv_nsec - _time.init_time.tv_nsec) /
-		1000000000.0;
+	_time.elapsedtime =
+		(_time.now.tv_sec - _time.init_time.tv_sec) + (_time.now.tv_nsec - _time.init_time.tv_nsec) / 1000000000.0;
 
 	_time.framerate = 1 / _time.deltatime;
 	_time.framecount++;
@@ -65,7 +64,7 @@ typedef struct
 	LARGE_INTEGER now_tick;
 } _Time;
 
-_Time _time = { 0,0 ,0,0,0,0,0 };
+_Time _time = {0, 0, 0, 0, 0, 0, 0};
 
 void time_init()
 {

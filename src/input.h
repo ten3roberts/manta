@@ -4,7 +4,6 @@
 #include "math/vec.h"
 #include "window.h"
 
-
 // Mouse buttons counts as keys
 
 void input_init(Window* window);
@@ -23,7 +22,7 @@ int input_key_pressed(int keycode);
 // Returns true if the key was released this frame
 int input_key_released(int keycode);
 
-// Returns the mouse position as a vec2 
+// Returns the mouse position as a vec2
 // Measures the cursor position as pixels from the top left corner
 vec2 input_mouse_pos();
 

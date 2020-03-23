@@ -20,9 +20,6 @@ typedef struct Texture
 	VkDescriptorSet descriptors[3];
 } Texture;
 
-
-
-
 VkSampler sampler_create()
 {
 	VkSamplerCreateInfo samplerInfo = {0};
@@ -102,7 +99,6 @@ Texture* texture_create(const char* file)
 	image_create(tex->width, tex->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
 				 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				 &tex->image, &tex->memory, VK_SAMPLE_COUNT_1_BIT);
-
 
 	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
 							VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
