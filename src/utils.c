@@ -286,7 +286,7 @@ void get_dir(const char* path, char* result, size_t size)
 	}
 }
 
-size_t read_file(char* path, char* buf)
+size_t read_file(const char* path, char* buf)
 {
 	FILE* file = fopen(path, "r");
 	if (!file)
@@ -303,7 +303,7 @@ size_t read_file(char* path, char* buf)
 	return size + 1;
 }
 
-char* read_file_alloc(char* path)
+char* read_file_alloc(const char* path)
 {
 	char* buf = NULL;
 	FILE* file = fopen(path, "r");
@@ -323,7 +323,7 @@ char* read_file_alloc(char* path)
 	return buf;
 }
 
-size_t read_fileb(char* path, char* buf)
+size_t read_fileb(const char* path, char* buf)
 {
 	FILE* file = fopen(path, "rb");
 	if (!file)
@@ -339,7 +339,7 @@ size_t read_fileb(char* path, char* buf)
 	return size;
 }
 
-char* read_fileb_alloc(char* path)
+char* read_fileb_alloc(const char* path)
 {
 	char* buf = NULL;
 	FILE* file = fopen(path, "rb");

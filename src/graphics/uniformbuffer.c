@@ -6,31 +6,18 @@
 #include <stdlib.h>
 #include <stb_image.h>
 
-VkDescriptorSetLayout layout = NULL;
-
-VkDescriptorSetLayout* ub_get_layouts()
+// The different flavors of descriptor pools
+struct DescriptorPool
 {
-	return &layout;
-}
-uint32_t ub_get_layout_count()
-{
-	return 1;
-}
-
-typedef struct
-{
-	// Describes the currently used count of allocated descriptors
-	uint32_t filled_count;
-	// Describes the total count that was allocated
-	uint32_t alloc_count;
+	// How many uniform type descriptors are left in the pool
+	uint32_t uniform_count;
+	// How many sampler type descriptors are left in the pool
+	uint32_t sampler_count;
 	VkDescriptorPool pool;
-} DescriptorPool;
+};
 
-DescriptorPool* descriptor_pools = NULL;
-uint32_t descriptor_pool_count = 0;
-
-DescriptorPool* sampler_descriptor_pools = NULL;
-uint32_t sampler_descriptor_pool_count = 0;
+struct DescriptorPool* descriptor_pools;
+uint32_t descriptor_pool_count;
 
 static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3 * 256 * 10, 0, NULL};
 
@@ -42,36 +29,72 @@ typedef struct
 	uint32_t offsets[3];
 	VkBuffer buffers[3];
 	VkDeviceMemory memories[3];
-	VkDescriptorSet descriptor_sets[3];
 } UniformBuffer;
 
-int ub_create_descriptor_set_layout()
+// Attempts to find and return a descriptor pool with a minimum of the supplied descriptor types remaining
+// If no qualifying pool was found, a new one is created
+VkDescriptorPool descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 {
-	// Update the map that corresponds the binding with the layout
-	VkDescriptorSetLayoutBinding uboLayoutBinding = {0};
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.descriptorCount = 1;
 
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+	{
+		// Qualifying pool
+		if (descriptor_pools[i].uniform_count >= uniform_count && descriptor_pools[i].sampler_count >= sampler_count)
+		{
+			// Remove thee requested amount of descriptors from the pool
+			descriptor_pools[i].uniform_count -= uniform_count;
+			descriptor_pools[i].sampler_count -= sampler_count;
 
-	uboLayoutBinding.pImmutableSamplers = NULL; // Optional
+			return descriptor_pools[i].pool;
+		}
+	}
 
-	VkDescriptorSetLayoutBinding samplerLayoutBinding = {0};
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = NULL;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	// No pool was found
+	// Allocate a new one
+	LOG_S("Creating new descriptor pool");
 
-	VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding, samplerLayoutBinding};
+	descriptor_pool_count += 1;
+	descriptor_pools = realloc(descriptor_pools, descriptor_pool_count * sizeof(struct DescriptorPool));
 
+	// Reference to the new pool struct
+	struct DescriptorPool* new_pool = &descriptor_pools[descriptor_pool_count - 1];
+
+	// Allocate a larger block of memory than the minimum to make room for more similar allocations and reduce memory
+	// allocations
+	new_pool->uniform_count = uniform_count * 100;
+	new_pool->sampler_count = sampler_count * 100;
+
+	VkDescriptorPoolSize poolSizes[2] = {0};
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[0].descriptorCount = new_pool->uniform_count;
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	poolSizes[1].descriptorCount = new_pool->sampler_count;
+
+	VkDescriptorPoolCreateInfo poolInfo = {0};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.poolSizeCount = sizeof(poolSizes) / sizeof(*poolSizes);
+	poolInfo.pPoolSizes = poolSizes;
+
+	poolInfo.maxSets = new_pool->uniform_count + new_pool->sampler_count;
+
+	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &new_pool->pool);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create descriptor pool - code %d", result);
+		return NULL;
+	}
+	return new_pool->pool;
+}
+
+int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
+							VkDescriptorSetLayout* dst_layout)
+{
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {0};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = sizeof(bindings) / sizeof(*bindings);
+	layoutInfo.bindingCount = binding_count;
 	layoutInfo.pBindings = bindings;
 
-	VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &layout);
+	VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, dst_layout);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create descriptor set layout - code %d", result);
@@ -80,114 +103,108 @@ int ub_create_descriptor_set_layout()
 	return 0;
 }
 
-int ub_descriptor_pool_create()
+int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
+						 UniformBuffer** uniformbuffers, Texture** textures, VkDescriptorSet* dst_descriptors)
 {
-	// Resize array
-	LOG_S("Creating new descriptor pool");
-
-	descriptor_pools = realloc(descriptor_pools, ++descriptor_pool_count * sizeof(DescriptorPool));
-	DescriptorPool* descriptor_pool = &descriptor_pools[descriptor_pool_count - 1];
-
-	descriptor_pool->filled_count = 0;
-	descriptor_pool->alloc_count = swapchain_image_count * 100;
-
-	VkDescriptorPoolSize poolSizes[2] = {0};
-	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = descriptor_pool->alloc_count;
-	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	poolSizes[1].descriptorCount = descriptor_pool->alloc_count;
-
-	VkDescriptorPoolCreateInfo poolInfo = {0};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = sizeof(poolSizes) / sizeof(*poolSizes);
-	poolInfo.pPoolSizes = poolSizes;
-
-	poolInfo.maxSets = descriptor_pool->alloc_count;
-
-	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &descriptor_pool->pool);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to create descriptor pool - code %d", result);
-		return -1;
-	}
-	return 0;
-}
-
-int ub_create_descriptor_sets(VkDescriptorSet* dst_descriptors, VkBuffer* buffers, uint32_t* offsets, uint32_t size,
-							  VkImageView image_view, VkSampler sampler)
-{
-	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
-
 	// Fill the layouts for all swapchain image count
+	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
 	for (size_t i = 0; i < swapchain_image_count; i++)
 		layouts[i] = layout;
 
+	// Find out how many of each type of descriptor type is required
+	uint32_t uniform_count = 0;
+	uint32_t sampler_count = 0;
+	for (uint32_t i = 0; i < binding_count; i++)
+	{
+		if (bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			uniform_count += bindings[i].descriptorCount;
+		}
+		else if (bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			sampler_count += bindings[i].descriptorCount;
+		}
+		else
+		{
+			LOG_W("Descriptor set creation: Unsupported descriptor type");
+		}
+	}
+
+	// Request uniform and sampler types for each frame in flight
+	uniform_count *= swapchain_image_count;
+	sampler_count *= swapchain_image_count;
+
 	VkDescriptorSetAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	if (descriptor_pool_count == 0)
-	{
-		ub_descriptor_pool_create(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-	}
-
-	// Iterate and find a pool that is not full
-	for (uint32_t i = 0; i < descriptor_pool_count; i++)
-	{
-		if (descriptor_pools[i].filled_count + 3 >= descriptor_pools[i].alloc_count)
-		{
-			// At last pool
-			if (i == descriptor_pool_count - 1)
-			{
-				ub_descriptor_pool_create();
-			}
-			continue;
-		}
-		// Found a good pool
-		allocInfo.descriptorPool = descriptor_pools[i].pool;
-		descriptor_pools[i].filled_count += 3;
-	}
-
+	allocInfo.descriptorPool = descriptorpool_get(uniform_count, sampler_count);
 	allocInfo.descriptorSetCount = swapchain_image_count;
 	allocInfo.pSetLayouts = layouts;
+	allocInfo.pNext = 0;
 
 	vkAllocateDescriptorSets(device, &allocInfo, dst_descriptors);
-	for (size_t i = 0; i < swapchain_image_count; i++)
+
+	VkWriteDescriptorSet* descriptorWrites = malloc(binding_count * sizeof(VkWriteDescriptorSet));
+	VkDescriptorBufferInfo* buffer_infos = malloc(uniform_count * sizeof(VkDescriptorBufferInfo));
+	VkDescriptorImageInfo* image_infos = malloc(sampler_count * sizeof(VkDescriptorImageInfo));
+
+	// Write descriptors, repeat for each frame in flight
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
-		VkDescriptorBufferInfo bufferInfo = {0};
-		bufferInfo.buffer = buffers[i];
-		bufferInfo.offset = offsets[i];
-		bufferInfo.range = size;
+		uint32_t buffer_it = 0;
+		uint32_t sampler_it = 0;
+		// Iterate and fill a descriptor info for each binding
+		for (uint32_t j = 0; j < binding_count; j++)
+		{
+			// Uniform buffer
+			if (bindings[j].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+			{
+				buffer_infos[buffer_it].buffer = uniformbuffers[buffer_it]->buffers[i];
+				buffer_infos[buffer_it].offset = uniformbuffers[buffer_it]->offsets[i];
+				buffer_infos[buffer_it].range = uniformbuffers[buffer_it]->size;
 
-		VkDescriptorImageInfo imageInfo = {0};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = texture_get_image_view(tex);
-		imageInfo.sampler = texture_get_sampler(tex);
+				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[j].dstSet = dst_descriptors[i];
+				descriptorWrites[j].dstBinding = bindings[j].binding;
+				descriptorWrites[j].dstArrayElement = 0;
+				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptorWrites[j].descriptorCount = 1;
+				descriptorWrites[j].pBufferInfo = &buffer_infos[buffer_it];
+				descriptorWrites[j].pImageInfo = NULL;
+				descriptorWrites[j].pTexelBufferView = NULL;
+				descriptorWrites[j].pNext = NULL;
+				buffer_it++;
+			}
 
-		VkWriteDescriptorSet descriptorWrites[2] = {0};
-		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = dst_descriptors[i];
-		descriptorWrites[0].dstBinding = 0;
-		descriptorWrites[0].dstArrayElement = 0;
-		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
-		descriptorWrites[0].pImageInfo = NULL;
-		descriptorWrites[0].pTexelBufferView = NULL;
+			// Sampler
+			else if (bindings[j].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+			{
+				image_infos[sampler_it].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				image_infos[sampler_it].imageView = texture_get_image_view(textures[sampler_it]);
+				image_infos[sampler_it].sampler = texture_get_sampler(textures[sampler_it]);
 
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = dst_descriptors[i];
-		descriptorWrites[1].dstBinding = 1;
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pBufferInfo = NULL;
-		descriptorWrites[1].pImageInfo = &imageInfo;
-		descriptorWrites[1].pTexelBufferView = NULL;
-
-		vkUpdateDescriptorSets(device, 2, descriptorWrites, 0,
-							   NULL);
+				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[j].dstSet = dst_descriptors[i];
+				descriptorWrites[j].dstBinding = bindings[j].binding;
+				descriptorWrites[j].dstArrayElement = 0;
+				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[j].descriptorCount = 1;
+				descriptorWrites[j].pBufferInfo = NULL;
+				descriptorWrites[j].pImageInfo = &image_infos[sampler_it];
+				descriptorWrites[j].pTexelBufferView = NULL;
+				descriptorWrites[j].pNext = NULL;
+				sampler_it++;
+			}
+			else
+			{
+				LOG_W("Descriptor set writing: Unsupported descriptor type");
+			}
+		}
+		vkUpdateDescriptorSets(device, binding_count, descriptorWrites, 0, NULL);
 	}
 
 	free(layouts);
+	free(buffer_infos);
+	free(image_infos);
 	return 0;
 }
 
@@ -205,8 +222,6 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 		buffer_pool_array_get(&ub_pools, size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
 	}
 
-	// Create descriptor sets
-	ub_create_descriptor_sets(ub->descriptor_sets, ub->buffers, ub->offsets, ub->size, NULL, NULL);
 	return ub;
 }
 
@@ -232,12 +247,6 @@ void ub_destroy(UniformBuffer* ub)
 		// vkFreeMemory(device, ub->memories[i], NULL);
 	}
 	free(ub);
-}
-
-void ub_bind(UniformBuffer* ub, VkCommandBuffer command_buffer, int i)
-{
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
-							&ub->descriptor_sets[i], 0, NULL);
 }
 
 void ub_pools_destroy()

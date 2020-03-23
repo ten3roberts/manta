@@ -93,7 +93,7 @@ int swapchain_recreate()
 	swapchain_create();
 	create_image_views();
 	create_render_pass();
-	create_graphics_pipeline();
+	// TODO : create_graphics_pipeline();
 	create_color_buffer();
 	create_depth_buffer();
 	create_framebuffers();

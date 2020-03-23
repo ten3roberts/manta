@@ -29,18 +29,18 @@ void get_dir(const char * path, char * result, size_t size);
 
 // Will read a file's contents into buf
 // If buf is NULL, nothing will be written and file length is returned in bytes
-size_t read_file(char* path, char* buf);
+size_t read_file(const char* path, char* buf);
 
 // Reads the file
 // Allocates and returns a null terminated string filled with the contents
 // Return value needs to be freed manually
 // Returns null if file doesn't exist
-char* read_file_alloc(char* path);
+char* read_file_alloc(const char* path);
 
 // Will read a binary file's contents into buf
 // If buf is NULL, nothing will be written and file length is returned in bytes
 // Is not null terminated
-size_t read_fileb(char* path, char* buf);
+size_t read_fileb(const char* path, char* buf);
 
 // Changes the working directory
 void set_workingdir(const char * dir);
