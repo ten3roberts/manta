@@ -25,10 +25,8 @@ uint32_t swapchain_image_view_count = 0;
 VkFormat swapchain_image_format;
 VkExtent2D swapchain_extent;
 
-// Pipeline layout
-VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
-
-VkPipeline graphics_pipeline = VK_NULL_HANDLE;
+VkDescriptorSetLayout global_descriptor_layout = VK_NULL_HANDLE;
+VkDescriptorSet global_descriptors[3];
 
 VkFramebuffer* framebuffers = NULL;
 size_t framebuffer_count = 0;

@@ -7,7 +7,7 @@
 #include "math/math.h"
 #include "vulkan.h"
 #include "swapchain.h"
-#include "uniformbuffer.h"
+#include "uniforms.h"
 #include "settings.h"
 #include "cr_time.h"
 #include "texture.h"
@@ -15,12 +15,12 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "model.h"
+#include "material.h"
 
 Model* model_cube;
 Model* model_blender;
-VkDescriptorSetLayoutBinding bindings[2];
-VkDescriptorSetLayout descriptor_layout;
-VkDescriptorSet descriptors[3];
+Material* material;
+VkDescriptorSetLayoutBinding bindings[1];
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 													 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -569,28 +569,28 @@ int create_render_pass()
 	return 0;
 }
 
-int create_graphics_pipeline(struct PipelineCreateInfo createinfo, VkPipelineLayout* dst_pipeline_layout,
+int create_graphics_pipeline(struct PipelineCreateInfo* createinfo, VkPipelineLayout* dst_pipeline_layout,
 							 VkPipeline* dst_pipeline)
 {
 	// Read vertex shader from SPIR-V
-	size_t vert_code_size = read_fileb(createinfo.vertexshader, NULL);
+	size_t vert_code_size = read_fileb(createinfo->vertexshader, NULL);
 	if (vert_code_size == 0)
 	{
-		LOG_E("Failed to read vertex shader %s from binary file", createinfo.vertexshader);
+		LOG_E("Failed to read vertex shader %s from binary file", createinfo->vertexshader);
 		return -1;
 	}
 	char* vert_shader_code = malloc(vert_code_size);
-	read_fileb(createinfo.vertexshader, vert_shader_code);
+	read_fileb(createinfo->vertexshader, vert_shader_code);
 
 	// Read fragment shader from SPIR-V
-	size_t frag_code_size = read_fileb(createinfo.fragmentshader, NULL);
+	size_t frag_code_size = read_fileb(createinfo->fragmentshader, NULL);
 	if (vert_code_size == 0)
 	{
 		LOG_E("Failed to read vertex shader %s from binary file", "./assets/shaders/standard.frag.spv");
 		return -1;
 	}
 	char* frag_shader_code = malloc(frag_code_size);
-	read_fileb(createinfo.fragmentshader, frag_shader_code);
+	read_fileb(createinfo->fragmentshader, frag_shader_code);
 
 	VkShaderModule vert_shader_module = create_shader_module(vert_shader_code, vert_code_size);
 	VkShaderModule frag_shader_module = create_shader_module(frag_shader_code, frag_code_size);
@@ -617,7 +617,7 @@ int create_graphics_pipeline(struct PipelineCreateInfo createinfo, VkPipelineLay
 
 	// Vertex input
 	// Specify the data the vertex shader takes as input
-	VertexInputDescription vertex_description = createinfo.vertex_layout;
+	VertexInputDescription vertex_description = createinfo->vertex_description;
 	VkPipelineVertexInputStateCreateInfo vertex_input_info = {0};
 	vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertex_input_info.vertexBindingDescriptionCount = 1;
@@ -738,8 +738,8 @@ int create_graphics_pipeline(struct PipelineCreateInfo createinfo, VkPipelineLay
 	// Pipeline layout
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = createinfo.descriptor_layout_count;
-	pipelineLayoutInfo.pSetLayouts = createinfo.descriptor_layouts;
+	pipelineLayoutInfo.setLayoutCount = createinfo->descriptor_layout_count;
+	pipelineLayoutInfo.pSetLayouts = createinfo->descriptor_layouts;
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // TODO
 	pipelineLayoutInfo.pPushConstantRanges = NULL; // TODO
 	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, dst_pipeline_layout);
@@ -910,11 +910,10 @@ int create_command_buffers()
 		render_pass_info.clearValueCount = 2;
 		render_pass_info.pClearValues = clear_values;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
-		// Bind the descriptors
-		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
-								&descriptors[i], 0, NULL);
+
+		material_bind(material, command_buffers[i], i);
+
 		/*model_bind(model_cube, command_buffers[i]);
 		texture_bind(tex, command_buffers[i], i);
 		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model_cube), 1, 0, 0, 0);*/
@@ -1026,28 +1025,16 @@ int vulkan_init()
 	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	bindings[0].pImmutableSamplers = NULL; // Optional
 
-	bindings[1].binding = 1;
+	/*bindings[1].binding = 1;
 	bindings[1].descriptorCount = 1;
 	bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	bindings[1].pImmutableSamplers = NULL;
-	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;*/
 
-	descriptorlayout_create(bindings, 2, &descriptor_layout);
-	descriptorset_create(descriptor_layout, bindings, 2, (UniformBuffer**)&ub, (Texture**)&tex, descriptors);
+	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
+	descriptorset_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub, (Texture**)&tex, global_descriptors);
 
-	struct PipelineCreateInfo pipeline_create_info = {0};
-	pipeline_create_info.vertexshader = "./assets/shaders/standard.vert.spv";
-	pipeline_create_info.fragmentshader = "./assets/shaders/standard.frag.spv";
-	pipeline_create_info.geometryshader = NULL;
-
-	pipeline_create_info.descriptor_layout_count = 1;
-	pipeline_create_info.descriptor_layouts = &descriptor_layout;
-	pipeline_create_info.vertex_layout = vertex_get_description();
-
-	if (create_graphics_pipeline(pipeline_create_info, &pipeline_layout, &graphics_pipeline))
-	{
-		return -10;
-	}
+	material = material_create("tmp");
 
 	if (create_color_buffer())
 	{
@@ -1083,7 +1070,7 @@ void vulkan_terminate()
 	vb_pools_destroy();
 	swapchain_destroy();
 	// free(descriptor_sets);
-	vkDestroyDescriptorSetLayout(device, descriptor_layout, NULL);
+	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
 	model_destroy(model_cube);
 	model_destroy(model_blender);
 	texture_destroy(tex);

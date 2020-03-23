@@ -4,7 +4,7 @@
 #include "vulkan.h"
 #include <stdlib.h>
 #include "log.h"
-#include "graphics/uniformbuffer.h"
+#include "graphics/uniforms.h"
 
 int swapchain_create()
 {
@@ -117,12 +117,6 @@ int swapchain_destroy()
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);
 
 	vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
-
-	vkDestroyPipeline(device, graphics_pipeline, NULL);
-	graphics_pipeline = NULL;
-	vkDestroyPipelineLayout(device, pipeline_layout, NULL);
-	pipeline_layout = NULL;
-	vkDestroyRenderPass(device, renderPass, NULL);
 
 	// Destroy the image views since they were explicitely created
 	for (size_t i = 0; i < swapchain_image_view_count; i++)

@@ -1,7 +1,7 @@
+#include "uniforms.h"
 #include "log.h"
 #include "graphics/vulkan_internal.h"
 #include "texture.h"
-#include "uniformbuffer.h"
 #include "graphics/buffer.h"
 #include "graphics/renderer.h"
 #include <stdlib.h>
@@ -72,8 +72,8 @@ VkDescriptorPool descriptorpool_get(uint32_t uniform_count, uint32_t sampler_cou
 
 	VkDescriptorPoolCreateInfo poolInfo = {0};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = sizeof(poolSizes) / sizeof(*poolSizes);
-	poolInfo.pPoolSizes = poolSizes;
+	poolInfo.poolSizeCount = uniform_count && sampler_count ? 2 : 1;
+	poolInfo.pPoolSizes = uniform_count ? poolSizes : sampler_count ? &poolSizes[1] : NULL;
 
 	poolInfo.maxSets = new_pool->uniform_count + new_pool->sampler_count;
 

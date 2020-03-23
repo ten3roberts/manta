@@ -2,7 +2,6 @@
 #include "buffer.h"
 #include "log.h"
 #include "vulkan_members.h"
-#include "uniformbuffer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <stdlib.h>
@@ -88,13 +87,6 @@ Texture* texture_create(const char* file)
 	vkMapMemory(device, staging_buffer_memory, 0, image_size, 0, &data);
 	memcpy(data, tex->pixels, image_size);
 	vkUnmapMemory(device, staging_buffer_memory);
-	const stbi_uc* p = tex->pixels + (4 * (10 * tex->width + 15));
-	int r = p[0];
-	int g = p[1];
-	int b = p[2];
-	int a = p[3];
-
-	LOG("%d, %d, %d", r, g, b);
 
 	image_create(tex->width, tex->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
 				 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -122,12 +114,6 @@ Texture* texture_create(const char* file)
 
 	// ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
 	return tex;
-}
-
-void texture_bind(Texture* tex, VkCommandBuffer command_buffer, int i)
-{
-	// vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
-	// &tex->descriptors[i], 0, NULL);
 }
 
 void texture_destroy(Texture* tex)

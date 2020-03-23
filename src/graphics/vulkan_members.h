@@ -61,10 +61,8 @@ extern uint32_t swapchain_image_view_count;
 extern VkFormat swapchain_image_format;
 extern VkExtent2D swapchain_extent;
 
-// Pipeline layout
-extern VkPipelineLayout pipeline_layout;
-
-extern VkPipeline graphics_pipeline;
+extern VkDescriptorSetLayout global_descriptor_layout;
+extern VkDescriptorSet global_descriptors[3];
 
 extern VkFramebuffer* framebuffers;
 extern size_t framebuffer_count;
