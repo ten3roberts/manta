@@ -1034,7 +1034,7 @@ int vulkan_init()
 	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
 	descriptorset_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub, (Texture**)&tex, global_descriptors);
 
-	material = material_create("tmp");
+	material = material_create("./assets/materials/grid.json");
 
 	if (create_color_buffer())
 	{

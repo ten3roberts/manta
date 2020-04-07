@@ -38,7 +38,7 @@ project "crescent"
     filter "system:linux"
     --linkoptions {"-lvulkan"}
         defines { "PL_LINUX=1"}
-        buildoptions { "-Wall", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function", "-pthread" }
+        buildoptions { "-Wall", "-Werror", "-Wno-unused-but-set-variable", "-Wno-unused-variable", "-Wno-unused-function", "-pthread" }
 
         links { "m", "dl", "pthread", "X11", "GL", "vulkan" }
         prebuildcommands "cd assets/shaders && ./compile.sh"
