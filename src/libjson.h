@@ -18,8 +18,6 @@ typedef struct JSON JSON;
 #define JSON_TBOOL	  16
 #define JSON_TNULL	  32
 
-void json_set_msgcallback(void (*func)(const char* msg));
-
 // Creates an empty json with invalid type
 JSON* json_create_empty();
 // Creates a valid json null
@@ -173,21 +171,9 @@ void json_destroy(JSON* object);
 
 #define JSON_IS_WHITESPACE(c) (c == ' ' || c == '\n' || c == '\r' || c == '\t')
 
-static void json_msg_default(const char* msg)
-{
-	puts(msg);
-}
-
-static void (*json_msg_func)(const char* msg) = json_msg_default;
-
-void json_set_msgcallback(void (*func)(const char* msg))
-{
-	json_msg_func = func;
-}
-
-#define JSON_MSG(m)    \
-	if (json_msg_func) \
-		json_msg_func(m);
+#ifndef JSON_MESSAGE
+#define JSON_MESSAGE(m) puts(m)
+#endif
 
 // Returns a copy of str
 char* strduplicate(const char* str)
@@ -222,7 +208,7 @@ void json_ss_write(struct JSONStringStream* ss, const char* str, int escape)
 {
 	if (str == NULL)
 	{
-		JSON_MSG("Error writing invalid string");
+		JSON_MESSAGE("Error writing invalid string");
 	}
 
 	size_t lstr = strlen(str);
@@ -281,7 +267,7 @@ void json_ss_write(struct JSONStringStream* ss, const char* str, int escape)
 		char* tmp = JSON_REALLOC(ss->str, ss->size);
 		if (tmp == NULL)
 		{
-			JSON_MSG("Failed to allocate memory for string stream");
+			JSON_MESSAGE("Failed to allocate memory for string stream");
 			return;
 		}
 		ss->str = tmp;
@@ -406,7 +392,7 @@ char* json_stof(char* str, double* out)
 		{
 			if (isexponent)
 			{
-				JSON_MSG("Can't have stacked exponents");
+				JSON_MESSAGE("Can't have stacked exponents");
 				return 0;
 			}
 			isexponent = 1;
@@ -478,7 +464,7 @@ char* json_read_quote(char* str, char** out)
 			char* tmp = JSON_REALLOC(*out, lval);
 			if (tmp == NULL)
 			{
-				JSON_MSG("Failed to allocate memory for string value");
+				JSON_MESSAGE("Failed to allocate memory for string value");
 				return str;
 			}
 			*out = tmp;
@@ -515,7 +501,7 @@ char* json_read_quote(char* str, char** out)
 				result[valit++] = '\t';
 				break;
 			default:
-				JSON_MSG("Invalid escape sequence");
+				JSON_MESSAGE("Invalid escape sequence");
 				break;
 			}
 			str++;
@@ -526,7 +512,7 @@ char* json_read_quote(char* str, char** out)
 		{
 			char msg[512];
 			snprintf(msg, sizeof msg, "Invalid character in string %10s, control characters must be escaped", str);
-			JSON_MSG(msg);
+			JSON_MESSAGE(msg);
 			return NULL;
 		}
 
@@ -540,7 +526,7 @@ char* json_read_quote(char* str, char** out)
 		// Normal character
 		result[valit++] = c;
 	}
-	JSON_MSG("Unexpected end of string");
+	JSON_MESSAGE("Unexpected end of string");
 	return str;
 }
 
@@ -818,7 +804,7 @@ int json_writefile(JSON* object, const char* filepath, int format)
 			{
 				char msg[512];
 				snprintf(msg, sizeof msg, "Failed to create directory %s", tmp_path);
-				JSON_MSG(msg);
+				JSON_MESSAGE(msg);
 				return -1;
 			}
 		}
@@ -845,7 +831,7 @@ int json_writefile(JSON* object, const char* filepath, int format)
 
 		char msg[512];
 		snprintf(msg, sizeof msg, "Failed to create or open file %s", filepath);
-		JSON_MSG(msg);
+		JSON_MESSAGE(msg);
 		return -2;
 	}
 	struct JSONStringStream ss = {0};
@@ -866,7 +852,7 @@ JSON* json_loadfile(const char* filepath)
 	{
 		char msg[512];
 		snprintf(msg, sizeof msg, "Failed to open file %s", filepath);
-		JSON_MSG(msg);
+		JSON_MESSAGE(msg);
 		return NULL;
 	}
 
@@ -885,7 +871,7 @@ JSON* json_loadfile(const char* filepath)
 	{
 		char msg[512];
 		snprintf(msg, sizeof msg, "File %s contains none or invalid json data", filepath);
-		JSON_MSG(msg);
+		JSON_MESSAGE(msg);
 		JSON_FREE(root);
 		JSON_FREE(buf);
 		return NULL;
@@ -899,7 +885,7 @@ JSON* json_loadstring(char* str)
 	JSON* root = JSON_MALLOC(sizeof(JSON));
 	if (json_load(root, str) == NULL)
 	{
-		JSON_MSG("String contains none or invalid json data");
+		JSON_MESSAGE("String contains none or invalid json data");
 		JSON_FREE(root);
 		return NULL;
 	}
@@ -940,7 +926,7 @@ char* json_load(JSON* object, char* str)
 				{
 					char msg[512];
 					snprintf(msg, sizeof msg, "Error reading characters in string \"%.15s\"", str);
-					JSON_MSG(msg);
+					JSON_MESSAGE(msg);
 					break;
 				}
 				str = tmp;
@@ -966,7 +952,7 @@ char* json_load(JSON* object, char* str)
 				{
 					char msg[512];
 					snprintf(msg, sizeof msg, "Invalid json %.15s", str);
-					JSON_MSG(msg);
+					JSON_MESSAGE(msg);
 					json_destroy(new_object);
 				}
 				else
@@ -989,12 +975,12 @@ char* json_load(JSON* object, char* str)
 						continue;
 					char msg[512];
 					snprintf(msg, sizeof msg, "Unexpected character before comma %.15s", str);
-					JSON_MSG(msg);
+					JSON_MESSAGE(msg);
 					return NULL;
 				}
 				if (*str == '\0')
 				{
-					JSON_MSG("Expected comma before end of string");
+					JSON_MESSAGE("Expected comma before end of string");
 					return NULL;
 				}
 				continue;
@@ -1002,7 +988,7 @@ char* json_load(JSON* object, char* str)
 
 			char msg[512];
 			snprintf(msg, sizeof msg, "Expected property before \"%.15s\"", str);
-			JSON_MSG(msg);
+			JSON_MESSAGE(msg);
 			return str;
 		}
 	}
@@ -1032,7 +1018,7 @@ char* json_load(JSON* object, char* str)
 				char* tmp_buf = json_load(new_object, str);
 				if (tmp_buf == NULL)
 				{
-					JSON_MSG("Invalid json");
+					JSON_MESSAGE("Invalid json");
 					json_destroy(new_object);
 				}
 				else
@@ -1054,7 +1040,7 @@ char* json_load(JSON* object, char* str)
 						continue;
 					char msg[512];
 					snprintf(msg, sizeof msg, "Unexpected character before comma \"%.15s\"\n", str);
-					JSON_MSG(msg);
+					JSON_MESSAGE(msg);
 					return str;
 				}
 			}
