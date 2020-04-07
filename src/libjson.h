@@ -89,6 +89,7 @@ JSON* json_get_member(JSON* object, const char* name);
 // Returns a linked list of the elements of a json array
 JSON* json_get_elements(JSON* object);
 
+#define json_next(elem) json_get_next(elem)
 // Returns the next item in the list element is a part of
 JSON* json_get_next(JSON* element);
 
