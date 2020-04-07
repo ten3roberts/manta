@@ -78,6 +78,15 @@ double json_get_number(JSON* object);
 // Returns 0 if it's not a bool type
 int json_get_bool(JSON* object);
 
+// Gets a member of an object and returns its string value
+char* json_get_member_string(JSON* object, const char* name);
+
+// Gets a member of an object and returns its number value
+double json_get_member_number(JSON* object, const char* name);
+
+// Gets a member of an object and returns its bool value
+int json_get_member_bool(JSON* object, const char* name);
+
 // Returns a linked list of the members of a json object
 JSON* json_get_members(JSON* object);
 
@@ -662,6 +671,32 @@ double json_get_number(JSON* object)
 int json_get_bool(JSON* object)
 {
 	return object->numval;
+}
+
+char* json_get_member_string(JSON* object, const char* name)
+{
+	JSON* tmp = json_get_member(object, name);
+	if (tmp == NULL)
+		return NULL;
+	return tmp->stringval;
+}
+
+// Gets a member of an object and returns its number value
+double json_get_member_number(JSON* object, const char* name)
+{
+	JSON* tmp = json_get_member(object, name);
+	if (tmp == NULL)
+		return 0;
+	return tmp->numval;
+}
+
+// Gets a member of an object and returns its bool value
+int json_get_member_bool(JSON* object, const char* name)
+{
+	JSON* tmp = json_get_member(object, name);
+	if (tmp == NULL)
+		return 0;
+	return tmp->numval;
 }
 
 JSON* json_get_members(JSON* object)
@@ -1281,19 +1316,19 @@ void json_destroy(JSON* object)
 // LICENSE
 //
 // MIT License
-// 
+//
 // Copyright (c) 2020 Tim Roberts
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
