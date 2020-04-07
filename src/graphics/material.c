@@ -23,7 +23,7 @@ struct Material
 	VkPipelineLayout pipeline_layout;
 
 	// 0 : albedo
-	Texture* textures[1];
+	Texture* textures[7];
 };
 
 // Loads a material from a json struct
@@ -63,30 +63,82 @@ Material* material_load_internal(JSON* object)
 		mat->name[lname] = '\0';
 	}
 
-	// Load the albedo texture
-	JSON* jalbedo = json_get_member(object, "albedo");
-	if (jalbedo && json_type(jalbedo) == JSON_TSTRING)
+	// Fill in global layout, assumes global descriptors exist and does not create them
+	mat->descriptor_layouts[GLOBAL_DESCRIPTOR_INDEX] = global_descriptor_layout;
+	// Fill in per material layout
+	JSON* jbindings = json_get_member(object, "bindings");
+	if(json_type(jbindings) != JSON_TARRAY)
 	{
-		mat->textures[0] = texture_create(json_get_string(jalbedo));
-	}
-	else
-	{
-		LOG_E("Failed to read albedo from material %s", mat->name);
+		LOG_E("Failed to load material %s - bindings should be of type array", mat->name);
 		material_destroy(mat);
 		return NULL;
 	}
+	const int material_binding_count = json_get_count(jbindings);
+	
+	VkDescriptorSetLayoutBinding* material_bindings = malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
+	// Iterate and fill out the bindings
+	JSON* bindcur = json_get_elements(jbindings);
+	// The current iterator on where to fill the next used texture slot
+	int tex_it = 0;
+	for(int i = 0; i < material_binding_count; i++)
+	{
+		material_bindings[i].binding = json_get_member_number(bindcur, "binding");
+		material_bindings[i].descriptorCount = 1;
+		const char* type = json_get_member_string(bindcur, "type");
+		if(strcmp(type, "uniformbuffer") == 0)
+		{
+			material_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			// [TODO]: create uniform buffer
+		}
+		else if(strcmp(type, "sampler") == 0)
+		{
+			material_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			// Load the texture it specifies
+			const char* texture_name = json_get_member_string(bindcur, "texture");
+			if(texture_name == NULL)
+			{
+				LOG_E("Failed to load material %s - missing value for \"texture\" in binding %d", mat->name, i);
+				free(material_bindings);
+				material_destroy(mat);
+				return NULL;
+			}
+			const char* texture_path = json_get_member_string(object, texture_name);
+			if(texture_path == NULL)
+			{
+				LOG_E("Failed to load material %s - missing texture \"%s\", required by binding %d", mat->name, texture_name, i);
+				free(material_bindings);
+				material_destroy(mat);
+				return NULL;
+			}
+			mat->textures[tex_it++] = texture_create(texture_path);
+		}
+		else
+		{
+			LOG_E("Failed to load material %s - unknown binding type \"%s\"", mat->name, type);
+			free(material_bindings);
+			material_destroy(mat);
+			return NULL;
+		}
+		const char* stage = json_get_member_string(bindcur, "stage");
+		if(strcmp(stage, "vertex") == 0)
+		{
+			material_bindings[i].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		}
+		else if(strcmp(stage, "fragment") == 0)
+		{
+			material_bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		else
+		{
+			LOG_E("Failed to load material %s - unknown shader stage \"%s\"", mat->name, stage);
+			free(material_bindings);
+			material_destroy(mat);
+			return NULL;
+		}
+		
+		bindcur = json_next(bindcur);
+	}
 
-	// Fill in global layout, assumes global descriptors exist and does not create them
-	mat->descriptor_layouts[GLOBAL_DESCRIPTOR_INDEX] = global_descriptor_layout;
-
-	// Fill in per material layout
-	const uint32_t material_binding_count = 1;
-	VkDescriptorSetLayoutBinding material_bindings[material_binding_count];
-	material_bindings[0].binding = 0;
-	material_bindings[0].descriptorCount = 1;
-	material_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	material_bindings[0].pImmutableSamplers = NULL;
-	material_bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	descriptorlayout_create(material_bindings, material_binding_count,
 							&mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
@@ -95,6 +147,7 @@ Material* material_load_internal(JSON* object)
 	descriptorset_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count,
 						 NULL, mat->textures, mat->material_descriptors);
 
+	free(material_bindings);
 	// Load the shaders
 	// Get the shader names temporarily
 	const char* vertexshader = json_get_member_string(object, "vertexshader");
@@ -155,7 +208,7 @@ Material* material_create(const char* file)
 	}
 	else
 	{
-		LOG_E("Failed to load material from json %s, root schema should be of either object or array type", file);
+		LOG_E("Failed to load material from json %s - root schema should be of either object or array type", file);
 		return NULL;
 	}
 	

@@ -1,19 +1,14 @@
 {
 	"name": "grid",
 	"albedo": "./assets/textures/grid.png",
+	"secondary": "./assets/textures/color.png",
 	"vertexshader": "./assets/shaders/standard.vert.spv",
 	"fragmentshader": "./assets/shaders/standard.frag.spv",
 	"bindings": [
 		{
 			"binding": 0,
-			"texture": "test",
+			"texture": "secondary",
 			"type": "sampler",
-			"stage": "fragment"
-		},
-		{
-			"binding": 1,
-			"type": "uniformbuffer",
-			"size": 128,
 			"stage": "fragment"
 		}
 	]

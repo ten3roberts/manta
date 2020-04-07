@@ -96,6 +96,9 @@ JSON* json_get_member(JSON* object, const char* name);
 // Returns a linked list of the elements of a json array
 JSON* json_get_elements(JSON* object);
 
+// Gets the number of members of an object or array
+int json_get_count(JSON* object);
+
 #define json_next(elem) json_get_next(elem)
 // Returns the next item in the list element is a part of
 JSON* json_get_next(JSON* element);
@@ -726,6 +729,11 @@ JSON* json_get_elements(JSON* object)
 	if (object->type != JSON_TARRAY)
 		return NULL;
 	return object->members;
+}
+
+int json_get_count(JSON* object)
+{
+	return object->count;
 }
 
 // Returns the next item in the list element is a part of
