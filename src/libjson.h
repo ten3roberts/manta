@@ -60,6 +60,9 @@ void json_set_null(JSON* object);
 // Returns the name/key of the object, NULL if an element in array
 const char* json_get_name(JSON* object);
 
+// Short hand for getting the type
+#define json_type(object) json_get_type(object)
+
 // Returns the type of the json object
 int json_get_type(JSON* object);
 
