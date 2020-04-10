@@ -82,8 +82,17 @@ Material* material_load_internal(JSON* object)
 	int tex_it = 0;
 	for(int i = 0; i < material_binding_count; i++)
 	{
-		material_bindings[i].binding = json_get_member_number(bindcur, "binding");
+		// Initialize
+		material_bindings[i].binding = 0;
 		material_bindings[i].descriptorCount = 1;
+		material_bindings[i].descriptorType = 0;
+		material_bindings[i].pImmutableSamplers = 0;
+		material_bindings[i].stageFlags = 0;
+
+		// Read the binding info
+		material_bindings[i].binding = json_get_member_number(bindcur, "binding");
+
+		// Read the descriptor type
 		const char* type = json_get_member_string(bindcur, "type");
 		if(strcmp(type, "uniformbuffer") == 0)
 		{
@@ -119,6 +128,7 @@ Material* material_load_internal(JSON* object)
 			material_destroy(mat);
 			return NULL;
 		}
+		// Read the shader stage of the resource
 		const char* stage = json_get_member_string(bindcur, "stage");
 		if(strcmp(stage, "vertex") == 0)
 		{

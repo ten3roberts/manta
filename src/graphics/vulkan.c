@@ -911,7 +911,6 @@ int create_command_buffers()
 		render_pass_info.pClearValues = clear_values;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-
 		material_bind(material, command_buffers[i], i);
 
 		/*model_bind(model_cube, command_buffers[i]);
@@ -1032,7 +1031,8 @@ int vulkan_init()
 	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;*/
 
 	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
-	descriptorset_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub, (Texture**)&tex, global_descriptors);
+	descriptorset_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub,
+						 (Texture**)&tex, global_descriptors);
 
 	material = material_create("./assets/materials/grid.json");
 

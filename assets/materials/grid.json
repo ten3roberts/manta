@@ -7,6 +7,12 @@
 	"bindings": [
 		{
 			"binding": 0,
+			"texture": "albedo",
+			"type": "sampler",
+			"stage": "fragment"
+		},
+		{
+			"binding": 1,
 			"texture": "secondary",
 			"type": "sampler",
 			"stage": "fragment"
