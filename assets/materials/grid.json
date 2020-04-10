@@ -2,6 +2,7 @@
 	"name": "grid",
 	"albedo": "./assets/textures/grid.png",
 	"secondary": "./assets/textures/color.png",
+	"factor": "./assets/textures/gradient.png",
 	"vertexshader": "./assets/shaders/standard.vert.spv",
 	"fragmentshader": "./assets/shaders/standard.frag.spv",
 	"bindings": [
@@ -14,6 +15,12 @@
 		{
 			"binding": 1,
 			"texture": "secondary",
+			"type": "sampler",
+			"stage": "fragment"
+		},
+		{
+			"binding": 2,
+			"texture": "factor",
 			"type": "sampler",
 			"stage": "fragment"
 		}

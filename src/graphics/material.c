@@ -7,6 +7,9 @@
 #include "log.h"
 #include "libjson.h"
 
+// A linked list tracking all loaded materials
+static Material* materials = NULL;
+
 #define GLOBAL_DESCRIPTOR_INDEX	  0
 #define MATERIAL_DESCRIPTOR_INDEX 1
 
@@ -24,6 +27,8 @@ struct Material
 
 	// 0 : albedo
 	Texture* textures[7];
+	// The resource management part, inaccessible for the use
+	struct Material *prev, *next;
 };
 
 // Loads a material from a json struct
@@ -63,24 +68,51 @@ Material* material_load_internal(JSON* object)
 		mat->name[lname] = '\0';
 	}
 
+
+	// Insert material into tracking list
+	// Check for duplicate
+	// Handle beginning
+	if (materials == NULL)
+		materials = mat;
+	else
+	{
+		Material* cur = materials;
+		Material* prev = NULL;
+		while (cur)
+		{
+			if (strcmp(mat->name, cur->name) == 0)
+			{
+				LOG_W("Duplicate material %s", mat->name);
+				material_destroy(mat);
+				return NULL;
+			}
+			prev = cur;
+			cur = cur->next;
+		}
+		// Add to tail of list
+		prev->next = mat;
+		mat->prev = prev;
+	}
+
 	// Fill in global layout, assumes global descriptors exist and does not create them
 	mat->descriptor_layouts[GLOBAL_DESCRIPTOR_INDEX] = global_descriptor_layout;
 	// Fill in per material layout
 	JSON* jbindings = json_get_member(object, "bindings");
-	if(json_type(jbindings) != JSON_TARRAY)
+	if (json_type(jbindings) != JSON_TARRAY)
 	{
 		LOG_E("Failed to load material %s - bindings should be of type array", mat->name);
 		material_destroy(mat);
 		return NULL;
 	}
 	const int material_binding_count = json_get_count(jbindings);
-	
-	VkDescriptorSetLayoutBinding* material_bindings = malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
+
+	VkDescriptorSetLayoutBinding* material_bindings =
+		malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
 	// Iterate and fill out the bindings
 	JSON* bindcur = json_get_elements(jbindings);
 	// The current iterator on where to fill the next used texture slot
 	int tex_it = 0;
-	for(int i = 0; i < material_binding_count; i++)
+	for (int i = 0; i < material_binding_count; i++)
 	{
 		// Initialize
 		material_bindings[i].binding = 0;
@@ -94,17 +126,17 @@ Material* material_load_internal(JSON* object)
 
 		// Read the descriptor type
 		const char* type = json_get_member_string(bindcur, "type");
-		if(strcmp(type, "uniformbuffer") == 0)
+		if (strcmp(type, "uniformbuffer") == 0)
 		{
 			material_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			// [TODO]: create uniform buffer
 		}
-		else if(strcmp(type, "sampler") == 0)
+		else if (strcmp(type, "sampler") == 0)
 		{
 			material_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			// Load the texture it specifies
 			const char* texture_name = json_get_member_string(bindcur, "texture");
-			if(texture_name == NULL)
+			if (texture_name == NULL)
 			{
 				LOG_E("Failed to load material %s - missing value for \"texture\" in binding %d", mat->name, i);
 				free(material_bindings);
@@ -112,9 +144,10 @@ Material* material_load_internal(JSON* object)
 				return NULL;
 			}
 			const char* texture_path = json_get_member_string(object, texture_name);
-			if(texture_path == NULL)
+			if (texture_path == NULL)
 			{
-				LOG_E("Failed to load material %s - missing texture \"%s\", required by binding %d", mat->name, texture_name, i);
+				LOG_E("Failed to load material %s - missing texture \"%s\", required by binding %d", mat->name,
+					  texture_name, i);
 				free(material_bindings);
 				material_destroy(mat);
 				return NULL;
@@ -130,11 +163,11 @@ Material* material_load_internal(JSON* object)
 		}
 		// Read the shader stage of the resource
 		const char* stage = json_get_member_string(bindcur, "stage");
-		if(strcmp(stage, "vertex") == 0)
+		if (strcmp(stage, "vertex") == 0)
 		{
 			material_bindings[i].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		}
-		else if(strcmp(stage, "fragment") == 0)
+		else if (strcmp(stage, "fragment") == 0)
 		{
 			material_bindings[i].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		}
@@ -145,10 +178,9 @@ Material* material_load_internal(JSON* object)
 			material_destroy(mat);
 			return NULL;
 		}
-		
+
 		bindcur = json_next(bindcur);
 	}
-
 
 	descriptorlayout_create(material_bindings, material_binding_count,
 							&mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
@@ -221,7 +253,7 @@ Material* material_create(const char* file)
 		LOG_E("Failed to load material from json %s - root schema should be of either object or array type", file);
 		return NULL;
 	}
-	
+
 	json_destroy(root);
 
 	return mat;
@@ -253,5 +285,22 @@ void material_destroy(Material* mat)
 	vkDestroyPipeline(device, mat->pipeline, NULL);
 
 	vkDestroyDescriptorSetLayout(device, mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], NULL);
+
+	// Remove from list
+	if (mat->prev)
+		mat->prev->next = mat->next;
+	// Update head
+	else
+		materials = mat->next;
+	if (mat->next)
+		mat->next->prev = mat->prev;
 	free(mat);
+}
+
+void material_destroy_all()
+{
+	while (materials)
+	{
+		material_destroy(materials);
+	}
 }

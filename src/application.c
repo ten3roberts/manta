@@ -41,6 +41,7 @@ int application_start()
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);
+	time_init();
 	swapchain_resize = 0;
 	while (!window_get_close(window))
 	{
