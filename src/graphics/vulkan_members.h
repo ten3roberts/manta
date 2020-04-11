@@ -3,6 +3,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "window.h"
+#include "uniforms.h"
+
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
@@ -62,8 +64,7 @@ extern VkFormat swapchain_image_format;
 extern VkExtent2D swapchain_extent;
 
 extern VkDescriptorSetLayout global_descriptor_layout;
-extern VkDescriptorSet global_descriptors[3];
-
+extern DescriptorPack global_descriptors;
 extern VkFramebuffer* framebuffers;
 extern size_t framebuffer_count;
 

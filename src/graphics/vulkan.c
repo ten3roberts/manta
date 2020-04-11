@@ -1031,8 +1031,8 @@ int vulkan_init()
 	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;*/
 
 	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
-	descriptorset_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub,
-						 (Texture**)&tex, global_descriptors);
+	descriptorpack_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub,
+						 (Texture**)&tex, &global_descriptors);
 
 	material = material_create("./assets/materials/grid.json");
 
@@ -1072,6 +1072,8 @@ void vulkan_terminate()
 	// free(descriptor_sets);
 	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
 	material_destroy_all();
+
+	descriptorpack_destroy(&global_descriptors);
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{

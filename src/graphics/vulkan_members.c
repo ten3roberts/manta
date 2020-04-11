@@ -1,5 +1,4 @@
 #include "vulkan_members.h"
-
 // Vulkan api members
 
 VkInstance instance = VK_NULL_HANDLE;
@@ -26,7 +25,7 @@ VkFormat swapchain_image_format;
 VkExtent2D swapchain_extent;
 
 VkDescriptorSetLayout global_descriptor_layout = VK_NULL_HANDLE;
-VkDescriptorSet global_descriptors[3];
+DescriptorPack global_descriptors;
 
 VkFramebuffer* framebuffers = NULL;
 size_t framebuffer_count = 0;

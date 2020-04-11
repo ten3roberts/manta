@@ -14,6 +14,8 @@ struct DescriptorPool
 	uint32_t uniform_count;
 	// How many sampler type descriptors are left in the pool
 	uint32_t sampler_count;
+	// Describes how many descriptors currently use the pool
+	uint32_t alloc_count;
 	VkDescriptorPool pool;
 };
 
@@ -33,9 +35,8 @@ struct UniformBuffer
 
 // Attempts to find and return a descriptor pool with a minimum of the supplied descriptor types remaining
 // If no qualifying pool was found, a new one is created
-VkDescriptorPool descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
+struct DescriptorPool* descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 {
-
 	for (uint32_t i = 0; i < descriptor_pool_count; i++)
 	{
 		// Qualifying pool
@@ -44,14 +45,14 @@ VkDescriptorPool descriptorpool_get(uint32_t uniform_count, uint32_t sampler_cou
 			// Remove thee requested amount of descriptors from the pool
 			descriptor_pools[i].uniform_count -= uniform_count;
 			descriptor_pools[i].sampler_count -= sampler_count;
+			++descriptor_pools[i].alloc_count;
 
-			return descriptor_pools[i].pool;
+			return &descriptor_pools[i];
 		}
 	}
 
 	// No pool was found
 	// Allocate a new one
-	LOG_S("Creating new descriptor pool");
 
 	descriptor_pool_count += 1;
 	descriptor_pools = realloc(descriptor_pools, descriptor_pool_count * sizeof(struct DescriptorPool));
@@ -63,6 +64,11 @@ VkDescriptorPool descriptorpool_get(uint32_t uniform_count, uint32_t sampler_cou
 	// allocations
 	new_pool->uniform_count = uniform_count * 100;
 	new_pool->sampler_count = sampler_count * 100;
+	// Make one allocation for the pool before returning
+	new_pool->alloc_count = 0;
+
+	LOG_S("Creating new descriptor pool with capacity for %d uniform types and %d sampler types",
+		  new_pool->uniform_count, new_pool->sampler_count);
 
 	VkDescriptorPoolSize poolSizes[2] = {0};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -83,7 +89,40 @@ VkDescriptorPool descriptorpool_get(uint32_t uniform_count, uint32_t sampler_cou
 		LOG_E("Failed to create descriptor pool - code %d", result);
 		return NULL;
 	}
-	return new_pool->pool;
+	// 'allocate'
+	new_pool->uniform_count -= uniform_count;
+	new_pool->sampler_count -= sampler_count;
+	new_pool->alloc_count = 1;
+	return new_pool;
+}
+
+void descriptorpool_destroy(struct DescriptorPool* pool)
+{
+	LOG_S("Destroying descriptor pool");
+	vkDestroyDescriptorPool(device, pool->pool, NULL);
+
+	// Last pool is being destroyed
+	if (descriptor_pool_count == 1)
+	{
+
+		free(descriptor_pools);
+		return;
+	}
+	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+	{
+		// Pool is found
+		if (&descriptor_pools[i] == pool)
+		{
+			// Shift pools after this one back to accomodate the empty space if not the last pool
+			if (i != descriptor_pool_count - 1)
+				memmove(descriptor_pools + i, descriptor_pools + i + 1,
+						(descriptor_pool_count - i - 1) * sizeof(*descriptor_pools));
+			// Decrease pool count by one
+			--descriptor_pool_count;
+			descriptor_pools = realloc(descriptor_pools, descriptor_pool_count * sizeof(struct DescriptorPool));
+			return;
+		}
+	}
 }
 
 int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
@@ -103,8 +142,8 @@ int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t bin
 	return 0;
 }
 
-int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
-						 UniformBuffer** uniformbuffers, Texture** textures, VkDescriptorSet* dst_descriptors)
+int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
+						  UniformBuffer** uniformbuffers, Texture** textures, DescriptorPack* dst_pack)
 {
 	// Fill the layouts for all swapchain image count
 	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
@@ -135,13 +174,19 @@ int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBind
 	sampler_count *= swapchain_image_count;
 
 	VkDescriptorSetAllocateInfo allocInfo = {0};
+
+	dst_pack->pool = descriptorpool_get(uniform_count, sampler_count);
+	dst_pack->uniform_count = uniform_count;
+	dst_pack->sampler_count = sampler_count;
+	dst_pack->count = swapchain_image_count;
+
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptorpool_get(uniform_count, sampler_count);
-	allocInfo.descriptorSetCount = swapchain_image_count;
+	allocInfo.descriptorPool = dst_pack->pool->pool;
+	allocInfo.descriptorSetCount = dst_pack->count;
 	allocInfo.pSetLayouts = layouts;
 	allocInfo.pNext = 0;
 
-	vkAllocateDescriptorSets(device, &allocInfo, dst_descriptors);
+	vkAllocateDescriptorSets(device, &allocInfo, dst_pack->sets);
 
 	VkWriteDescriptorSet* descriptorWrites = malloc(binding_count * sizeof(VkWriteDescriptorSet));
 	VkDescriptorBufferInfo* buffer_infos = malloc(uniform_count * sizeof(VkDescriptorBufferInfo));
@@ -163,7 +208,7 @@ int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBind
 				buffer_infos[buffer_it].range = uniformbuffers[buffer_it]->size;
 
 				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrites[j].dstSet = dst_descriptors[i];
+				descriptorWrites[j].dstSet = dst_pack->sets[i];
 				descriptorWrites[j].dstBinding = bindings[j].binding;
 				descriptorWrites[j].dstArrayElement = 0;
 				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -183,7 +228,7 @@ int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBind
 				image_infos[sampler_it].sampler = texture_get_sampler(textures[sampler_it]);
 
 				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrites[j].dstSet = dst_descriptors[i];
+				descriptorWrites[j].dstSet = dst_pack->sets[i];
 				descriptorWrites[j].dstBinding = bindings[j].binding;
 				descriptorWrites[j].dstArrayElement = 0;
 				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -206,6 +251,24 @@ int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBind
 	free(buffer_infos);
 	free(image_infos);
 	return 0;
+}
+
+void descriptorpack_destroy(DescriptorPack* pack)
+{
+
+	// Put back the available descriptor types to the pool
+	pack->pool->uniform_count += pack->uniform_count;
+	pack->pool->sampler_count += pack->sampler_count;
+
+	// Descrease size of pool
+	--pack->pool->alloc_count;
+	// Free descriptor set in pool
+	// vkFreeDescriptorSets(device, pack->pool->pool, pack->count, pack->sets);
+	// Pool is empty
+	if (pack->pool->alloc_count == 0)
+	{
+		descriptorpool_destroy(pack->pool);
+	}
 }
 
 UniformBuffer* ub_create(uint32_t size, uint32_t binding)
@@ -263,19 +326,4 @@ void ub_destroy(UniformBuffer* ub)
 void ub_pools_destroy()
 {
 	buffer_pool_array_destroy(&ub_pools);
-	for (uint32_t i = 0; i < descriptor_pool_count; i++)
-	{
-		vkDestroyDescriptorPool(device, descriptor_pools[i].pool, NULL);
-	}
-
-	free(descriptor_pools);
-	descriptor_pool_count = 0;
-
-	/*for (uint32_t i = 0; i < descriptor_layout_count; i++)
-	{
-		vkDestroyDescriptorSetLayout(device, descriptor_layouts[i], NULL);
-	}
-	free(descriptor_layouts);
-	free(layout_binding_map);
-	descriptor_layout_count = 0;*/
 }

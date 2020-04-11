@@ -21,7 +21,7 @@ struct Material
 	// 0 : global descriptor layout
 	// 1 : per material descriptor layout
 	VkDescriptorSetLayout descriptor_layouts[2];
-	VkDescriptorSet material_descriptors[3];
+	DescriptorPack material_descriptors;
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 
@@ -186,8 +186,8 @@ Material* material_load_internal(JSON* object)
 							&mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
 
 	// Create the material descriptors
-	descriptorset_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count,
-						 NULL, mat->textures, mat->material_descriptors);
+	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count,
+						 NULL, mat->textures, &mat->material_descriptors);
 
 	free(material_bindings);
 	// Load the shaders
@@ -268,10 +268,10 @@ void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame
 
 	// Bind global set 0
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat->pipeline_layout, 0, 1,
-							&global_descriptors[frame], 0, NULL);
+							&global_descriptors.sets[frame], 0, NULL);
 	// Bind material set 1
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat->pipeline_layout, 1, 1,
-							&mat->material_descriptors[frame], 0, NULL);
+							&mat->material_descriptors.sets[frame], 0, NULL);
 }
 
 void material_destroy(Material* mat)
@@ -284,6 +284,7 @@ void material_destroy(Material* mat)
 	vkDestroyPipelineLayout(device, mat->pipeline_layout, NULL);
 	vkDestroyPipeline(device, mat->pipeline, NULL);
 
+	descriptorpack_destroy(&mat->material_descriptors);
 	vkDestroyDescriptorSetLayout(device, mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], NULL);
 
 	// Remove from list

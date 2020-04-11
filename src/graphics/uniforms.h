@@ -13,6 +13,25 @@ typedef struct
 	mat4 proj;
 } TransformType;
 
+typedef struct DescriptorPool DescriptorPool;
+
+// A struct containing an entire descriptor set and data of where it is from
+// Contains descriptor sets for all possible frames in flight
+typedef struct
+{
+	DescriptorPool* pool;
+	// The sum of uniform_count and sampler_count describes the 'size' of the pool it takes
+	// Represents how many uniform types is allocated
+	uint32_t uniform_count;
+	// Represents how many sampler types is allocated
+	uint32_t sampler_count;
+
+	// How many descriptor set it holds
+	uint32_t count;
+	VkDescriptorSet sets[3];
+
+} DescriptorPack;
+
 typedef struct UniformBuffer UniformBuffer;
 
 // Creates a descriptor set layout from the specified bindings
@@ -25,8 +44,11 @@ int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t bin
 // The number of uniformbuffers should match the bindings
 // The number of textures should match the bindings
 // dst_descriptors should be an array of swapchain_image_count length. Arrays data will be overwritten
-int descriptorset_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
-						 UniformBuffer** uniformbuffers, Texture** textures, VkDescriptorSet* dst_descriptors);
+int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
+						  UniformBuffer** uniformbuffers, Texture** textures, DescriptorPack* dst_pack);
+
+// Destroys a descriptor pack, and if necessary, destroy the pool
+void descriptorpack_destroy(DescriptorPack* pack);
 
 // Creates and allocates memory for a uniform buffer
 // Internally holds one buffer per frame in flight to avoid simultaneous read and writes
@@ -45,5 +67,5 @@ void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, ui
 void ub_destroy(UniformBuffer* ub);
 
 // Destroys all UniformBuffer pools in the end of the programs
-// The pool were first created implicitly when a UniformBuffer was created
+// The pools were first created implicitly when a UniformBuffer was created
 void ub_pools_destroy();
