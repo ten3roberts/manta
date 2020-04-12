@@ -22,6 +22,8 @@ typedef struct
 {
 	uint32_t vertex_count;
 	Vertex* vertices;
+	// The size of the vertex buffer data
+	uint32_t size;
 	uint32_t offset;
 	VkBuffer buffer;
 	VkDeviceMemory memory;

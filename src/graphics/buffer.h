@@ -3,46 +3,55 @@
 #include <vulkan/vulkan.h>
 
 // Defines a buffer pool that can be used to create pools for different buffer types
-typedef struct
+struct BufferPoolBlock
 {
-	VkBufferUsageFlagBits usage;
-	uint32_t alignment;
-	// Describes the currently used size of the buffer/memory
-	uint32_t filled_size;
+	// Describes the currently used offset to the last used bytes of the buffer/memory
+	uint32_t end;
 	// Describes the total size of the buffer/memory that was allocated
 	uint32_t alloc_size;
 	VkBuffer buffer;
 	VkDeviceMemory memory;
-} BufferPool;
+	struct BufferPoolFree* free_blocks;
+};
+
+// Describes a freed part of memory for a pool
+struct BufferPoolFree
+{
+	VkBuffer buffer;
+	VkDeviceMemory memory;
+	// The offset to the start of the freed space
+	uint32_t offset;
+	uint32_t size;
+	// A pointer to the next freed block
+	struct BufferPoolFree* next;
+};
 
 // An array holding several buffer pools
 typedef struct
 {
 	VkBufferUsageFlagBits usage;
-	// Indicates the minimum size of a new pool
-	// If smaller than requested size, requested size is use
-	// Is used when a buffer is created implictly with 'get'
-	// New size of the allocated pool will be requested size * preferred_unit_count
-	// This is to avoid allocating one pool per request
-	uint32_t preferred_size;
-	uint32_t count;
-	BufferPool* pools;
-} BufferPoolArray;
+	uint32_t alignment;
 
-// Adds another buffer to a BufferPoolArray
+	// How many blocks are in the pool
+	uint32_t block_count;
+	struct BufferPoolBlock* blocks;
+} BufferPool;
+
+// Adds another buffer pool to a BufferPoolArray
 // If it is empty, a buffer is created
 // Creates the buffer according to type
-void buffer_pool_array_add(BufferPoolArray* array, uint32_t size);
+// void buffer_pool_array_add(BufferPoolArray* array, uint32_t size);
 
 // Retrieves an available pool able to hold > size
 // Populates buffer, memory, and offset
 // If no pool in array is free, the pool array is extended
 // Satisfies alignment requirements
-void buffer_pool_array_get(BufferPoolArray* array, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory,
-						   uint32_t* offset);
+void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset);
+
+void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDeviceMemory memory, uint32_t offset);
 
 // Destroys and frees all pools and buffers
-void buffer_pool_array_destroy(BufferPoolArray* array);
+void buffer_pool_array_destroy(BufferPool* pool);
 
 uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties);
 

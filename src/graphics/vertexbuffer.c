@@ -3,7 +3,7 @@
 #include "buffer.h"
 #include "log.h"
 
-static BufferPoolArray vb_pools = {VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 1024, 0, NULL};
+static BufferPool vb_pool = {VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT};
 
 VertexBuffer* vb_generate_triangle()
 {
@@ -23,15 +23,15 @@ VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 {
 	VertexBuffer* vb = malloc(sizeof(VertexBuffer));
 
-	size_t buffer_size = sizeof(*vb->vertices) * vertex_count;
+	vb->size = sizeof(*vb->vertices) * vertex_count;
 
 	vb->vertex_count = vertex_count;
-	vb->vertices = malloc(buffer_size);
+	vb->vertices = malloc(vb->size);
 	memcpy(vb->vertices, vertices, sizeof(*vb->vertices) * vb->vertex_count);
 
 	// Create the buffer and memory
 
-	buffer_pool_array_get(&vb_pools, buffer_size, &vb->buffer, &vb->memory, &vb->offset);
+	buffer_pool_malloc(&vb_pool, vb->size, &vb->buffer, &vb->memory, &vb->offset);
 
 	vb_copy_data(vb);
 
@@ -42,25 +42,24 @@ VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 void vb_copy_data(VertexBuffer* vb)
 {
 	// Temporary staging buffer
-	size_t buffer_size = sizeof(*vb->vertices) * vb->vertex_count;
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
-	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	buffer_create(vb->size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
 				  &staging_buffer_memory, NULL, NULL);
 	// Copy the vertex data to the buffer
 	void* data = NULL;
-	vkMapMemory(device, staging_buffer_memory, 0, buffer_size, 0, &data);
+	vkMapMemory(device, staging_buffer_memory, 0, vb->size, 0, &data);
 	if (data == NULL)
 	{
 		LOG_E("Failed to map vertex buffer memory");
 		return;
 	}
-	memcpy(data, vb->vertices, buffer_size);
+	memcpy(data, vb->vertices, vb->size);
 	vkUnmapMemory(device, staging_buffer_memory);
 
 	// Copy the data from the staging buffer to the local vertex buffer
-	buffer_copy(staging_buffer, vb->buffer, buffer_size, 0, vb->offset);
+	buffer_copy(staging_buffer, vb->buffer, vb->size, 0, vb->offset);
 	vkDestroyBuffer(device, staging_buffer, NULL);
 	vkFreeMemory(device, staging_buffer_memory, NULL);
 }
@@ -75,8 +74,7 @@ void vb_bind(VertexBuffer* vb, VkCommandBuffer command_buffer)
 void vb_destroy(VertexBuffer* vb)
 {
 	LOG_S("Destroying vertex buffer");
-	// vkDestroyBuffer(device, vb->buffer, NULL);
-	// vkFreeMemory(device, vb->memory, NULL);
+ 	buffer_pool_free(&vb_pool, vb->size, vb->buffer, vb->memory, vb->offset);
 	vb->vertex_count = 0;
 	free(vb->vertices);
 	free(vb);
@@ -84,7 +82,7 @@ void vb_destroy(VertexBuffer* vb)
 
 void vb_pools_destroy()
 {
-	buffer_pool_array_destroy(&vb_pools);
+	buffer_pool_array_destroy(&vb_pool);
 }
 
 VertexInputDescription vertex_get_description()

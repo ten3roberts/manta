@@ -22,7 +22,7 @@ struct DescriptorPool
 struct DescriptorPool* descriptor_pools;
 uint32_t descriptor_pool_count;
 
-static BufferPoolArray ub_pools = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 3 * 256 * 10, 0, NULL};
+static BufferPool ub_pool = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT};
 
 struct UniformBuffer
 {
@@ -280,7 +280,7 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 	// Find a free pool
 	for (int i = 0; i < swapchain_image_count; i++)
 	{
-		buffer_pool_array_get(&ub_pools, size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
+		buffer_pool_malloc(&ub_pool, size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
 	}
 
 	return ub;
@@ -317,13 +317,12 @@ void ub_destroy(UniformBuffer* ub)
 	LOG_S("Destroying uniform buffer");
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
-		// vkDestroyBuffer(device, ub->buffers[i], NULL);
-		// vkFreeMemory(device, ub->memories[i], NULL);
+		buffer_pool_free(&ub_pool, ub->size, ub->buffers[i], ub->memories[i], ub->offsets[i]);
 	}
 	free(ub);
 }
 
 void ub_pools_destroy()
 {
-	buffer_pool_array_destroy(&ub_pools);
+	buffer_pool_array_destroy(&ub_pool);
 }

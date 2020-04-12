@@ -4,63 +4,205 @@
 #include <stdlib.h>
 #include <math.h>
 
-void buffer_pool_array_add(BufferPoolArray* array, uint32_t size)
+#define B_MILLION 1048576
+
+void buffer_pool_add(BufferPool* pool, uint32_t size)
 {
-	LOG_S("Creating new buffer pool with usage %d", array->usage);
-	array->pools = realloc(array->pools, ++array->count * sizeof(BufferPool));
-	BufferPool* pool = &array->pools[array->count - 1];
-	if (array->pools == NULL)
+	LOG_S("Creating new buffer pool with usage %d", pool->usage);
+	pool->blocks = realloc(pool->blocks, ++pool->block_count * sizeof(struct BufferPoolBlock));
+	// Check for allocation errors
+	if (pool->blocks == NULL)
 	{
 		LOG_E("Failed to allocate uniform buffer pool");
 		return;
 	}
-	buffer_create(size, array->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				  &pool->buffer, &pool->memory, &pool->alignment, NULL);
-	pool->filled_size = 0;
-	pool->alloc_size = size;
+	// Get a pointer to the new pool
+	struct BufferPoolBlock* new_block = &pool->blocks[pool->block_count - 1];
+	// Create the buffer and memory for vulkan
+	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				  &new_block->buffer, &new_block->memory, &pool->alignment, NULL);
+
+	// No blocks have been allocated, so initialize to 0
+	new_block->end = 0;
+	new_block->alloc_size = size;
 }
 
-void buffer_pool_array_get(BufferPoolArray* array, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory,
-						   uint32_t* offset)
+void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset)
 {
 	// No pool has been created yet
-	if (array->count == 0)
+	if (pool->block_count == 0)
 	{
-		buffer_pool_array_add(array, (array->preferred_size > size ? array->preferred_size : size));
+		// Create a new pool 64 times larger than requested size to support multiple allocation if < 1MB
+		buffer_pool_add(pool, size < B_MILLION ? size * 64 : size);
 	}
 
-	for (int i = 0; i < array->count; i++)
+	// Iterate all blocks
+	for (uint32_t i = 0; i < pool->block_count; i++)
 	{
+		// Check if it will fit in a free block
+		// Will search for the closest fitting block to reoccupy small freed blocks first
+		struct BufferPoolFree* best_fit = NULL;
+		struct BufferPoolFree* best_fit_prev = NULL;
+		uint32_t best_fit_margin = -1;
+		struct BufferPoolFree* free_it = pool->blocks[i].free_blocks;
+		struct BufferPoolFree* free_prev = NULL;
+		while (free_it)
+		{
+			// Check if fits and is better than the best fit
+			if (free_it->size - size < best_fit_margin)
+			{
+				best_fit = free_it;
+				best_fit_prev = free_prev;
+			}
+
+			free_prev = free_it;
+			free_it = free_it->next;
+		}
+
+		if (best_fit)
+		{
+			best_fit->size -= size;
+
+			// Occupy space
+			*buffer = best_fit->buffer;
+			*memory = best_fit->memory;
+			*offset = best_fit->offset;
+			// Does not count to freed size since it was freed
+
+			// Remove the freed block completely
+			if (best_fit->size == 0)
+			{
+				best_fit_prev->next = best_fit->next;
+				free(best_fit);
+			}
+		}
+
 		// Pool is full or not large enough
-		if (array->pools[i].filled_size + size > array->pools[i].alloc_size)
+		if (pool->blocks[i].end + size > pool->blocks[i].alloc_size)
 		{
 			// At last pool
-			if (i == array->count - 1)
+			if (i == pool->block_count - 1)
 			{
-				buffer_pool_array_add(array, size * (array->preferred_size > size ? array->preferred_size : size));
+				buffer_pool_add(pool, size < B_MILLION ? size * 64 : size);
 			}
 			continue;
 		};
 
 		// Occupy space
-		*buffer = array->pools[i].buffer;
-		*memory = array->pools[i].memory;
-		*offset = array->pools[i].filled_size;
-		array->pools[i].filled_size += ceil(size / (float)array->pools[i].alignment) * array->pools[i].alignment;
+		*buffer = pool->blocks[i].buffer;
+		*memory = pool->blocks[i].memory;
+		*offset = pool->blocks[i].end;
+		// Satisfy alignment requirements
+		pool->blocks[i].end += ceil(size / (float)pool->alignment) * pool->alignment;
 	}
 }
 
-void buffer_pool_array_destroy(BufferPoolArray* array)
+// Will iterate and merge adjacent free blocks
+// This will only work if the blocks are sorted, which they are
+int buffer_pool_merge_free(struct BufferPoolBlock* block)
 {
-	LOG_S("Destroy buffer pool array");
-	for (int i = 0; i < array->count; i++)
+	struct BufferPoolFree* cur = block->free_blocks;
+	struct BufferPoolFree* next = cur->next;
+	while (cur->next)
 	{
-		vkDestroyBuffer(device, array->pools[i].buffer, NULL);
-		vkFreeMemory(device, array->pools[i].memory, NULL);
+		// Check if contiguous
+		if (cur->offset + cur->size == cur->next->offset)
+		{
+			LOG_S("Merging adjacent buffer blocks");
+			cur->size += cur->next->size;
+
+			// Remove the next block since it was merged
+			cur->next = next->next;
+			free(next);
+			return EXIT_SUCCESS;
+		}
+		cur = cur->next;
+		next = cur->next;
 	}
-	free(array->pools);
-	array->pools = NULL;
-	array->count = 0;
+	return EXIT_FAILURE;
+}
+
+void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDeviceMemory memory, uint32_t offset)
+{
+	// Find the block
+	struct BufferPoolBlock* block = NULL;
+	for (uint32_t i = 0; i < pool->block_count; i++)
+	{
+		if (pool->blocks[i].buffer == buffer && pool->blocks[i].memory == memory)
+		{
+			block = &pool->blocks[i];
+		}
+	}
+	if (block == NULL)
+	{
+		LOG_E("Failed to find the block buffer with offset %d and size %d was allocated from", offset, size);
+		return;
+	}
+
+	struct BufferPoolFree* cur = block->free_blocks;
+	struct BufferPoolFree* prev = NULL;
+
+	// Handle beginning of list
+	if (block->free_blocks == NULL)
+	{
+		struct BufferPoolFree* free_block = malloc(sizeof(struct BufferPoolFree));
+		free_block->buffer = buffer;
+		free_block->memory = memory;
+		free_block->offset = offset;
+		free_block->size = size;
+		free_block->next = NULL;
+		block->free_blocks = free_block;
+		return;
+	}
+	// Loop through to end and insert or merge
+	while (cur)
+	{
+		// Reached sorted insert point
+		if (cur->offset < offset)
+		{
+			// Insert a new block at tail
+			struct BufferPoolFree* free_block = malloc(sizeof(struct BufferPoolFree));
+			free_block->buffer = buffer;
+			free_block->memory = memory;
+			free_block->offset = offset;
+			free_block->size = size;
+
+			// Insert
+			free_block->next = cur->next;
+			cur->next = free_block;
+
+			// Merge if necessary
+			buffer_pool_merge_free(block);
+			return;
+		}
+		prev = cur;
+		cur = cur->next;
+	}
+}
+
+void buffer_pool_array_destroy(BufferPool* pool)
+{
+	LOG_S("Destroying buffer pool array");
+	for (int i = 0; i < pool->block_count; i++)
+	{
+		// Remove all freed spaces
+		struct BufferPoolFree* cur = pool->blocks[i].free_blocks;
+		struct BufferPoolFree* next = NULL;
+		while (cur)
+		{
+			next = cur->next;
+
+			free(cur);
+
+			cur = next;
+		}
+
+		vkDestroyBuffer(device, pool->blocks[i].buffer, NULL);
+		vkFreeMemory(device, pool->blocks[i].memory, NULL);
+	}
+	free(pool->blocks);
+	pool->blocks = NULL;
+	pool->block_count = 0;
 }
 
 // Buffer creation

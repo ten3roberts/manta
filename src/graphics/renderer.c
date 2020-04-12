@@ -9,7 +9,6 @@ uint32_t image_index;
 
 void renderer_draw()
 {
-	return;
 	// Update uniform buffer
 	TransformType transform_buffer;
 	quaternion rotation = quat_axis_angle((vec3){0, 0.5, 1}, time_elapsed());
@@ -23,17 +22,6 @@ void renderer_draw()
 	// transform_buffer.proj = mat4_perspective(window_get_width(window) / window_get_height(window), 1, 0, 10);
 	transform_buffer.proj = mat4_ortho(window_get_aspect(window), 1, 0, 10);
 	ub_update(ub, &transform_buffer, 0, CS_WHOLE_SIZE, -1);
-
-	// Second
-	rotation = quat_axis_angle((vec3){1, 1, 0}, time_elapsed());
-	rot = quat_to_mat4(rotation);
-
-	pos = mat4_translate((vec3){time_elapsed() * 0.1, -sinf(time_elapsed()) * 0.5, -time_elapsed() * 0.5});
-	scale = mat4_scale((vec3){0.5, 0.5, 0.5});
-	transform_buffer.model = mat4_mul(&rot, &pos);
-	transform_buffer.model = mat4_mul(&transform_buffer.model, &scale);
-
-	ub_update(ub2, &transform_buffer, 0, CS_WHOLE_SIZE, -1);
 
 	// Submit render queue
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)

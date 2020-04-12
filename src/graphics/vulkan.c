@@ -913,10 +913,6 @@ int create_command_buffers()
 
 		material_bind(material, command_buffers[i], i);
 
-		/*model_bind(model_cube, command_buffers[i]);
-		texture_bind(tex, command_buffers[i], i);
-		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model_cube), 1, 0, 0, 0);*/
-
 		model_bind(model, command_buffers[i]);
 		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model), 1, 0, 0, 0);
 
@@ -1011,7 +1007,7 @@ int vulkan_init()
 	ub = ub_create(sizeof(TransformType), 0);
 
 	// model_cube = model_load_collada("./assets/models/cube.dae");
-	model = model_load_collada("./assets/models/plane.dae");
+	//model = model_load_collada("./assets/models/plane.dae");
 
 	// Create uniform buffer layout
 
@@ -1021,17 +1017,17 @@ int vulkan_init()
 	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	bindings[0].pImmutableSamplers = NULL; // Optional
 
-	/*bindings[1].binding = 1;
+	bindings[1].binding = 1;
 	bindings[1].descriptorCount = 1;
 	bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	bindings[1].pImmutableSamplers = NULL;
-	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;*/
+	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
 	descriptorpack_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings),
 						  (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
 
-	//material = material_create("./assets/materials/grid.json");
+	material = material_create("./assets/materials/grid.json");
 
 	if (create_color_buffer())
 	{
@@ -1041,10 +1037,10 @@ int vulkan_init()
 	{
 		return -13;
 	}
-	/*if (create_framebuffers())
+	if (create_framebuffers())
 	{
 		return -11;
-	}*/
+	}
 
 	if (create_command_buffers())
 	{
@@ -1064,16 +1060,20 @@ void vulkan_terminate()
 	LOG_S("Terminating vulkan");
 
 	vkDeviceWaitIdle(device);
-	ub_pools_destroy();
-	vb_pools_destroy();
+
 	swapchain_destroy();
 
 	model_destroy(model);
-	// free(descriptor_sets);
+
 	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
 	material_destroy_all();
 
 	descriptorpack_destroy(&global_descriptors);
+
+	ub_pools_destroy();
+
+	vb_pools_destroy();
+
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{

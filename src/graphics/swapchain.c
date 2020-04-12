@@ -101,8 +101,6 @@ int swapchain_recreate()
 }
 int swapchain_destroy()
 {
-	ub_destroy(ub);
-
 	// Destroy color buffer
 	vkDestroyImageView(device, color_image_view, NULL);
 	vkDestroyImage(device, color_image, NULL);
