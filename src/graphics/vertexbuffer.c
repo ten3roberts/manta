@@ -1,3 +1,4 @@
+#include "magpie.h"
 #include "vertexbuffer.h"
 #include "vulkan_members.h"
 #include "buffer.h"

@@ -1,5 +1,5 @@
 #include "strmap.h"
-#include <stdlib.h>
+#include "magpie.h"
 #include <string.h>
 #include "math/prime.h"
 #include <math.h>

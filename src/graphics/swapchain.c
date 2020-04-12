@@ -2,7 +2,7 @@
 #include "vulkan_internal.h"
 #include "swapchain.h"
 #include "vulkan.h"
-#include <stdlib.h>
+#include "magpie.h"
 #include "log.h"
 #include "graphics/uniforms.h"
 

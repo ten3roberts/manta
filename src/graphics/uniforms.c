@@ -4,7 +4,7 @@
 #include "texture.h"
 #include "graphics/buffer.h"
 #include "graphics/renderer.h"
-#include <stdlib.h>
+#include "magpie.h"
 #include <stb_image.h>
 
 // The different flavors of descriptor pools
@@ -191,7 +191,7 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 
 	vkAllocateDescriptorSets(device, &allocInfo, dst_pack->sets);
 
-	VkWriteDescriptorSet* descriptorWrites = malloc(binding_count * sizeof(VkWriteDescriptorSet));
+	VkWriteDescriptorSet* descriptor_writes = malloc(binding_count * sizeof(VkWriteDescriptorSet));
 	VkDescriptorBufferInfo* buffer_infos = malloc(uniform_count * sizeof(VkDescriptorBufferInfo));
 	VkDescriptorImageInfo* image_infos = malloc(sampler_count * sizeof(VkDescriptorImageInfo));
 
@@ -210,16 +210,16 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 				buffer_infos[buffer_it].offset = uniformbuffers[buffer_it]->offsets[i];
 				buffer_infos[buffer_it].range = uniformbuffers[buffer_it]->size;
 
-				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrites[j].dstSet = dst_pack->sets[i];
-				descriptorWrites[j].dstBinding = bindings[j].binding;
-				descriptorWrites[j].dstArrayElement = 0;
-				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				descriptorWrites[j].descriptorCount = 1;
-				descriptorWrites[j].pBufferInfo = &buffer_infos[buffer_it];
-				descriptorWrites[j].pImageInfo = NULL;
-				descriptorWrites[j].pTexelBufferView = NULL;
-				descriptorWrites[j].pNext = NULL;
+				descriptor_writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptor_writes[j].dstSet = dst_pack->sets[i];
+				descriptor_writes[j].dstBinding = bindings[j].binding;
+				descriptor_writes[j].dstArrayElement = 0;
+				descriptor_writes[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				descriptor_writes[j].descriptorCount = 1;
+				descriptor_writes[j].pBufferInfo = &buffer_infos[buffer_it];
+				descriptor_writes[j].pImageInfo = NULL;
+				descriptor_writes[j].pTexelBufferView = NULL;
+				descriptor_writes[j].pNext = NULL;
 				buffer_it++;
 			}
 
@@ -230,16 +230,16 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 				image_infos[sampler_it].imageView = texture_get_image_view(textures[sampler_it]);
 				image_infos[sampler_it].sampler = texture_get_sampler(textures[sampler_it]);
 
-				descriptorWrites[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptorWrites[j].dstSet = dst_pack->sets[i];
-				descriptorWrites[j].dstBinding = bindings[j].binding;
-				descriptorWrites[j].dstArrayElement = 0;
-				descriptorWrites[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				descriptorWrites[j].descriptorCount = 1;
-				descriptorWrites[j].pBufferInfo = NULL;
-				descriptorWrites[j].pImageInfo = &image_infos[sampler_it];
-				descriptorWrites[j].pTexelBufferView = NULL;
-				descriptorWrites[j].pNext = NULL;
+				descriptor_writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptor_writes[j].dstSet = dst_pack->sets[i];
+				descriptor_writes[j].dstBinding = bindings[j].binding;
+				descriptor_writes[j].dstArrayElement = 0;
+				descriptor_writes[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptor_writes[j].descriptorCount = 1;
+				descriptor_writes[j].pBufferInfo = NULL;
+				descriptor_writes[j].pImageInfo = &image_infos[sampler_it];
+				descriptor_writes[j].pTexelBufferView = NULL;
+				descriptor_writes[j].pNext = NULL;
 				sampler_it++;
 			}
 			else
@@ -247,9 +247,9 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 				LOG_W("Descriptor set writing: Unsupported descriptor type");
 			}
 		}
-		vkUpdateDescriptorSets(device, binding_count, descriptorWrites, 0, NULL);
+		vkUpdateDescriptorSets(device, binding_count, descriptor_writes, 0, NULL);
 	}
-
+	free(descriptor_writes);
 	free(layouts);
 	free(buffer_infos);
 	free(image_infos);

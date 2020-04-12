@@ -4,7 +4,6 @@
 #include "math/math.h"
 #include "window.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
 #include "math/vec.h"
 #include "input.h"

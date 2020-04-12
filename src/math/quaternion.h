@@ -3,6 +3,7 @@
 #include "mat4.h"
 #include "vec.h"
 #include <math.h>
+#include <stdlib.h>
 
 // Specifies the quaternion structure
 typedef struct

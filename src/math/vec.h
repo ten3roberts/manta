@@ -2,12 +2,12 @@
 
 #include "math.h"
 #include <math.h>
-#include <stdlib.h>
 
 typedef struct
 {
 	float x, y;
 } vec2;
+
 typedef struct
 {
 	int x, y;

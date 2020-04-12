@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include "magpie.h"
 #include "strmap.h"
 
 struct XMLNode
@@ -404,6 +404,7 @@ void xml_destroy(XMLNode* node)
 
 	strmap_destroy(node->attributes);
 	free(node->tag);
-	free(node->content);
+	if (node->content)
+		free(node->content);
 	free(node);
 }

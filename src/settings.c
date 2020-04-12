@@ -1,7 +1,10 @@
 #include "settings.h"
 #include "log.h"
-#include "stdio.h"
 #include "window.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+
 ivec2 resolution = {800, 600};
 int window_style = WS_WINDOWED;
 VsyncMode vsync = VSYNC_NONE;

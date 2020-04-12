@@ -17,8 +17,8 @@ project "crescent"
     targetdir "bin"
 
 	-- sets the compiler include directories for the source files and glfw
-    includedirs { "src", "vendor/glfw/include" }
-    includedirs { "src", "vendor/" }
+    includedirs { "src" }
+    includedirs { "vendor/", "vendor/glfw/include" }
 
     files {"src/**.h", "src/**.c"}
     
@@ -27,7 +27,7 @@ project "crescent"
 
 	-- specifies configuration specific options
     filter "configurations:Debug"
-      defines { "DEBUG=1" }
+      defines { "DEBUG=1", "MP_REPLACE_STD" }
       symbols "On"
 
    filter "configurations:Release"

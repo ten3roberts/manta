@@ -12,7 +12,7 @@
 #include "cr_time.h"
 #include "texture.h"
 #include "buffer.h"
-#include <stdlib.h>
+#include "magpie.h"
 #include <stdbool.h>
 #include "model.h"
 #include "material.h"
@@ -1068,6 +1068,7 @@ void vulkan_terminate()
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
 
+	ub_destroy(ub);
 	ub_pools_destroy();
 
 	vb_pools_destroy();

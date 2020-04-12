@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "magpie.h"
 #include "log.h"
 #include <string.h>
 #include "application.h"
@@ -17,6 +18,10 @@ int main(int argc, char** argv)
 
 	application_start();
 
+#if DEBUG
+	LOG("A total of %d allocations were made", mp_get_total_count());
+	mp_terminate();
+#endif
 	log_terminate();
 	return 0;
 }

@@ -1,7 +1,7 @@
 #include "buffer.h"
 #include "vulkan_internal.h"
 #include "log.h"
-#include <stdlib.h>
+#include "magpie.h"
 #include <math.h>
 
 #define B_MILLION 1048576

@@ -1,7 +1,7 @@
 #pragma once
 
 // Contains utility functions used by the engine
-#include <stdlib.h>
+#include "magpie.h"
 
 // Returns 1 if the path is a regular file
 int is_regular_file(const char* path);

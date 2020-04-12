@@ -3,6 +3,7 @@
 #include "vulkan_members.h"
 #include "buffer.h"
 #include "log.h"
+#include "magpie.h"
 
 IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count)
 {

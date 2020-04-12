@@ -1,5 +1,5 @@
 #include "math.h"
-#include <stdlib.h>
+#include "magpie.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

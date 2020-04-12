@@ -2,9 +2,8 @@
 #include "buffer.h"
 #include "log.h"
 #include "vulkan_members.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#include <stdlib.h>
+#include "magpie.h"
+#include "stb_image.h"
 
 typedef struct Texture
 {

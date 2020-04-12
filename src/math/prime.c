@@ -1,6 +1,7 @@
 #include "prime.h"
 #include "math/mat4.h"
 #include "log.h"
+#include <stdlib.h>
 
 /* This function calculates (ab)%c */
 int modulo(int a, int b, int c) {

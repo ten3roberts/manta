@@ -1,6 +1,5 @@
 #include "vec.h"
 #include "math.h"
-
 #include <stdlib.h>
 
 // Returns the normalized vector a
