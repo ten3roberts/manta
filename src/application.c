@@ -39,6 +39,7 @@ int application_start()
 
 	input_init(window);
 	vulkan_init();
+
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);

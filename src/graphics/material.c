@@ -25,7 +25,8 @@ struct Material
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 
-	// 0 : albedo
+	// The material indexes are specified by the json bindings
+	uint32_t texture_count;
 	Texture* textures[7];
 	// The resource management part, inaccessible for the use
 	struct Material *prev, *next;
@@ -111,7 +112,6 @@ Material* material_load_internal(JSON* object)
 	// Iterate and fill out the bindings
 	JSON* bindcur = json_get_elements(jbindings);
 	// The current iterator on where to fill the next used texture slot
-	int tex_it = 0;
 	for (int i = 0; i < material_binding_count; i++)
 	{
 		// Initialize
@@ -152,7 +152,7 @@ Material* material_load_internal(JSON* object)
 				material_destroy(mat);
 				return NULL;
 			}
-			mat->textures[tex_it++] = texture_create(texture_path);
+			mat->textures[mat->texture_count++] = texture_create(texture_path);
 		}
 		else
 		{
@@ -279,7 +279,12 @@ void material_destroy(Material* mat)
 	vkDeviceWaitIdle(device);
 
 	free(mat->name);
-	texture_destroy(mat->textures[0]);
+
+	// Destroy all textures
+	for(uint32_t i = 0; i < mat->texture_count; i++)
+	{
+		texture_destroy(mat->textures[i]);
+	}
 
 	vkDestroyPipelineLayout(device, mat->pipeline_layout, NULL);
 	vkDestroyPipeline(device, mat->pipeline, NULL);

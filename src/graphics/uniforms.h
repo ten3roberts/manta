@@ -19,7 +19,8 @@ typedef struct DescriptorPool DescriptorPool;
 // Contains descriptor sets for all possible frames in flight
 typedef struct
 {
-	DescriptorPool* pool;
+	// The index of the pool
+	uint32_t pool_index;
 	// The sum of uniform_count and sampler_count describes the 'size' of the pool it takes
 	// Represents how many uniform types is allocated
 	uint32_t uniform_count;

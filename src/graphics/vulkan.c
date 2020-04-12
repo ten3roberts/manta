@@ -910,7 +910,8 @@ int create_command_buffers()
 		render_pass_info.clearValueCount = 2;
 		render_pass_info.pClearValues = clear_values;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-
+		if (material == NULL || model == NULL)
+			continue;
 		material_bind(material, command_buffers[i], i);
 
 		model_bind(model, command_buffers[i]);
@@ -1007,7 +1008,7 @@ int vulkan_init()
 	ub = ub_create(sizeof(TransformType), 0);
 
 	// model_cube = model_load_collada("./assets/models/cube.dae");
-	//model = model_load_collada("./assets/models/plane.dae");
+	model = model_load_collada("./assets/models/plane.dae");
 
 	// Create uniform buffer layout
 
@@ -1051,7 +1052,6 @@ int vulkan_init()
 		return -14;
 	}
 	LOG_OK("Successfully initialized vulkan");
-	vulkan_terminate();
 	return 0;
 }
 
@@ -1063,12 +1063,14 @@ void vulkan_terminate()
 
 	swapchain_destroy();
 
-	model_destroy(model);
+	if (model)
+		model_destroy(model);
 
 	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
 	material_destroy_all();
 
-	descriptorpack_destroy(&global_descriptors);
+	if (global_descriptors.count)
+		descriptorpack_destroy(&global_descriptors);
 
 	ub_pools_destroy();
 
