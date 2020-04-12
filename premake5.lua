@@ -32,7 +32,8 @@ project "crescent"
 
    filter "configurations:Release"
       defines { "RELEASE=1" }
-      optimize "On"
+	  optimize "On"
+	  symbols "On"
 
 	-- sets platform specific includes
     filter "system:linux"

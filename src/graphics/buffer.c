@@ -22,7 +22,8 @@ void buffer_pool_add(BufferPool* pool, uint32_t size)
 	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				  &new_block->buffer, &new_block->memory, &pool->alignment, NULL);
 
-	// No blocks have been allocated, so initialize to 0
+	// No blocks have been allocated nor freed, so initialize to 0
+	new_block->free_blocks = NULL;
 	new_block->end = 0;
 	new_block->alloc_size = size;
 }

@@ -20,7 +20,7 @@
 Model* model_cube;
 Model* model;
 Material* material;
-VkDescriptorSetLayoutBinding bindings[1];
+VkDescriptorSetLayoutBinding bindings[2];
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 													 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -142,29 +142,32 @@ int create_instance()
 		}
 	}
 
-	// Check for validation layer support
-	uint32_t layer_count;
-	vkEnumerateInstanceLayerProperties(&layer_count, NULL);
-	VkLayerProperties* available_layers = malloc(layer_count * sizeof(VkLayerProperties));
-	vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
+	if (enable_validation_layers)
+	{ // Check for validation layer support
+		uint32_t layer_count;
+		vkEnumerateInstanceLayerProperties(&layer_count, NULL);
+		VkLayerProperties* available_layers = malloc(layer_count * sizeof(VkLayerProperties));
+		vkEnumerateInstanceLayerProperties(&layer_count, available_layers);
 
-	for (i = 0; i < validation_layers_count; i++)
-	{
-		int layer_exists = 0;
-		for (size_t j = 0; j < layer_count; j++)
+		for (i = 0; i < validation_layers_count; i++)
 		{
-			if (strcmp(validation_layers[0], available_layers[j].layerName) == 0)
+			int layer_exists = 0;
+			for (size_t j = 0; j < layer_count; j++)
 			{
-				layer_exists = 1;
-				LOG("Enabling validation layer '%s'", validation_layers[i]);
-				break;
+				if (strcmp(validation_layers[i], available_layers[j].layerName) == 0)
+				{
+					layer_exists = 1;
+					LOG("Enabling validation layer '%s'", validation_layers[i]);
+					break;
+				}
+			}
+			if (!layer_exists)
+			{
+				LOG_E("Validation layer '%s' does not exist", validation_layers[i]);
+				return -1;
 			}
 		}
-		if (!layer_exists)
-		{
-			LOG_E("Validation layer '%s' does not exist", validation_layers[i]);
-			return -1;
-		}
+		free(available_layers);
 	}
 	// Setup a temporary debug messenger and enable validation layers
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
@@ -192,7 +195,6 @@ int create_instance()
 
 	free(required_extensions);
 	free(extensions);
-	free(available_layers);
 
 	return 0;
 }
@@ -1018,14 +1020,8 @@ int vulkan_init()
 	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	bindings[0].pImmutableSamplers = NULL; // Optional
 
-	bindings[1].binding = 1;
-	bindings[1].descriptorCount = 1;
-	bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	bindings[1].pImmutableSamplers = NULL;
-	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
-	descriptorpack_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings),
+	descriptorlayout_create(bindings, 1, &global_descriptor_layout);
+	descriptorpack_create(global_descriptor_layout, bindings, 1,
 						  (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
 
 	material = material_create("./assets/materials/grid.json");
