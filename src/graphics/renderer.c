@@ -9,6 +9,7 @@ uint32_t image_index;
 
 void renderer_draw()
 {
+	return;
 	// Update uniform buffer
 	TransformType transform_buffer;
 	quaternion rotation = quat_axis_angle((vec3){0, 0.5, 1}, time_elapsed());

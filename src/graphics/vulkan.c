@@ -1007,11 +1007,8 @@ int vulkan_init()
 	{
 		return -12;
 	}
-	// Create sampler layout
-	tex = texture_create("./assets/textures/grid.png");
 
 	ub = ub_create(sizeof(TransformType), 0);
-	ub2 = ub_create(sizeof(TransformType), 0);
 
 	// model_cube = model_load_collada("./assets/models/cube.dae");
 	model = model_load_collada("./assets/models/plane.dae");
@@ -1031,10 +1028,10 @@ int vulkan_init()
 	bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;*/
 
 	descriptorlayout_create(bindings, sizeof(bindings) / sizeof(*bindings), &global_descriptor_layout);
-	descriptorpack_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings), (UniformBuffer**)&ub,
-						 (Texture**)&tex, &global_descriptors);
+	descriptorpack_create(global_descriptor_layout, bindings, sizeof(bindings) / sizeof(*bindings),
+						  (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
 
-	material = material_create("./assets/materials/grid.json");
+	//material = material_create("./assets/materials/grid.json");
 
 	if (create_color_buffer())
 	{
@@ -1044,10 +1041,10 @@ int vulkan_init()
 	{
 		return -13;
 	}
-	if (create_framebuffers())
+	/*if (create_framebuffers())
 	{
 		return -11;
-	}
+	}*/
 
 	if (create_command_buffers())
 	{
@@ -1058,6 +1055,7 @@ int vulkan_init()
 		return -14;
 	}
 	LOG_OK("Successfully initialized vulkan");
+	vulkan_terminate();
 	return 0;
 }
 
@@ -1069,6 +1067,8 @@ void vulkan_terminate()
 	ub_pools_destroy();
 	vb_pools_destroy();
 	swapchain_destroy();
+
+	model_destroy(model);
 	// free(descriptor_sets);
 	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
 	material_destroy_all();
@@ -1081,6 +1081,7 @@ void vulkan_terminate()
 		vkDestroySemaphore(device, semaphores_image_available[i], NULL);
 		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
+	vkDestroyRenderPass(device, renderPass, NULL);
 	vkDestroyCommandPool(device, command_pool, NULL);
 
 	vkDestroyDevice(device, NULL);

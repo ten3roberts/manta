@@ -25,8 +25,9 @@ int swapchain_resize = 0;
 int application_start()
 {
 	Timer timer = timer_start(CT_WALL_TICKS);
-	if (DEBUG)
+#if (DEBUG)
 		LOG_S("Running in debug mode");
+#endif
 	time_init();
 
 	settings_load();
