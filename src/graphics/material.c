@@ -63,12 +63,11 @@ Material* material_load_internal(JSON* object)
 			path_pos = tmp_name;
 
 		size_t lname = ext_pos - path_pos;
-		mat->name = malloc(lname);
+		mat->name = malloc(lname + 1);
 		// Allocate memory for the name
-		memcpy(mat->name, tmp_name, lname + 1);
+		memcpy(mat->name, path_pos + 1, lname + 1);
 		mat->name[lname] = '\0';
 	}
-
 
 	// Insert material into tracking list
 	// Check for duplicate
@@ -187,7 +186,7 @@ Material* material_load_internal(JSON* object)
 
 	// Create the material descriptors
 	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count,
-						 NULL, mat->textures, &mat->material_descriptors);
+						  NULL, mat->textures, &mat->material_descriptors);
 
 	free(material_bindings);
 	// Load the shaders
@@ -281,7 +280,7 @@ void material_destroy(Material* mat)
 	free(mat->name);
 
 	// Destroy all textures
-	for(uint32_t i = 0; i < mat->texture_count; i++)
+	for (uint32_t i = 0; i < mat->texture_count; i++)
 	{
 		texture_destroy(mat->textures[i]);
 	}
