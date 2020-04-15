@@ -27,7 +27,8 @@ project "crescent"
 
 	-- specifies configuration specific options
     filter "configurations:Debug"
-      defines { "DEBUG=1", "MP_REPLACE_STD" }
+	  defines { "DEBUG=1", "MP_REPLACE_STD" }
+	  optimize "Off"
       symbols "On"
 
    filter "configurations:Release"
