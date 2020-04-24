@@ -18,8 +18,10 @@ int main(int argc, char** argv)
 
 	application_start();
 
+// Include allocation information on debug builds
 #if DEBUG
 	LOG("A total of %d allocations were made", mp_get_total_count());
+	mp_print_locations();
 	mp_terminate();
 #endif
 	log_terminate();
