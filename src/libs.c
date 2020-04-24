@@ -9,9 +9,15 @@
 #include "magpie.h"
 
 // A C file for building and configuring header only libraries
-#define JSON_IMPLEMENTATION
-#define JSON_MESSAGE(m) LOG_E(m)
+#define LIBJSON_IMPLEMENTATION
+#define LIBJSON_MESSAGE(m) LOG_E(m)
 #include "libjson.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+
+#define HASHTABLE_IMPLEMENTATION
+#include "hashtable.h"
+#define MEMPOOL_IMPLEMENTATION
+#define MEMPOOL_MESSAGE(m) LOG_E(m)
+#include "mempool.h"
