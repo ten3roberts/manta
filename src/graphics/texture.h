@@ -1,7 +1,10 @@
 typedef struct Texture Texture;
 #include "vulkan/vulkan.h"
 
-Texture* texture_create(const char* file);
+//Texture* texture_create(const char* file);
+
+// Attempts to find a texture by filename and if it doesn't exist it gets loaded
+Texture* texture_get(const char* name);
 
 void texture_destroy(Texture* tex);
 

@@ -4,9 +4,13 @@
 #include "vulkan_members.h"
 #include "magpie.h"
 #include "stb_image.h"
+#include "hashtable.h"
+
+static hashtable_t* texture_table = NULL;
 
 typedef struct Texture
 {
+	char name[256];
 	int width;
 	int height;
 	int channels;
@@ -61,7 +65,8 @@ VkSampler sampler_create()
 	return sampler;
 }
 
-Texture* texture_create(const char* file)
+// Only used internally since textures are only loaded once
+static Texture* texture_load(const char* file)
 {
 	LOG_S("Loading texture %s", file);
 	Texture* tex = malloc(sizeof(Texture));
@@ -73,6 +78,9 @@ Texture* texture_create(const char* file)
 		free(tex);
 		return NULL;
 	}
+
+	// Save the name
+	snprintf(tex->name, sizeof tex->name, "%s", file);
 
 	// Create a staging bufer
 	VkBuffer staging_buffer;
@@ -115,12 +123,44 @@ Texture* texture_create(const char* file)
 	return tex;
 }
 
+Texture* texture_get(const char* name)
+{
+	// Create table if it doesn't exist
+	if (texture_table == NULL)
+		texture_table = hashtable_create_string();
+
+	// Attempt to find texture if it already exists
+	Texture* tex = hashtable_find(texture_table, (void*)name);
+
+	if (tex)
+		return tex;
+
+	// Load from file
+	tex = texture_load(name);
+	// File was not found
+	if (tex == NULL)
+		return NULL;
+
+	hashtable_insert(texture_table, (void*)tex->name, tex);
+	return tex;
+}
+
 void texture_destroy(Texture* tex)
 {
+	hashtable_remove(texture_table, tex->name);
+	// Last texture was removed
+	if(hashtable_get_count(texture_table) == 0)
+	{
+
+		hashtable_destroy(texture_table);
+		texture_table = NULL;
+	}
+
 	vkDestroyImage(device, tex->image, NULL);
 	vkFreeMemory(device, tex->memory, NULL);
 	vkDestroyImageView(device, tex->view, NULL);
 	vkDestroySampler(device, tex->sampler, NULL);
+	
 	free(tex);
 }
 

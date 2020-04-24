@@ -151,7 +151,7 @@ Material* material_load_internal(JSON* object)
 				material_destroy(mat);
 				return NULL;
 			}
-			mat->textures[mat->texture_count++] = texture_create(texture_path);
+			mat->textures[mat->texture_count++] = texture_get(texture_path);
 		}
 		else
 		{
