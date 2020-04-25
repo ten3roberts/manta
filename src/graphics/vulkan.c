@@ -1024,7 +1024,7 @@ int vulkan_init()
 	descriptorpack_create(global_descriptor_layout, bindings, 1,
 						  (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
 
-	material = material_create("./assets/materials/grid.json");
+	material = material_load("./assets/materials/grid.json");
 
 	if (create_color_buffer())
 	{
@@ -1063,7 +1063,10 @@ void vulkan_terminate()
 		model_destroy(model);
 
 	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
+
+	// Free textures and materials
 	material_destroy_all();
+	texture_destroy_all();
 
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
@@ -1072,6 +1075,9 @@ void vulkan_terminate()
 	ub_pools_destroy();
 
 	vb_pools_destroy();
+
+
+
 
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)

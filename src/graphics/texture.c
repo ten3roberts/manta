@@ -10,6 +10,7 @@ static hashtable_t* texture_table = NULL;
 
 typedef struct Texture
 {
+	// Name should not be modified after creation
 	char name[256];
 	int width;
 	int height;
@@ -162,6 +163,15 @@ void texture_destroy(Texture* tex)
 	vkDestroySampler(device, tex->sampler, NULL);
 	
 	free(tex);
+}
+
+void texture_destroy_all()
+{
+	Texture* tex = NULL;
+	while (texture_table && (tex = hashtable_pop(texture_table)))
+	{
+		texture_destroy(tex);
+	}
 }
 
 void* texture_get_image_view(Texture* tex)

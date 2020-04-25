@@ -6,16 +6,18 @@
 #include "graphics/renderer.h"
 #include "log.h"
 #include "libjson.h"
+#include "hashtable.h"
 
 // A linked list tracking all loaded materials
-static Material* materials = NULL;
+static hashtable_t* material_table = NULL;
 
 #define GLOBAL_DESCRIPTOR_INDEX	  0
 #define MATERIAL_DESCRIPTOR_INDEX 1
 
 struct Material
 {
-	char* name;
+	// Name should not be modified after creation
+	char name[256];
 
 	// An array to all descriptor layouts of the pipeline
 	// 0 : global descriptor layout
@@ -41,7 +43,7 @@ Material* material_load_internal(JSON* object)
 	JSON* jname = json_get_member(object, "name");
 	if (jname)
 	{
-		mat->name = string_dup(json_get_string(jname));
+		snprintf(mat->name, sizeof mat->name, "%s", json_get_string(jname));
 	}
 	// If name doesn't exist, use the filename
 	else
@@ -63,36 +65,27 @@ Material* material_load_internal(JSON* object)
 			path_pos = tmp_name;
 
 		size_t lname = ext_pos - path_pos;
-		mat->name = malloc(lname + 1);
+		if (lname > sizeof mat->name)
+			lname = sizeof mat->name;
 		// Allocate memory for the name
-		memcpy(mat->name, path_pos + 1, lname + 1);
+		memcpy(mat->name, path_pos + 1, lname);
 		mat->name[lname] = '\0';
 	}
 
-	// Insert material into tracking list
-	// Check for duplicate
-	// Handle beginning
-	if (materials == NULL)
-		materials = mat;
-	else
+	// Create table if it doesn't exist
+	if(material_table == NULL)
 	{
-		Material* cur = materials;
-		Material* prev = NULL;
-		while (cur)
-		{
-			if (strcmp(mat->name, cur->name) == 0)
-			{
-				LOG_W("Duplicate material %s", mat->name);
-				material_destroy(mat);
-				return NULL;
-			}
-			prev = cur;
-			cur = cur->next;
-		}
-		// Add to tail of list
-		prev->next = mat;
-		mat->prev = prev;
+		material_table = hashtable_create_string();
 	}
+	// Insert material into tracking table after name is acquired
+	if (hashtable_find(material_table, mat->name) != NULL)
+	{
+		LOG_W("Duplicate material %s", mat->name);
+		material_destroy(mat);
+		return NULL;
+	}
+	// Insert into table
+	hashtable_insert(material_table, mat->name, mat);
 
 	// Fill in global layout, assumes global descriptors exist and does not create them
 	mat->descriptor_layouts[GLOBAL_DESCRIPTOR_INDEX] = global_descriptor_layout;
@@ -220,7 +213,7 @@ Material* material_load_internal(JSON* object)
 	return mat;
 }
 
-Material* material_create(const char* file)
+Material* material_load(const char* file)
 {
 	JSON* root = json_loadfile(file);
 	int jtype = json_type(root);
@@ -258,6 +251,14 @@ Material* material_create(const char* file)
 	return mat;
 }
 
+Material* material_get(const char* name)
+{
+	// No materials loaded
+	if (material_table == NULL)
+		return NULL;
+	return hashtable_find(material_table, name);
+}
+
 void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame)
 {
 	if (frame == -1)
@@ -275,9 +276,16 @@ void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame
 
 void material_destroy(Material* mat)
 {
-	vkDeviceWaitIdle(device);
+	// Remove from table if it exists
+	hashtable_remove(material_table, mat->name);
+	// Last texture was removed
+	if(hashtable_get_count(material_table) == 0)
+	{
+		hashtable_destroy(material_table);
+		material_table = NULL;
+	}
 
-	free(mat->name);
+	vkDeviceWaitIdle(device);
 
 	// Destroy all textures
 	for (uint32_t i = 0; i < mat->texture_count; i++)
@@ -291,21 +299,14 @@ void material_destroy(Material* mat)
 	descriptorpack_destroy(&mat->material_descriptors);
 	vkDestroyDescriptorSetLayout(device, mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], NULL);
 
-	// Remove from list
-	if (mat->prev)
-		mat->prev->next = mat->next;
-	// Update head
-	else
-		materials = mat->next;
-	if (mat->next)
-		mat->next->prev = mat->prev;
 	free(mat);
 }
 
 void material_destroy_all()
 {
-	while (materials)
+	Material* mat = NULL;
+	while (material_table && (mat = hashtable_pop(material_table)))
 	{
-		material_destroy(materials);
+		material_destroy(mat);
 	}
 }

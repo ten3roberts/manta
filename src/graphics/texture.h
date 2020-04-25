@@ -8,6 +8,9 @@ Texture* texture_get(const char* name);
 
 void texture_destroy(Texture* tex);
 
+// Destroys all loaded textures
+void texture_destroy_all();
+
 void* texture_get_image_view(Texture* tex);
 
 void* texture_get_sampler(Texture* tex);
