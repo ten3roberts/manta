@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include "magpie.h"
 #include "strmap.h"
+#include "mempool.h"
+
+static mempool_t* node_pool = NULL;
 
 struct XMLNode
 {
@@ -17,6 +20,17 @@ struct XMLNode
 	// Linked list to children
 	XMLNode* children;
 };
+
+// Pool allocated a new node
+static XMLNode* xml_node_new()
+{
+	// Allocate pool for the first time
+	if (node_pool == NULL)
+	{
+		node_pool = mempool_create(sizeof(XMLNode), 16);
+	}
+	return mempool_alloc(node_pool);
+}
 
 XMLNode* xml_loadfile(const char* filepath)
 {
@@ -37,7 +51,7 @@ XMLNode* xml_loadfile(const char* filepath)
 	fread(buf, 1, size, file);
 
 	// Loads the root node
-	XMLNode* root = malloc(sizeof(XMLNode));
+	XMLNode* root = xml_node_new();
 	root->parent = NULL;
 	char* body = buf;
 	body = xml_load(root, buf);
@@ -83,6 +97,7 @@ char* xml_load(XMLNode* node, char* str)
 	int in_attributes = 0;
 	int after_equal = 0;
 	node->attributes = strmap_create(node->attributes);
+	
 	// i : iterator for string
 	// j : iterator for dst
 	for (uint32_t i = 1, j = 0; i < tag_end; i++)
@@ -179,12 +194,13 @@ char* xml_load(XMLNode* node, char* str)
 	// Load children
 	while (1)
 	{
-		XMLNode* new_node = malloc(sizeof(XMLNode));
+
+		XMLNode* new_node = xml_node_new();
 		char* buf = xml_load(new_node, str);
 		new_node->parent = node;
 		if (buf == NULL)
 		{
-			free(new_node);
+			mempool_free(node_pool, new_node);
 			break;
 		}
 		tag_close -= buf - str;
@@ -286,7 +302,7 @@ void xml_savefile(XMLNode* root, const char* filepath)
 
 XMLNode* xml_create(char* tag, char* content)
 {
-	XMLNode* node = malloc(sizeof(XMLNode));
+	XMLNode* node = xml_node_new();
 	if (node == NULL)
 		return NULL;
 	if (tag)
@@ -406,5 +422,14 @@ void xml_destroy(XMLNode* node)
 	free(node->tag);
 	if (node->content)
 		free(node->content);
-	free(node);
+
+
+	mempool_free(node_pool, node);
+
+	// Destroy pool if it is empty
+	if(mempool_get_count(node_pool) == 0)
+	{
+		mempool_destroy(node_pool);
+		node_pool = NULL;
+	}
 }
