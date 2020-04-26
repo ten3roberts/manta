@@ -141,7 +141,6 @@ void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDevice
 	}
 
 	struct BufferPoolFree* cur = block->free_blocks;
-	struct BufferPoolFree* prev = NULL;
 
 	// Handle beginning of list
 	if (block->free_blocks == NULL)
@@ -176,7 +175,6 @@ void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDevice
 			buffer_pool_merge_free(block);
 			return;
 		}
-		prev = cur;
 		cur = cur->next;
 	}
 }

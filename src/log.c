@@ -52,7 +52,6 @@ int normalize(double* val)
 void ftoa_sci(char* buffer, double value)
 {
 	int exponent = 0;
-	int places = 0;
 	static const int width = 4;
 
 	// If value is 0,

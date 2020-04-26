@@ -165,7 +165,6 @@ int ftos_fixed(double num, char* buf, int length)
 
 	uint64_t dec_pos = length - max((int64_t)log10(num), 0) - 1 - neg;
 
-	int base = 10;
 	char numerals[17] = {"0123456789ABCDEF"};
 
 	// Return and write one character if float == 0 to precision accuracy

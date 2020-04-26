@@ -46,7 +46,6 @@ XMLNode* xml_loadfile(const char* filepath)
 	size = ftell(file);
 	buf = malloc(size);
 	fseek(file, 0L, SEEK_SET);
-	size_t i = 0;
 	// Loads the xml file into memory, taking escaping into account
 	fread(buf, 1, size, file);
 
@@ -55,6 +54,10 @@ XMLNode* xml_loadfile(const char* filepath)
 	root->parent = NULL;
 	char* body = buf;
 	body = xml_load(root, buf);
+	if(body == NULL)
+	{
+		LOG_E("Failed to read xml file %s", filepath);
+	}
 	free(buf);
 	fclose(file);
 	return root;

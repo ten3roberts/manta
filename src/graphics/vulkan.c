@@ -729,13 +729,13 @@ int create_graphics_pipeline(struct PipelineCreateInfo* createinfo, VkPipelineLa
 	depthStencil.front = (VkStencilOpState){0}; // Optional
 	depthStencil.back = (VkStencilOpState){0};	// Optional
 
-	// Dynamic states
-	VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
+	// TODO: Dynamic states
+	/*VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
 
 	VkPipelineDynamicStateCreateInfo dynamicState = {0};
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicState.dynamicStateCount = 2;
-	dynamicState.pDynamicStates = dynamicStates;
+	dynamicState.pDynamicStates = dynamicStates;*/
 
 	// Pipeline layout
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};

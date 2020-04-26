@@ -57,7 +57,6 @@ bool prime_test(uint64_t n, int iteration) {
 
 uint64_t prime_next(uint64_t n)
 {
-	int is_prime = 0;
 	for (uint32_t i = n; i < 2 * n; ++i)
 	{
 		if (prime_test(i, 5))

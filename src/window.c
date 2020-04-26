@@ -50,7 +50,6 @@ void window_close_callback(GLFWwindow* raw_window)
 
 void key_callback(GLFWwindow* raw_window, int key, int scancode, int action, int mods)
 {
-	Window* window = glfwGetWindowUserPointer(raw_window);
 	switch (action)
 	{
 	case GLFW_PRESS: {

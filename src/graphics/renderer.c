@@ -15,7 +15,6 @@ void renderer_draw()
 
 	mat4 rot = quat_to_mat4(rotation);
 	mat4 pos = mat4_translate((vec3){0, sinf(time_elapsed()) * 0.5, -time_elapsed() * 0.2 + -2});
-	mat4 scale = mat4_scale((vec3){1, 1, 1});
 	transform_buffer.model = mat4_mul(&rot, &pos);
 
 	transform_buffer.view = mat4_identity;
