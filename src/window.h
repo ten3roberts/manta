@@ -6,7 +6,7 @@
 
 typedef void Window;
 
-Window* window_create(char* title, int width, int height, int style);
+Window* window_create(char* title, int width, int height, int style, int resizable);
 
 // Destroys a window and frees all resources
 void window_destroy(Window* window);

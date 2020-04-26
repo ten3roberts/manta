@@ -97,12 +97,12 @@ void mouse_moved_callback(GLFWwindow* raw_window, double x, double y)
 	application_send_event((Event){EVENT_MOUSE_MOVED, .fdata = {x, y}, 0});
 }
 
-Window* window_create(char* title, int width, int height, int style)
+Window* window_create(char* title, int width, int height, int style, int resizable)
 {
 	// Make sure to initialize glfw once
 	if (!glfw_initialized && glfwInit())
 		glfw_initialized = 1;
-
+	
 	// Sets the resolution to native if res is set to -1
 	GLFWmonitor* primary = glfwGetPrimaryMonitor();
 	const GLFWvidmode* mode = glfwGetVideoMode(primary);
@@ -110,7 +110,7 @@ Window* window_create(char* title, int width, int height, int style)
 	height = height > 0 ? height : mode->height;
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	glfwWindowHint(GLFW_RESIZABLE, resizable);
 
 	LOG("Creating window %d %d", width, height);
 	Window* window = malloc(sizeof(Window));
@@ -122,7 +122,7 @@ Window* window_create(char* title, int width, int height, int style)
 	window->height = height;
 	window->in_focus = 1;
 	window->should_close = 0;
-	strcpy(window->title, title);
+	snprintf(window->title, sizeof window->title, "%s", title);
 
 	if (style == 0)
 	{

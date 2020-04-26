@@ -1,24 +1,21 @@
 #pragma once
 #include "event.h"
 
+// Includes the declarations of the user application functions
+
 // Defines the application
 // Handles events and propogates them throughout the program
 // Handles the main loop and updates the application
 
-// Starts the application
-// Initalizes time
-// Initializes input
-// Creates a window
-// Initializes vulkan
-// Enter main loop
-// terminates vulkan
-// destroys the window
-int application_start();
+// A user application defined function that is called to start the application
+// All initialization happend here
+// The user handles the game loop, be it this or a separate function call
+extern int application_start(int argc, char** argv);
 
 // The starting point from where all events should propagate
-void application_send_event(Event event);
+extern void application_send_event(Event event);
 
 // Returns the current window of the application
 // Returns as a void pointer as window.h is not included to to deps
 // Can safely be cast to Window unless null
-void* application_get_window();
+extern void* application_get_window();
