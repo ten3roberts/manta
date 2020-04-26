@@ -1,6 +1,6 @@
 #ifndef UNIFORMS_H
 #define UNIFORMS_H
-#endif
+
 #include "math/mat4.h"
 #include <vulkan/vulkan.h>
 #include "graphics/texture.h"
