@@ -9,7 +9,7 @@ project "*"
 	configurations { "Debug", "Release" }
 
 	-- sets the compiler include directories for the source files and glfw
-	includedirs { "include",  "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
+	includedirs { "include", "vendor", "vendor/glfw/include", "vendor/headerlibs" }
 
 	-- Unix and Linux links and configurations
 	filter "system:linux or bsd or hurd or aix or solaris or haiku"
@@ -30,10 +30,10 @@ project "*"
 	filter "configurations:Debug"
 		defines { "DEBUG=1", "MP_REPLACE_STD" }
 		optimize "Off"
-    	symbols "On"
+	symbols "On"
 
-   	filter "configurations:Release"
-    	defines { "RELEASE==1" }
+	filter "configurations:Release"
+		defines { "RELEASE==1" }
 		optimize "On"
 		symbols "On"
 
@@ -49,13 +49,10 @@ project "*"
 
 
 project "crescent"
-    kind "StaticLib"
+	kind "StaticLib"
 
-    language "C"
-    targetdir "bin"
+	language "C"
+	targetdir "bin"
 	files {"src/**.h", "src/**.c"}
-	includedirs { "include", "src", "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
-
-
-    
+	includedirs { "include", "src", "vendor", "vendor/glfw/include", "vendor/headerlibs" }	
 
