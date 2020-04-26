@@ -2,34 +2,6 @@
 outputdir = ""
 include ("vendor/glfw")
 
-libraries = {};
-
--- Inserts one or more libraries into the libraries table
-function addlib(libname)
-	if type(libname) == "table" then
-		for k, v in pairs(libname) do
-			table.insert(libraries, v)
-			printf("Adding library '%s'", v)
-		end
-	elseif type(libname) == "string" then
-		table.insert(libraries, libname)
-		printf("Adding library '%s'", v)
-
-	else
-		premake.error("Invalid library type: ", libname)
-end
-end
-
--- Shader compilation
-filter "files:**.frag"
-	buildmessage "Compiling shader %file.relpath"
-	buildcommands {
-		"glslc -o %{file.relpath}.spv.auto %{file.relpath}"
-	}
-	buildoutputs {
-		"%{file.relpath}.spv.auto"
-	}
-
 project "*"
 	
 	-- Only x64 architecture is supported
@@ -60,8 +32,8 @@ project "*"
 		optimize "Off"
     	symbols "On"
 
-   filter "configurations:Release"
-    	defines { "RELEASE=1" }
+   	filter "configurations:Release"
+    	defines { "RELEASE==1" }
 		optimize "On"
 		symbols "On"
 
@@ -83,7 +55,6 @@ project "crescent"
     targetdir "bin"
 	files {"src/**.h", "src/**.c"}
 	includedirs { "include", "src", "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
-	
 
 
     
