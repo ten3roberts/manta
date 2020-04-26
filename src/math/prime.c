@@ -1,4 +1,4 @@
-#include "prime.h"
+#include "math/prime.h"
 #include "math/mat4.h"
 #include "log.h"
 #include <stdlib.h>

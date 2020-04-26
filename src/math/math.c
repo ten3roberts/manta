@@ -1,4 +1,4 @@
-#include "math.h"
+#include "math/math.h"
 #include "magpie.h"
 #include <stdio.h>
 #include <stdint.h>

@@ -1,9 +1,9 @@
-#include "uniforms.h"
-#include "log.h"
+#include "graphics/uniforms.h"
 #include "graphics/vulkan_internal.h"
-#include "texture.h"
+#include "graphics/texture.h"
 #include "graphics/buffer.h"
 #include "graphics/renderer.h"
+#include "log.h"
 #include "magpie.h"
 #include <stb_image.h>
 

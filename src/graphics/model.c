@@ -1,4 +1,4 @@
-#include "model.h"
+#include "graphics/model.h"
 #include "graphics/vertexbuffer.h"
 #include "graphics/indexbuffer.h"
 #include "xmlparser.h"

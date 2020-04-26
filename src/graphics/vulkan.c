@@ -5,17 +5,16 @@
 #include "log.h"
 #include "utils.h"
 #include "math/math.h"
-#include "vulkan.h"
-#include "swapchain.h"
+#include "graphics/graphics.h"
 #include "uniforms.h"
 #include "settings.h"
 #include "cr_time.h"
-#include "texture.h"
+#include "graphics/texture.h"
 #include "buffer.h"
 #include "magpie.h"
+#include "graphics/model.h"
+#include "graphics/material.h"
 #include <stdbool.h>
-#include "model.h"
-#include "material.h"
 
 Model* model_cube;
 Model* model;
@@ -966,7 +965,7 @@ int create_sync_objects()
 	return 0;
 }
 
-int vulkan_init()
+int graphics_init()
 {
 	window = application_get_window();
 	// Create a vulkan instance
@@ -1051,7 +1050,7 @@ int vulkan_init()
 	return 0;
 }
 
-void vulkan_terminate()
+void graphics_terminate()
 {
 	LOG_S("Terminating vulkan");
 

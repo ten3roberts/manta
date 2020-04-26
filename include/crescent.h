@@ -11,9 +11,8 @@
 #include "input.h"
 #include "log.h"
 
-#include "graphics/vulkan.h"
+#include "graphics/graphics.h"
 #include "graphics/material.h"
 #include "graphics/model.h"
 #include "graphics/renderer.h"
-#include "graphics/swapchain.h"
 #endif

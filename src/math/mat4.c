@@ -1,8 +1,8 @@
 #define _USE_MATH_DEFINES
 #include <stdint.h>
 #include <math.h>
-#include "vec.h"
-#include "mat4.h"
+#include "math/vec.h"
+#include "math/mat4.h"
 #include <stdio.h>
 
 // Returns a 4x4 matrix initialized with zero

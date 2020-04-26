@@ -1,5 +1,5 @@
-#include "vec.h"
-#include "math.h"
+#include "math/vec.h"
+#include "math/math.h"
 
 // Converts a vector to a comma separated string with the components
 void vec4_string(vec4 a, char * buf, int precision)

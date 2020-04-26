@@ -37,7 +37,7 @@ project "*"
 	configurations { "Debug", "Release" }
 
 	-- sets the compiler include directories for the source files and glfw
-	includedirs { "src",  "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
+	includedirs { "include",  "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
 
 	-- Unix and Linux links and configurations
 	filter "system:linux or bsd or hurd or aix or solaris or haiku"
@@ -53,7 +53,6 @@ project "*"
 		-- Vulkan
 		includedirs "C:/VulkanSDK/1.1.126.0/Include"
 		links ("C:/VulkanSDK/1.1.126.0/Lib/vulkan-1.lib")
-		prebuildcommands "cd assets/shaders && compile.bat"
 
 	-- specifies configuration specific options
 	filter "configurations:Debug"
@@ -83,7 +82,7 @@ project "crescent"
     language "C"
     targetdir "bin"
 	files {"src/**.h", "src/**.c"}
-	includedirs { "src", "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
+	includedirs { "include", "src", "vendor", "vendor/glfw/include", "vendor/headerlibs"  }
 	
 
 

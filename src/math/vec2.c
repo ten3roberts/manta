@@ -1,5 +1,5 @@
-#include "vec.h"
-#include "math.h"
+#include "math/vec.h"
+#include "math/math.h"
 
 // Returns the normalized vector of a
 vec2 vec2_norm(vec2 a)

@@ -1,6 +1,6 @@
 #include "log.h"
 #include "vulkan_members.h"
-#include "swapchain.h"
+#include "graphics/graphics.h"
 #include "cr_time.h"
 #include "graphics/uniforms.h"
 #include "math/quaternion.h"

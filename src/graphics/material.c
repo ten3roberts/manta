@@ -1,4 +1,4 @@
-#include "material.h"
+#include "graphics/material.h"
 #include "graphics/texture.h"
 #include "graphics/uniforms.h"
 #include "utils.h"
