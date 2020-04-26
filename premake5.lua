@@ -3,7 +3,6 @@ outputdir = ""
 include ("vendor/glfw")
 
 project "*"
-	
 	-- Only x64 architecture is supported
 	architecture "x64"
 	configurations { "Debug", "Release" }
@@ -33,7 +32,7 @@ project "*"
 	symbols "On"
 
 	filter "configurations:Release"
-		defines { "RELEASE==1" }
+		defines { "RELEASE==1", "MP_DISABLE" }
 		optimize "On"
 		symbols "On"
 
