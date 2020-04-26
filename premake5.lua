@@ -20,7 +20,18 @@ function addlib(libname)
 end
 end
 
+-- Shader compilation
+filter "files:**.frag"
+	buildmessage "Compiling shader %file.relpath"
+	buildcommands {
+		"glslc -o %{file.relpath}.spv.auto %{file.relpath}"
+	}
+	buildoutputs {
+		"%{file.relpath}.spv.auto"
+	}
+
 project "*"
+	
 	-- Only x64 architecture is supported
 	architecture "x64"
 	configurations { "Debug", "Release" }
@@ -54,6 +65,16 @@ project "*"
     	defines { "RELEASE=1" }
 		optimize "On"
 		symbols "On"
+
+	-- Shader compilation
+	filter "files:**.frag or files:**.vert"
+		buildmessage "Compiling shader %{file.relpath}"
+		buildcommands {
+			"glslc -o %{file.relpath}.spv %{file.relpath}"
+		}
+		buildoutputs {
+			"%{cfg.objdir}/%{file.name}.spv"
+		}
 
 
 project "crescent"
