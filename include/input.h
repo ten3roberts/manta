@@ -1,4 +1,5 @@
-#pragma once
+#ifndef INPUT_H
+#define INPUT_H
 #include "event.h"
 #include "keycodes.h"
 #include "math/vec.h"
@@ -42,3 +43,4 @@ vec2 input_get_scroll();
 // The y component represents the normal vertical scroll wheel or touchpad
 // The x component represents the horizontal scroll wheel or touchpad
 vec2 input_get_rel_scroll();
+#endif

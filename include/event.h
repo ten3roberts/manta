@@ -1,4 +1,5 @@
-#pragma once
+#ifndef EVENT_H
+#define EVENT_H
 typedef enum
 {
 	// Dummy or invalid event
@@ -36,3 +37,4 @@ typedef struct
 	};
 	int handled;
 } Event;
+#endif

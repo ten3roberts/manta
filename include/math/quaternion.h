@@ -1,4 +1,5 @@
-#pragma once
+#ifndef QUATERNION_H
+#define QUATERNION_H
 
 #include "mat4.h"
 #include "vec.h"
@@ -224,3 +225,4 @@ quaternion quat_lerp(quaternion a, quaternion b, float t)
 	result = quat_norm(result);
 	return result;
 }
+#endif

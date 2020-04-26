@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CR_TIME_H
+#define CR_TIME_H
 #include <time.h>
 #include <stdint.h>
 
@@ -33,4 +34,5 @@ size_t time_framecount();
 #include <Windows.h>
 // Sleeps for (float) seconds
 #define SLEEP(s) Sleep(s * 1000);
+#endif
 #endif

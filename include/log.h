@@ -1,3 +1,6 @@
+#ifndef LOG_H
+#define LOG_H
+
 #include <string.h>
 
 #if PL_LINUX
@@ -60,3 +63,4 @@ int log_call(int color, const char* name, const char* fmt, ...);
 // Issues a formated log call that prints to stdout and a log file
 // Prints in blue color and indicates a status message
 #define LOG_S(fmt, ...) log_call(CONSOLE_BLUE, __FILENAME__, fmt, ##__VA_ARGS__)
+#endif

@@ -1,3 +1,5 @@
+#ifndef MATERIAL_H
+#define MATERIAL_H
 #include <stdint.h>
 #include <vulkan/vulkan.h>
 
@@ -20,3 +22,4 @@ void material_destroy(Material* mat);
 
 // Destroys all loaded materials
 void material_destroy_all();
+#endif

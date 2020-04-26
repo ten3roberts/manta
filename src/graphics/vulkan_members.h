@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VULKAN_MEMBERS_H
+#define VULKAN_MEMBERS_H
 #include <stdint.h>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -111,3 +112,4 @@ extern void* ub;
 extern void* ub2;
 
 extern void* tex;
+#endif

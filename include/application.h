@@ -1,4 +1,6 @@
-#pragma once
+
+#ifndef APPLICATION_H
+#define APPLICATION_H
 #include "event.h"
 
 // Includes the declarations of the user application functions
@@ -19,3 +21,4 @@ extern void application_send_event(Event event);
 // Returns as a void pointer as window.h is not included to to deps
 // Can safely be cast to Window unless null
 extern void* application_get_window();
+#endif

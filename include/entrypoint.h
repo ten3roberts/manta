@@ -1,3 +1,6 @@
+#ifndef ENTRYPOINT_H
+#define ENTRYPOINT_H
+
 #include <stdio.h>
 #include "magpie.h"
 #include "log.h"
@@ -33,3 +36,4 @@ int main(int argc, char** argv)
 	log_terminate();
 	return 0;
 }
+#endif

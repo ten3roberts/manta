@@ -1,5 +1,5 @@
 #ifndef GRAPHICS_H
-#define GRAPHIC_H
+#define GRAPHICS_H
 
 // Initialized the graphics api
 // The implementation location of this function is determined by which api is used

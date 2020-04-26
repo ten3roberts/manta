@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VEC_H
+#define VEC_H
 
 #include "math.h"
 #include <math.h>
@@ -248,3 +249,4 @@ void vec4_string(vec4 a, char* buf, int precision);
 
 // Converts a vector to a comma separated string with the components and magnitude
 void vec4_string_long(vec4 a, char* buf, int precision);
+#endif

@@ -1,3 +1,5 @@
+#ifndef SETTINGS_H
+#define SETTINGS_H
 #include "math/vec.h"
 
 typedef enum
@@ -19,3 +21,4 @@ void settings_set_resolution(ivec2 res);
 void settings_set_window_style(int ws);
 void settings_set_vsync(VsyncMode mode);
 void settings_set_msaa(int samples);
+#endif

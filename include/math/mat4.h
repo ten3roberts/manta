@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MAT4_H
+#define MAT4_H
 #include "vec.h"
 #include <stdint.h>
 
@@ -43,3 +44,4 @@ vec3 mat4_transform_vec3(const mat4* m, vec3 v);
 
 // Converts a matrix to a comma line separated float grid
 void mat4_string(mat4* a, char * buf, int precision);
+#endif

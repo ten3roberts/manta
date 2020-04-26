@@ -1,3 +1,6 @@
+#ifndef TIMER_H
+#define TIMER_H
+
 #include <time.h>
 #include <stdint.h>
 
@@ -44,3 +47,4 @@ float timer_duration(const Timer* timer);
 
 // Reads the duration of a stopped timer in CPU ticks
 uint64_t timer_ticks(const Timer* timer);
+#endif

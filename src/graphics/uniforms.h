@@ -1,4 +1,6 @@
-#pragma once
+#ifndef UNIFORMS_H
+#define UNIFORMS_H
+#endif
 #include "math/mat4.h"
 #include <vulkan/vulkan.h>
 #include "graphics/texture.h"
@@ -70,3 +72,4 @@ void ub_destroy(UniformBuffer* ub);
 // Destroys all UniformBuffer pools in the end of the programs
 // The pools were first created implicitly when a UniformBuffer was created
 void ub_pools_destroy();
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef UTILS_H
+#define UTILS_H
 
 // Contains utility functions used by the engine
 #include "magpie.h"
@@ -58,3 +59,4 @@ void replace_string(const char* src, char* result, size_t size, char find, char 
 // Copies and allocates a string
 // Same behaviour as non-standard strdup
 char* string_dup(const char* s);
+#endif

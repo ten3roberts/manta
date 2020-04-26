@@ -1,3 +1,6 @@
+#ifndef KEYCODES_H
+#define KEYCODES_H
+
 // Based of GLFW keycodes
 // Mouse buttons are included and do not have spearate keycodes
 
@@ -135,3 +138,4 @@
 
 // The last keu, and the number of keycodes
 #define CS_KEY_LAST CS_MOUSE_4
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VERTEXBUFFER_H
+#define VERTEXBUFFER_H
 
 #include "math/vec.h"
 #define GLFW_INCLUDE_VULKAN
@@ -45,3 +46,4 @@ void vb_destroy(VertexBuffer* vb);
 void vb_pools_destroy();
 
 VertexInputDescription vertex_get_description();
+#endif

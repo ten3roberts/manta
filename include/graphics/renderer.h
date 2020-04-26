@@ -1,3 +1,6 @@
+#ifndef RENDERER_H
+#define RENDERER_H
+
 #include <stdint.h>
 
 // Initializes rendering for the next frame
@@ -13,3 +16,4 @@ void renderer_draw();
 
 // Retrieves the index of the current image to render to
 uint32_t renderer_get_frameindex();
+#endif

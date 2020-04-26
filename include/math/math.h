@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CSMATH_H
+#define CSMATH_H
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdbool.h>
@@ -76,3 +77,4 @@ int ftos_fixed(double num, char * buf, int length);
 // pad_length is recommended to be 2 less than precisio nto fit 0.
 // Returns how many characters were written
 int ftos_pad(double num, char * buf, int precision, int pad_length, char pad_char);
+#endif
