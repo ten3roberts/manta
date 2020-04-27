@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <vulkan/vulkan.h>
 
+// Materials hold textures, shaders, and descriptors
+
 typedef struct Material Material;
 
 // Loads one or more materials from a file and stores them into memory

@@ -7,6 +7,8 @@
 #include "log.h"
 #include "libjson.h"
 #include "hashtable.h"
+#include "graphics/pipeline.h"
+#include "magpie.h"
 
 // A linked list tracking all loaded materials
 static hashtable_t* material_table = NULL;
@@ -24,8 +26,7 @@ struct Material
 	// 1 : per material descriptor layout
 	VkDescriptorSetLayout descriptor_layouts[2];
 	DescriptorPack material_descriptors;
-	VkPipeline pipeline;
-	VkPipelineLayout pipeline_layout;
+	Pipeline* pipeline;
 
 	// The material indexes are specified by the json bindings
 	uint32_t texture_count;
@@ -73,7 +74,7 @@ Material* material_load_internal(JSON* object)
 	}
 
 	// Create table if it doesn't exist
-	if(material_table == NULL)
+	if (material_table == NULL)
 	{
 		material_table = hashtable_create_string();
 	}
@@ -99,8 +100,7 @@ Material* material_load_internal(JSON* object)
 	}
 	const int material_binding_count = json_get_count(jbindings);
 
-	VkDescriptorSetLayoutBinding* material_bindings =
-		malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
+	VkDescriptorSetLayoutBinding* material_bindings = malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
 	// Iterate and fill out the bindings
 	JSON* bindcur = json_get_elements(jbindings);
 	// The current iterator on where to fill the next used texture slot
@@ -138,8 +138,7 @@ Material* material_load_internal(JSON* object)
 			const char* texture_path = json_get_member_string(object, texture_name);
 			if (texture_path == NULL)
 			{
-				LOG_E("Failed to load material %s - missing texture \"%s\", required by binding %d", mat->name,
-					  texture_name, i);
+				LOG_E("Failed to load material %s - missing texture \"%s\", required by binding %d", mat->name, texture_name, i);
 				free(material_bindings);
 				material_destroy(mat);
 				return NULL;
@@ -174,12 +173,10 @@ Material* material_load_internal(JSON* object)
 		bindcur = json_next(bindcur);
 	}
 
-	descriptorlayout_create(material_bindings, material_binding_count,
-							&mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
+	descriptorlayout_create(material_bindings, material_binding_count, &mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
 
 	// Create the material descriptors
-	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count,
-						  NULL, mat->textures, &mat->material_descriptors);
+	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count, NULL, mat->textures, &mat->material_descriptors);
 
 	free(material_bindings);
 	// Load the shaders
@@ -195,17 +192,17 @@ Material* material_load_internal(JSON* object)
 
 	// Create the graphics pipeline
 	// Create the pipeline
-	struct PipelineCreateInfo pipeline_create_info = {0};
-	pipeline_create_info.descriptor_layout_count = 2;
-	pipeline_create_info.descriptor_layouts = mat->descriptor_layouts;
-	pipeline_create_info.vertexshader = vertexshader;
-	pipeline_create_info.fragmentshader = fragmentshader;
-	pipeline_create_info.geometryshader = NULL;
-	pipeline_create_info.vertex_description = vertex_get_description();
-	int result = create_graphics_pipeline(&pipeline_create_info, &mat->pipeline_layout, &mat->pipeline);
-	if (result != 0)
+	struct PipelineInfo pipeline_info = {0};
+	pipeline_info.descriptor_layout_count = 2;
+	pipeline_info.descriptor_layouts = mat->descriptor_layouts;
+	pipeline_info.vertexshader = vertexshader;
+	pipeline_info.fragmentshader = fragmentshader;
+	pipeline_info.geometryshader = NULL;
+	pipeline_info.vertex_description = vertex_get_description();
+	mat->pipeline = pipeline_get(&pipeline_info);
+	if (mat->pipeline == NULL)
 	{
-		LOG_E("Failed to create graphics pipeline for material %s - code %d", mat->name, result);
+		LOG_E("Failed to create graphics pipeline for material %s", mat->name);
 		material_destroy(mat);
 		return NULL;
 	}
@@ -264,14 +261,14 @@ void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame
 	if (frame == -1)
 		frame = renderer_get_frameindex();
 
-	vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat->pipeline);
+	pipeline_bind(mat->pipeline, command_buffer);
 
+	// Get the layout from the pipeline
+	VkPipelineLayout pipeline_layout = pipeline_get_layout(mat->pipeline);
 	// Bind global set 0
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat->pipeline_layout, 0, 1,
-							&global_descriptors.sets[frame], 0, NULL);
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &global_descriptors.sets[frame], 0, NULL);
 	// Bind material set 1
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat->pipeline_layout, 1, 1,
-							&mat->material_descriptors.sets[frame], 0, NULL);
+	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 1, 1, &mat->material_descriptors.sets[frame], 0, NULL);
 }
 
 void material_destroy(Material* mat)
@@ -279,7 +276,7 @@ void material_destroy(Material* mat)
 	// Remove from table if it exists
 	hashtable_remove(material_table, mat->name);
 	// Last texture was removed
-	if(hashtable_get_count(material_table) == 0)
+	if (hashtable_get_count(material_table) == 0)
 	{
 		hashtable_destroy(material_table);
 		material_table = NULL;
@@ -293,8 +290,7 @@ void material_destroy(Material* mat)
 		texture_destroy(mat->textures[i]);
 	}
 
-	vkDestroyPipelineLayout(device, mat->pipeline_layout, NULL);
-	vkDestroyPipeline(device, mat->pipeline, NULL);
+	pipeline_destroy(mat->pipeline);
 
 	descriptorpack_destroy(&mat->material_descriptors);
 	vkDestroyDescriptorSetLayout(device, mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], NULL);

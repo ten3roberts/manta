@@ -7,7 +7,6 @@
 
 int swapchain_create()
 {
-
 	SwapchainSupportDetails support = get_swapchain_support(physical_device);
 	VkSurfaceFormatKHR surface_format = pick_swap_surface_format(support.formats, support.format_count);
 	VkPresentModeKHR present_mode = pick_swap_present_mode(support.present_modes, support.present_mode_count);

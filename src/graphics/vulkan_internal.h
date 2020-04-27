@@ -1,17 +1,6 @@
 #include "vulkan_members.h"
 #include "vertexbuffer.h"
 
-struct PipelineCreateInfo
-{
-	const char* vertexshader;
-	const char* fragmentshader;
-	const char* geometryshader;
-
-	VkDescriptorSetLayout* descriptor_layouts;
-	uint32_t descriptor_layout_count;
-
-	VertexInputDescription vertex_description;
-};
 
 // Holds internal function prototypes and definitions that should be shared across several compilation units using
 // vulkan Defined in vulkan_internal.c
@@ -39,5 +28,3 @@ int create_graphics_pipeline();
 int create_framebuffers();
 int create_command_buffers();
 int create_descriptor_pool();
-int create_graphics_pipeline(struct PipelineCreateInfo* createinfo, VkPipelineLayout* dst_pipeline_layout,
-							 VkPipeline* dst_pipeline);
