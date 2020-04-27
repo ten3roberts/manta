@@ -7,7 +7,7 @@
 
 ivec2 resolution = {800, 600};
 int window_style = WS_WINDOWED;
-VsyncMode vsync = VSYNC_NONE;
+enum VsyncMode vsync = VSYNC_NONE;
 int msaa = 1;
 
 #define STRING(s) #s
@@ -84,7 +84,7 @@ int settings_get_window_style()
 	return window_style;
 }
 
-VsyncMode settings_get_vsync()
+enum VsyncMode settings_get_vsync()
 {
 	return vsync;
 }
@@ -101,7 +101,7 @@ void settings_set_window_style(int ws)
 {
 	window_style = ws;
 }
-void settings_set_vsync(VsyncMode mode)
+void settings_set_vsync(enum VsyncMode mode)
 {
 	vsync = mode;
 }

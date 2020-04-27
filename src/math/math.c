@@ -5,7 +5,7 @@
 #include <string.h>
 
 // Converts a signed integer to string
-int itos(signed long long num, char* buf, int base, int upper)
+int itos(int num, char* buf, int base, int upper)
 {
 	// Return and write one character num == 0
 	if (num == 0)
@@ -38,7 +38,7 @@ int itos(signed long long num, char* buf, int base, int upper)
 }
 
 // Converts an unsigned integer to string
-int utos(unsigned long long num, char* buf, int base, int upper)
+int utos(unsigned int num, char* buf, int base, int upper)
 {
 	// Return and write one character num == 0
 	if (num == 0)

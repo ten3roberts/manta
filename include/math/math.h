@@ -54,11 +54,11 @@ static int32_t sqrti(int32_t n)
 
 // Converts a signed integer to a string
 // Returns how many characters were written
-int itos(signed long long num, char * buf, int base, int upper);
+int itos(int num, char * buf, int base, int upper);
 
 // Converts an unsigned integer to a string
 // Returns how many characters were written
-int utos(unsigned long long num, char * buf, int base, int upper);
+int utos(unsigned int num, char * buf, int base, int upper);
 
 // Converts a double/float to a string
 // Precision indicates the max digits to include after the comma

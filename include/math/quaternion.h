@@ -120,11 +120,11 @@ quaternion quat_point_to(vec3 a)
 
 	float dot = vec3_dot(vec3_forward, forward_vector);
 
-	if (abs(dot - (-1.0f)) < 0.000001f)
+	if (fabs(dot - (-1.0f)) < 0.000001f)
 	{
 		return (quaternion) { 0, 1, 0, M_PI };
 	}
-	if (abs(dot - (1.0f)) < 0.000001f)
+	if (fabs(dot - (1.0f)) < 0.000001f)
 	{
 		return quat_identity;
 	}
