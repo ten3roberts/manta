@@ -1,6 +1,6 @@
 #include "log.h"
 #define MP_MESSAGE LOG
-#if DEBUG
+#ifdef DEBUG
 #define MP_CHECK_FULL
 #else
 #define MP_DISABLE

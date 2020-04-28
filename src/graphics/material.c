@@ -195,8 +195,8 @@ Material* material_load_internal(JSON* object)
 	struct PipelineInfo pipeline_info = {0};
 	pipeline_info.descriptor_layout_count = 2;
 	pipeline_info.descriptor_layouts = mat->descriptor_layouts;
-	pipeline_info.vertexshader = vertexshader;
-	pipeline_info.fragmentshader = fragmentshader;
+	pipeline_info.vertexshader = string_dup(vertexshader);
+	pipeline_info.fragmentshader = string_dup(fragmentshader);
 	pipeline_info.geometryshader = NULL;
 	pipeline_info.vertex_description = vertex_get_description();
 	mat->pipeline = pipeline_get(&pipeline_info);
@@ -265,6 +265,7 @@ void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame
 
 	// Get the layout from the pipeline
 	VkPipelineLayout pipeline_layout = pipeline_get_layout(mat->pipeline);
+	
 	// Bind global set 0
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &global_descriptors.sets[frame], 0, NULL);
 	// Bind material set 1

@@ -21,14 +21,14 @@ int main(int argc, char** argv)
 
 	log_init();
 
-#if (DEBUG)
+#ifdef DEBUG
 	LOG_S("Running in debug mode");
 #endif
 
 	application_start(argc, argv);
 
 // Include allocation information on debug builds
-#if DEBUG
+#ifdef DEBUG
 	LOG("A total of %d allocations were made", mp_get_total_count());
 	//mp_print_locations();
 	mp_terminate();

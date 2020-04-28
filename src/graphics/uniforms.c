@@ -297,7 +297,7 @@ void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, ui
 	if (size == -1)
 		size = ub->size - offset;
 
-#if DEBUG
+#ifdef DEBUG
 	if (offset + size > ub->size)
 		LOG_W("Size and offset of uniform update exceeds capacity. Uniform buffer of %d bytes is being updated with %d "
 			  "bytes at an offset of %d",

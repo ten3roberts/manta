@@ -4,6 +4,7 @@
 #include "magpie.h"
 #include "log.h"
 #include "graphics/uniforms.h"
+#include "graphics/pipeline.h"
 
 int swapchain_create()
 {
@@ -88,12 +89,13 @@ int swapchain_recreate()
 	swapchain_create();
 	create_image_views();
 	create_render_pass();
-	// TODO : create_graphics_pipeline();
+
+	pipeline_recreate_all();
+
 	create_color_buffer();
 	create_depth_buffer();
 	create_framebuffers();
-	ub = ub_create(sizeof(TransformType), 0);
-	// create_descriptor_pool();
+
 	create_command_buffers();
 	return 0;
 }

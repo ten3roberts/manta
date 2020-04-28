@@ -32,7 +32,7 @@ project "*"
 	symbols "On"
 
 	filter "configurations:Release"
-		defines { "RELEASE==1", "MP_DISABLE" }
+		defines { "NDEBUG", "RELEASE=1" }
 		optimize "On"
 		symbols "On"
 
@@ -54,30 +54,4 @@ project "crescent"
 	targetdir "bin"
 	files {"src/**.h", "src/**.c"}
 	includedirs { "include", "src", "vendor", "vendor/glfw/include", "vendor/headerlibs" }	
-
-	-- Unix and Linux links and configurations
-	filter "system:linux or bsd or hurd or aix or solaris or haiku"
-		defines { "PL_LINUX=1"}
-		buildoptions { "-Wall", "-Wno-unused-function", "-pthread" }
-		links { "m", "dl", "pthread", "X11", "GL", "vulkan" }
-
-	-- Specifies Windows and MSVC specific options and preprocessor definitions
-	filter "system:windows"
-		defines {"PL_WINDOWS=1"}
-		systemversion "latest"
-		links "opengl32.lib"
-		-- Vulkan
-		includedirs "C:/VulkanSDK/1.1.126.0/Include"
-		links ("C:/VulkanSDK/1.1.126.0/Lib/vulkan-1.lib")
-
-	-- specifies configuration specific options
-	filter "configurations:Debug"
-		defines { "DEBUG=1", "MP_REPLACE_STD" }
-		optimize "Off"
-	symbols "On"
-
-	filter "configurations:Release"
-		defines { "RELEASE==1", "MP_DISABLE" }
-		optimize "On"
-		symbols "On"
 

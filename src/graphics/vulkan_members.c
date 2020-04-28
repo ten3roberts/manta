@@ -65,7 +65,7 @@ const size_t validation_layers_count = (sizeof(validation_layers) / sizeof(char*
 const char* device_extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 const size_t device_extensions_count = (sizeof(device_extensions) / sizeof(char*));
 
-#if RELEASE
+#ifdef RELEASE
 const int enable_validation_layers = 0;
 #else
 const int enable_validation_layers = 1;

@@ -42,7 +42,7 @@ static int32_t comp_pipelineinfo(const void* pkey1, const void* pkey2)
 	return 0;
 }
 
-static Pipeline* pipeline_create(struct PipelineInfo* info);
+static int pipeline_create(struct PipelineInfo* info, VkPipeline* pipeline, VkPipelineLayout* layout);
 
 struct Pipeline
 {
@@ -63,10 +63,12 @@ Pipeline* pipeline_get(struct PipelineInfo* info)
 	}
 
 	// Pipeline does not exist
-	pipeline = pipeline_create(info);
-	if (pipeline == NULL)
+	pipeline = malloc(sizeof (Pipeline));
+	pipeline->info = *info;
+	int result = pipeline_create(info, &pipeline->pipeline, &pipeline->layout);
+	if (result != 0)
 	{
-		LOG_E("Pipeline creation using shaders %s, %s, and %s failed", info->vertexshader, info->geometryshader, info->fragmentshader);
+		LOG_E("Pipeline creation using shaders %s, %s, and %s failed with code - %d", info->vertexshader, info->geometryshader, info->fragmentshader, result);
 		return NULL;
 	}
 
@@ -110,6 +112,31 @@ VkPipelineLayout pipeline_get_layout(Pipeline* pipeline)
 	return pipeline->layout;
 }
 
+void pipeline_recreate(Pipeline* pipeline)
+{
+	// Destroy old
+	vkDestroyPipeline(device, pipeline->pipeline, NULL);
+	vkDestroyPipelineLayout(device, pipeline->layout, NULL);
+
+	int result = pipeline_create(&pipeline->info, &pipeline->pipeline, &pipeline->layout);
+	if (result != 0)
+	{
+		LOG_E("Pipeline recreation using shaders %s, %s, and %s failed with code - %d", pipeline->info.vertexshader, pipeline->info.geometryshader, pipeline->info.fragmentshader, result);
+		return;
+	}
+}
+
+void pipeline_recreate_all()
+{
+	hashtable_iterator* it = hashtable_iterator_begin(pipeline_table);
+	Pipeline* pipeline = NULL;
+	while ((pipeline = hashtable_iterator_next(it)))
+	{
+		pipeline_recreate(pipeline);
+	}
+	hashtable_iterator_end(it);
+}
+
 // Vulkan implementation of pipeline creation
 VkShaderModule create_shader_module(char* code, size_t size)
 {
@@ -126,20 +153,16 @@ VkShaderModule create_shader_module(char* code, size_t size)
 	return shader_module;
 }
 
-static Pipeline* pipeline_create(struct PipelineInfo* info)
+static int pipeline_create(struct PipelineInfo* info, VkPipeline* pipeline, VkPipelineLayout* layout)
 {
 	LOG_S("Creating new pipeline");
-	Pipeline* pipeline = malloc(sizeof(Pipeline));
-	pipeline->info = *info;
-	pipeline->layout = VK_NULL_HANDLE;
-	pipeline->pipeline = VK_NULL_HANDLE;
 
 	// Read vertex shader from SPIR-V
 	size_t vert_code_size = read_fileb(info->vertexshader, NULL);
 	if (vert_code_size == 0)
 	{
 		LOG_E("Failed to read vertex shader %s from binary file", info->vertexshader);
-		return NULL;
+		return -1;
 	}
 	char* vert_shader_code = malloc(vert_code_size);
 	read_fileb(info->vertexshader, vert_shader_code);
@@ -149,7 +172,7 @@ static Pipeline* pipeline_create(struct PipelineInfo* info)
 	if (vert_code_size == 0)
 	{
 		LOG_E("Failed to read vertex shader %s from binary file", info->fragmentshader);
-		return NULL;
+		return -2;
 	}
 	char* frag_shader_code = malloc(frag_code_size);
 	read_fileb(info->fragmentshader, frag_shader_code);
@@ -303,11 +326,11 @@ static Pipeline* pipeline_create(struct PipelineInfo* info)
 	pipelineLayoutInfo.pSetLayouts = info->descriptor_layouts;
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // TODO
 	pipelineLayoutInfo.pPushConstantRanges = NULL; // TODO
-	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &pipeline->layout);
+	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, layout);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create pipeline layout - code %d", result);
-		return NULL;
+		return -3;
 	}
 	VkGraphicsPipelineCreateInfo pipelineInfo = {0};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -325,7 +348,7 @@ static Pipeline* pipeline_create(struct PipelineInfo* info)
 	pipelineInfo.pDynamicState = NULL; // Optional
 
 	// Reference pipeline layout
-	pipelineInfo.layout = pipeline->layout;
+	pipelineInfo.layout = *layout;
 
 	// Render passes
 	pipelineInfo.renderPass = renderPass;
@@ -336,11 +359,11 @@ static Pipeline* pipeline_create(struct PipelineInfo* info)
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1;			  // Optional
 
-	result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline->pipeline);
+	result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, pipeline);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create graphics - code %d", result);
-		return NULL;
+		return -4;
 	}
 	// Free the temporary resources
 	free(vert_shader_code);
@@ -349,5 +372,5 @@ static Pipeline* pipeline_create(struct PipelineInfo* info)
 	// Modules are not needed after the creaton
 	vkDestroyShaderModule(device, vert_shader_module, NULL);
 	vkDestroyShaderModule(device, frag_shader_module, NULL);
-	return pipeline;
+	return 0;
 }
