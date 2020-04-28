@@ -14,7 +14,7 @@ project "sandbox"
 	files { "src/**.c", "src/**.h" }
 
 	-- Add shaders to compilation
-	files { "assets/shaders/**.vert", "assets/shaders/**.frag" }	
+	files { "../assets/shaders/**.vert", "../assets/shaders/**.frag" }	
 
 	-- Link crescent and GLFW
 	-- Vulkan is linked by crescent
