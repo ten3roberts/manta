@@ -1,0 +1,4 @@
+resolution 800,600
+window_style 1
+vsync 0
+msaa 16

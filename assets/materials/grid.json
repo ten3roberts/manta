@@ -1,0 +1,27 @@
+{
+	"albedo": "./assets/textures/grid.png",
+	"secondary": "./assets/textures/concrete.png",
+	"factor": "./assets/textures/gradient.png",
+	"vertexshader": "./assets/shaders/standard.vert.spv",
+	"fragmentshader": "./assets/shaders/standard.frag.spv",
+	"bindings": [
+		{
+			"binding": 0,
+			"texture": "albedo",
+			"type": "sampler",
+			"stage": "fragment"
+		},
+		{
+			"binding": 1,
+			"texture": "secondary",
+			"type": "sampler",
+			"stage": "fragment"
+		},
+		{
+			"binding": 2,
+			"texture": "factor",
+			"type": "sampler",
+			"stage": "fragment"
+		}
+	]
+}

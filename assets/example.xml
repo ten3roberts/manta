@@ -1,0 +1,7 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+<note>
+       <to lang="en">Tove</to>
+       <from>Jani</from>
+       <heading>&ltReminder&gt</heading>
+       <body>Don't forget me this weekend!</body>
+</note> 
