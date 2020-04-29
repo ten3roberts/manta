@@ -1,0 +1,11 @@
+Renderer:
+  - Dynamic pipelines
+  - Rerecording of command queues
+  - One uniform buffer for all entities positions to render
+
+Entities:
+  - Implement entities
+  - Lua scripting
+  - Transform and Rigidbodies
+  - Collision detection
+  - Quadtree collision pruning
