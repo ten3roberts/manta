@@ -27,6 +27,27 @@ int application_start(int argc, char** argv)
 	swapchain_resize = 0;
 	while (!window_get_close(window))
 	{
+
+		// Don't resize every frame
+		if (swapchain_resize == 2)
+		{
+			swapchain_resize = 1;
+			continue;
+		}
+		window_update(window);
+		if (swapchain_resize == 1)
+		{
+			swapchain_recreate();
+			swapchain_resize = 0;
+			// Skip this frame
+			continue;
+		}
+		else if (swapchain_resize == 2)
+		{
+			continue;
+		}
+		// End of swapchain resize logic
+
 		renderer_begin();
 		if (window_get_minimized(window))
 		{
@@ -35,19 +56,6 @@ int application_start(int argc, char** argv)
 
 		input_update();
 
-		// Don't resize every frame
-		if (swapchain_resize == 2)
-			swapchain_resize = 1;
-		window_update(window);
-		if (swapchain_resize == 1)
-		{
-			swapchain_recreate();
-			swapchain_resize = 0;
-		}
-		else if (swapchain_resize == 2)
-		{
-			continue;
-		}
 		time_update();
 		renderer_draw();
 

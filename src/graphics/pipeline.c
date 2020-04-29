@@ -128,6 +128,7 @@ void pipeline_recreate(Pipeline* pipeline)
 
 void pipeline_recreate_all()
 {
+	LOG_S("Recreating all pipelines");
 	hashtable_iterator* it = hashtable_iterator_begin(pipeline_table);
 	Pipeline* pipeline = NULL;
 	while ((pipeline = hashtable_iterator_next(it)))
@@ -155,8 +156,6 @@ VkShaderModule create_shader_module(char* code, size_t size)
 
 static int pipeline_create(struct PipelineInfo* info, VkPipeline* pipeline, VkPipelineLayout* layout)
 {
-	LOG_S("Creating new pipeline");
-
 	// Read vertex shader from SPIR-V
 	size_t vert_code_size = read_fileb(info->vertexshader, NULL);
 	if (vert_code_size == 0)
