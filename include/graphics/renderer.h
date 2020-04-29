@@ -14,6 +14,12 @@ void renderer_begin();
 // Presents the correct framebuffer
 void renderer_draw();
 
+// This function shall be called after a resize event
+// Does not explicitely resize the window, but recreates the swapchain and pipelines
+// Will not immidiately resize until resize events stop
+// This is to avoid resizing every frame when user drag-resizes window
+void renderer_resize();
+
 // Retrieves the index of the current image to render to
 uint32_t renderer_get_frameindex();
 #endif

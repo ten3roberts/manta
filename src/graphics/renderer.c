@@ -4,11 +4,22 @@
 #include "cr_time.h"
 #include "graphics/uniforms.h"
 #include "math/quaternion.h"
+#include "graphics/pipeline.h"
 
-uint32_t image_index;
+static uint32_t image_index;
+
+// 0: No resize
+// 1: Resize event
+static int resize_event;
 
 void renderer_draw()
 {
+	// Don't render while user is resizing window
+	if (resize_event)
+	{
+		return;
+	}
+
 	// Update uniform buffer
 	TransformType transform_buffer;
 	quaternion rotation = quat_axis_angle((vec3){0, 0.5, 1}, time_elapsed());
@@ -79,6 +90,7 @@ void renderer_draw()
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
+		LOG_S("Suboptimal swapchain");
 		swapchain_recreate();
 		return;
 	}
@@ -98,10 +110,29 @@ void renderer_begin()
 	{
 		return;
 	}
+
+	// Handle resize event
+	if (resize_event == 1)
+	{
+		resize_event = 2;
+		// Don't get next image since swapchain is outdated
+		return;
+	}
+	// There has been one frame clear of resize events
+	else if (resize_event == 2)
+	{
+		swapchain_recreate();
+		resize_event = 0;
+	}
+
 	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
-	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE,
-						  &image_index);
+	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE, &image_index);
+}
+
+void renderer_resize()
+{
+	resize_event = 1;
 }
 
 int renderer_get_frameindex()
