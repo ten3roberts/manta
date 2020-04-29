@@ -17,4 +17,3 @@ rm -rv vendor/glfw/bin-int
 
 # compiled shaders
 rm -rv assets/shaders/*.spv
-
