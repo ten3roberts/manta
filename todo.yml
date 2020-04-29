@@ -9,3 +9,7 @@ Entities:
   - Transform and Rigidbodies
   - Collision detection
   - Quadtree collision pruning
+
+Vulkan bugs:
+  - Image extent outside of bounds when resizing (nonfatal)
+  
