@@ -12,7 +12,7 @@ int application_start(int argc, char** argv)
 
 	settings_load();
 
-	window = window_create("sandbox", settings_get_resolution().x, settings_get_resolution().y, settings_get_window_style(), 0);
+	window = window_create("sandbox", settings_get_resolution().x, settings_get_resolution().y, settings_get_window_style(), 1);
 
 	if (window == NULL)
 		return -1;

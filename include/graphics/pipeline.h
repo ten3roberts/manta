@@ -5,9 +5,9 @@
 
 struct PipelineInfo
 {
-	const char* vertexshader;
-	const char* fragmentshader;
-	const char* geometryshader;
+	char* vertexshader;
+	char* fragmentshader;
+	char* geometryshader;
 
 	VkDescriptorSetLayout* descriptor_layouts;
 	uint32_t descriptor_layout_count;

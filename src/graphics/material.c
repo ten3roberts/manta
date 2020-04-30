@@ -195,7 +195,9 @@ Material* material_load_internal(JSON* object)
 	struct PipelineInfo pipeline_info = {0};
 	pipeline_info.descriptor_layout_count = 2;
 	pipeline_info.descriptor_layouts = mat->descriptor_layouts;
+	// Passed to pipeline. Freeing handled inside pipeline
 	pipeline_info.vertexshader = stringdup(vertexshader);
+	// Passed to pipeline. Freeing handled inside pipeline
 	pipeline_info.fragmentshader = stringdup(fragmentshader);
 	pipeline_info.geometryshader = NULL;
 	pipeline_info.vertex_description = vertex_get_description();

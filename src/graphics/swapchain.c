@@ -114,6 +114,10 @@ int swapchain_destroy()
 	for (size_t i = 0; i < framebuffer_count; i++)
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);
 
+	// Destroy render pass
+	vkDestroyRenderPass(device, renderPass, NULL);
+	renderPass = NULL;
+
 	vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
 
 	// Destroy the image views since they were explicitely created

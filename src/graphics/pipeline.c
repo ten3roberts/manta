@@ -32,13 +32,14 @@ static int32_t comp_pipelineinfo(const void* pkey1, const void* pkey2)
 	struct PipelineInfo* info2 = (struct PipelineInfo*)pkey2;
 
 	// Check to see if the shaders are identical
-	if (strcmp(info1->vertexshader, info2->vertexshader))
+	if (strcmp_s(info1->vertexshader, info2->vertexshader))
 		return 1;
-	if (strcmp(info1->fragmentshader, info2->fragmentshader))
+	if (strcmp_s(info1->fragmentshader, info2->fragmentshader))
 		return 1;
-	if (strcmp(info1->geometryshader, info2->geometryshader))
+	if (strcmp_s(info1->geometryshader, info2->geometryshader))
 		return 1;
 
+	// Match
 	return 0;
 }
 
@@ -56,6 +57,7 @@ Pipeline* pipeline_get(struct PipelineInfo* info)
 	// Create the hashtable with the custom types
 	if (pipeline_table == NULL)
 		pipeline_table = hashtable_create(hash_pipelineinfo, comp_pipelineinfo);
+
 	Pipeline* pipeline = hashtable_find(pipeline_table, info);
 	if (pipeline)
 	{
@@ -63,7 +65,7 @@ Pipeline* pipeline_get(struct PipelineInfo* info)
 	}
 
 	// Pipeline does not exist
-	pipeline = malloc(sizeof (Pipeline));
+	pipeline = malloc(sizeof(Pipeline));
 	pipeline->info = *info;
 	int result = pipeline_create(info, &pipeline->pipeline, &pipeline->layout);
 	if (result != 0)
@@ -79,14 +81,20 @@ Pipeline* pipeline_get(struct PipelineInfo* info)
 void pipeline_destroy(Pipeline* pipeline)
 {
 	hashtable_remove(pipeline_table, &pipeline->info);
+
 	// Last texture was removed
 	if (hashtable_get_count(pipeline_table) == 0)
 	{
-
 		hashtable_destroy(pipeline_table);
 		pipeline_table = NULL;
 	}
 
+	// Free shadernames
+	free(pipeline->info.vertexshader);
+	free(pipeline->info.geometryshader);
+	free(pipeline->info.fragmentshader);
+
+	// Destroy vulkan objects
 	vkDestroyPipeline(device, pipeline->pipeline, NULL);
 	vkDestroyPipelineLayout(device, pipeline->layout, NULL);
 

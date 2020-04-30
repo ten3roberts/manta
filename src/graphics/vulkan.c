@@ -849,7 +849,7 @@ void graphics_terminate()
 		vkDestroySemaphore(device, semaphores_image_available[i], NULL);
 		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
-	vkDestroyRenderPass(device, renderPass, NULL);
+
 	vkDestroyCommandPool(device, command_pool, NULL);
 
 	vkDestroyDevice(device, NULL);
