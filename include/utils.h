@@ -1,8 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
-
-// Contains utility functions used by the engine
 #include "magpie.h"
+// Contains utility functions used by the engine
 
 // Returns 1 if the path is a regular file
 int is_regular_file(const char* path);
@@ -58,7 +57,8 @@ void replace_string(const char* src, char* result, size_t size, char find, char 
 
 // Copies and allocates a string
 // Same behaviour as non-standard strdup
-char* string_dup(const char* s);
+#define stringdup(s) mp_bind(stringdup_internal(s))
+char* stringdup_internal(const char* s);
 // Compares two strings
 // Returns nonzero if strings don't match or one of them is NULL
 // Won't crash on NULL pointers

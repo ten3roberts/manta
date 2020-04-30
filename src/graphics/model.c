@@ -32,8 +32,8 @@ Model* model_load_collada(const char* filepath)
 	}
 	XMLNode* mesh = xml_get_child(root, "library_geometries");
 	mesh = xml_get_children(mesh);
-	model->name = string_dup(xml_get_attribute(mesh, "name"));
-	model->id = string_dup(xml_get_attribute(mesh, "id"));
+	model->name = stringdup(xml_get_attribute(mesh, "name"));
+	model->id = stringdup(xml_get_attribute(mesh, "id"));
 	mesh = xml_get_children(mesh);
 	XMLNode* sources = xml_get_children(mesh);
 	XMLNode* triangles_node = xml_get_child(mesh, "triangles");

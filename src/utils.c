@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include "magpie.h"
 
 #if PL_LINUX
 #include <unistd.h>
@@ -440,7 +441,7 @@ void replace_string(const char* src, char* result, size_t size, char find, char 
 	}
 }
 
-char* string_dup(const char* s)
+char* stringdup_internal(const char* s)
 {
 	size_t slen = strlen(s);
 	char* result = malloc(slen + 1);

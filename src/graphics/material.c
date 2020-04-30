@@ -195,8 +195,8 @@ Material* material_load_internal(JSON* object)
 	struct PipelineInfo pipeline_info = {0};
 	pipeline_info.descriptor_layout_count = 2;
 	pipeline_info.descriptor_layouts = mat->descriptor_layouts;
-	pipeline_info.vertexshader = string_dup(vertexshader);
-	pipeline_info.fragmentshader = string_dup(fragmentshader);
+	pipeline_info.vertexshader = stringdup(vertexshader);
+	pipeline_info.fragmentshader = stringdup(fragmentshader);
 	pipeline_info.geometryshader = NULL;
 	pipeline_info.vertex_description = vertex_get_description();
 	mat->pipeline = pipeline_get(&pipeline_info);
