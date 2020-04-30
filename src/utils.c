@@ -457,11 +457,11 @@ int strcmp_s(const char* str1, const char* str2)
 {
 	// Either both are NULL or the same location string
 	if (str1 == str2)
-		return 1;
+		return 0;
 	if (str1 == NULL && str2 != NULL)
-		return 0;
+		return 1;
 	if (str1 != NULL && str2 == NULL)
-		return 0;
+		return 1;
 		
 	// C stdlib strcmp
 	return strcmp(str1, str2);
