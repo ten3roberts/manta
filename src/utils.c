@@ -128,8 +128,7 @@ void create_dirs(const char* path)
 		{
 			strncpy(buf, path, i + 1);
 			buf[i + 1] = '\0';
-			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "") || !strcmp(buf + 1, ":") ||
-				!strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
+			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "") || !strcmp(buf + 1, ":") || !strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
 				continue;
 			mkdir(buf, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		}
@@ -249,8 +248,7 @@ void create_dirs(const char* path)
 		{
 			strncpy(buf, path, i + 1);
 			buf[i + 1] = '\0';
-			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "") || !strcmp(buf + 1, ":") ||
-				!strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
+			if (!strcmp(buf, "./") || !strcmp(buf, "../") || !strcmp(buf, "") || !strcmp(buf + 1, ":") || !strcmp(buf, ".\\") || !strcmp(buf, "..\\"))
 				continue;
 			CreateDirectoryA(buf, NULL);
 		}
@@ -453,4 +451,18 @@ char* string_dup(const char* s)
 
 	memcpy(result, s, slen + 1);
 	return result;
+}
+
+int strcmp_s(const char* str1, const char* str2)
+{
+	// Either both are NULL or the same location string
+	if (str1 == str2)
+		return 1;
+	if (str1 == NULL && str2 != NULL)
+		return 0;
+	if (str1 != NULL && str2 == NULL)
+		return 0;
+		
+	// C stdlib strcmp
+	return strcmp(str1, str2);
 }

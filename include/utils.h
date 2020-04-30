@@ -59,4 +59,8 @@ void replace_string(const char* src, char* result, size_t size, char find, char 
 // Copies and allocates a string
 // Same behaviour as non-standard strdup
 char* string_dup(const char* s);
+// Compares two strings
+// Returns nonzero if strings don't match or one of them is NULL
+// Won't crash on NULL pointers
+int strcmp_s(const char* str1, const char* str2);
 #endif
