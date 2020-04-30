@@ -1,5 +1,5 @@
 Renderer:
-  - Dynamic pipelines
+  - Optional dynamic pipelines that don't resize, not all need to be dynamic
   - Rerecording of command queues
   - One uniform buffer for all entities positions to render
 
@@ -20,7 +20,6 @@ Window:
   - Mouse pointer options
   - Hide cursor
   - Window icon
-
 
 General Features:
   - Hashtable leak trace
