@@ -2,6 +2,8 @@ Renderer:
   - Optional dynamic pipelines that don't resize, not all need to be dynamic
   - Rerecording of command queues
   - One uniform buffer for all entities positions to render
+  - Push constants
+  - Remove global variables used bby vulkan
 
 Entities:
   - Implement entities
@@ -22,4 +24,4 @@ Window:
   - Window icon
 
 General Features:
-  - Hashtable leak trace
+  - (done) Hashtable leak trace
