@@ -13,4 +13,14 @@ Entities:
 Vulkan bugs:
   - Image extent outside of bounds when resizing (nonfatal)
   - When skipping image aquire when waiting for resizes, there is a chance that uniform updates could get an invalid frame
+
+General bugs:
   
+Window:
+  - Mouse pointer options
+  - Hide cursor
+  - Window icon
+
+
+General Features:
+  - Hashtable leak trace
