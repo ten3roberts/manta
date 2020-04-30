@@ -27,7 +27,12 @@ project "*"
 
 	-- specifies configuration specific options
 	filter "configurations:Debug"
-		defines { "DEBUG=1", "MP_REPLACE_STD" }
+		defines { "DEBUG=1" }
+		-- Leak detection with magpie
+		defines {
+			"hashtable_create(hashfunc, compfunc)=mp_bind(hashtable_create_internal(hashfunc, compfunc))",
+			"MP_REPLACE_STD"
+		}
 		optimize "Off"
 	symbols "On"
 

@@ -8,6 +8,10 @@
 #define MP_IMPLEMENTATION
 #include "magpie.h"
 
+#ifdef DEBUG
+// Catch hashtable allocations
+#endif
+
 // A C file for building and configuring header only libraries
 #define LIBJSON_IMPLEMENTATION
 #define LIBJSON_MESSAGE(m) LOG_E(m)
