@@ -88,12 +88,12 @@ void ftoa_sci(char* buffer, double value)
 	itos(exponent, buffer, 10, 1);
 }
 
-FILE* log_file = NULL;
-size_t last_log_length = 0;
+static FILE* log_file = NULL;
+static size_t last_log_length = 0;
 
 // Specifies the frame number the previous log was on, to indicate if a new message is on a new frame
-size_t last_log_frame = 0;
-int last_color = CONSOLE_WHITE;
+static size_t last_log_frame = 0;
+static int last_color = CONSOLE_WHITE;
 
 #ifdef DEBUG
 #define WRITE(s)                                                                                                       \
