@@ -25,3 +25,4 @@ Window:
 
 General Features:
   - (done) Hashtable leak trace
+  - Improve logging
