@@ -24,7 +24,6 @@ int application_start(int argc, char** argv)
 
 	timer_reset(&timer);
 	time_init();
-	swapchain_resize = 0;
 	while (!window_get_close(window))
 	{
 		// Poll window events
