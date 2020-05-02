@@ -5,7 +5,7 @@
 #include "entity.h"
 
 // Initializes the renderer
-void renderer_init();
+int renderer_init();
 
 // Initializes rendering for the next frame
 // Acquires the next image in the swapchain
@@ -31,4 +31,7 @@ void renderer_flag_rebuild();
 
 // Retrieves the index of the current image to render to
 uint32_t renderer_get_frameindex();
+
+// Deinitializes the renderer and frees all resources
+void renderer_terminate();
 #endif

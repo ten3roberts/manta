@@ -3,11 +3,14 @@
 #include "graphics/indexbuffer.h"
 #include "xmlparser.h"
 #include "log.h"
-#include <utils.h>
+#include "utils.h"
+#include "hashtable.h"
+
+hashtable_t* model_table = NULL;
 
 struct Model
 {
-	char* name;
+	char name[256];
 	char* id;
 	VertexBuffer* vb;
 	IndexBuffer* ib;
@@ -32,7 +35,25 @@ Model* model_load_collada(const char* filepath)
 	}
 	XMLNode* mesh = xml_get_child(root, "library_geometries");
 	mesh = xml_get_children(mesh);
-	model->name = stringdup(xml_get_attribute(mesh, "name"));
+	snprintf(model->name, sizeof model->name, "%s", xml_get_attribute(mesh, "name"));
+
+	// Insert into table
+	// Create table if it doesn't exist
+	if (model_table == NULL)
+	{
+		model_table = hashtable_create_string();
+	}
+	// Insert material into tracking table after name is acquired
+	if (hashtable_find(model_table, model->name) != NULL)
+	{
+		LOG_W("Duplicate material %s", model->name);
+		model_destroy(model);
+		return NULL;
+	}
+	// Insert into table
+	hashtable_insert(model_table, model->name, model);
+
+
 	model->id = stringdup(xml_get_attribute(mesh, "id"));
 	mesh = xml_get_children(mesh);
 	XMLNode* sources = xml_get_children(mesh);
@@ -215,11 +236,38 @@ uint32_t model_get_vertex_count(Model* model)
 	return model->vertex_count;
 }
 
+Model* model_get(const char* name)
+{
+	// No materials loaded
+	if (model_table == NULL)
+		return NULL;
+	return hashtable_find(model_table, name);
+}
+
+
 void model_destroy(Model* model)
 {
+
+	// Remove from table if it exists
+	hashtable_remove(model_table, model->name);
+	// Last texture was removed
+	if (hashtable_get_count(model_table) == 0)
+	{
+		hashtable_destroy(model_table);
+		model_table = NULL;
+	}
+
 	vb_destroy(model->vb);
 	ib_destroy(model->ib);
-	free(model->name);
 	free(model->id);
 	free(model);
+}
+
+void model_destroy_all()
+{
+	Model* model = NULL;
+	while (model_table && (model = hashtable_pop(model_table)))
+	{
+		model_destroy(model);
+	}
 }

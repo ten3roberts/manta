@@ -277,6 +277,8 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 // Command Buffers
 VkCommandBuffer single_use_commands_begin()
 {
+
+
 	VkCommandBufferAllocateInfo allocInfo = {0};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;

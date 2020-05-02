@@ -10,6 +10,7 @@
 #include "settings.h"
 #include "input.h"
 #include "log.h"
+#include "scene.h"
 
 #include "graphics/graphics.h"
 #include "graphics/material.h"

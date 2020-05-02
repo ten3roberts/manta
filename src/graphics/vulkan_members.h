@@ -82,9 +82,6 @@ extern VkSampleCountFlagBits msaa_samples;
 
 extern VkCommandPool command_pool;
 
-extern VkCommandBuffer* command_buffers;
-extern size_t command_buffer_count;
-
 // Semaphores
 extern VkSemaphore semaphores_image_available[MAX_FRAMES_IN_FLIGHT];
 extern VkSemaphore semaphores_render_finished[MAX_FRAMES_IN_FLIGHT];

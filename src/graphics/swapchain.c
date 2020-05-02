@@ -96,7 +96,7 @@ int swapchain_recreate()
 	create_depth_buffer();
 	create_framebuffers();
 
-	create_command_buffers();
+	//create_command_buffers();
 	return 0;
 }
 int swapchain_destroy()
@@ -117,7 +117,7 @@ int swapchain_destroy()
 	vkDestroyRenderPass(device, renderPass, NULL);
 	renderPass = NULL;
 
-	vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
+	// TODO: vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
 
 	// Destroy the image views since they were explicitely created
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
@@ -130,9 +130,9 @@ int swapchain_destroy()
 	framebuffers = NULL;
 	framebuffer_count = 0;
 
-	free(command_buffers);
+	/*free(command_buffers);
 	command_buffers = NULL;
-	command_buffer_count = 0;
+	command_buffer_count = 0;*/
 
 	free(swapchain_images);
 	swapchain_images = NULL;

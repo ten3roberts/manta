@@ -19,25 +19,30 @@ int application_start(int argc, char** argv)
 
 	input_init(window);
 	graphics_init();
+	renderer_init();
 
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
 	timer_reset(&timer);
 	time_init();
+
+	Scene* scene = scene_create("main");
+	(void)model_load_collada("./assets/models/cube.dae");
+	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0,0,-1}, quat_identity, vec3_one});
+
 	while (!window_get_close(window))
 	{
 		// Poll window events
 		window_update(window);
 		renderer_begin();
-		if (window_get_minimized(window))
-		{
-			SLEEP(0.1);
-		}
+
+		scene_update(scene);
+		entity_get_transform(entity1)->position.z = sin(time_elapsed());
 
 		input_update();
 
 		time_update();
-		renderer_draw();
+		renderer_submit();
 
 		if (timer_duration(&timer) > 2.0f)
 		{
@@ -45,6 +50,8 @@ int application_start(int argc, char** argv)
 			LOG("Framerate %d %f", time_framecount(), time_framerate());
 		}
 	}
+	scene_destroy_entities(scene);
+	scene_destroy(scene);
 	graphics_terminate();
 	LOG_S("Terminating");
 	window_destroy(window);

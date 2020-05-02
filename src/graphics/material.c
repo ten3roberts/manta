@@ -70,7 +70,7 @@ Material* material_load_internal(JSON* object)
 		if (lname > sizeof mat->name)
 			lname = sizeof mat->name;
 		// Allocate memory for the name
-		memcpy(mat->name, path_pos + 1, lname);
+		memcpy(mat->name, path_pos + 1, lname - 1);
 		mat->name[lname] = '\0';
 	}
 
@@ -281,7 +281,7 @@ Material* material_get_default()
 	json_add_member(root, "bindings", bindings);
 
 	material_default = material_load_internal(root);
-	
+
 	json_destroy(root);
 	return material_default;
 }

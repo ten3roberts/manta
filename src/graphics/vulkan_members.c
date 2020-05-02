@@ -41,11 +41,6 @@ VkFormat depth_image_format = VK_FORMAT_UNDEFINED;
 
 VkSampleCountFlagBits msaa_samples = VK_SAMPLE_COUNT_1_BIT;
 
-VkCommandPool command_pool;
-
-VkCommandBuffer* command_buffers = NULL;
-size_t command_buffer_count = 0;
-
 // Semaphores
 VkSemaphore semaphores_image_available[MAX_FRAMES_IN_FLIGHT] = {0};
 VkSemaphore semaphores_render_finished[MAX_FRAMES_IN_FLIGHT] = {0};

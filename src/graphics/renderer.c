@@ -5,6 +5,7 @@
 #include "graphics/uniforms.h"
 #include "math/quaternion.h"
 #include "graphics/pipeline.h"
+#include "scene.h"
 
 static uint32_t image_index;
 
@@ -18,15 +19,74 @@ VkCommandBuffer command_buffers[3];
 
 VkCommandPool command_pool;
 
+// Rebuilds command buffers for the current frame
+// Needs to be called after renderer_begin
 static void renderer_rebuild()
 {
+	VkCommandBuffer command_buffer = command_buffers[image_index];
+	vkResetCommandBuffer(command_buffer, 0);
+	VkCommandBufferBeginInfo begin_info = {0};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = 0;
+	begin_info.pInheritanceInfo = NULL;
 
+	// Start recording
+	VkResult result = vkBeginCommandBuffer(command_buffer, &begin_info);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to record command buffer %d", image_index);
+		return;
+	}
+	// Begin render pass
+	VkRenderPassBeginInfo render_pass_info = {0};
+	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	render_pass_info.renderPass = renderPass;
+	render_pass_info.framebuffer = framebuffers[image_index];
+	render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
+	render_pass_info.renderArea.extent = swapchain_extent;
+	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
+	render_pass_info.clearValueCount = 2;
+	render_pass_info.pClearValues = clear_values;
+	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+	// Iterate all entities
+	uint32_t index = 0;
+	Entity* entity = NULL;
+	Scene* scene = scene_get_current();
+	while ((entity = scene_get_entity(scene, index)))
+	{
+		entity_render(entity, command_buffer, image_index);
+		++index;
+	}
+	vkCmdEndRenderPass(command_buffer);
+	result = vkEndCommandBuffer(command_buffer);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to record command buffer");
+		return;
+	}
 }
 
-void renderer_init()
+int renderer_init()
 {
 	// Create command buffers
-	command_buffer_count = 
+	uint32_t command_buffer_count = framebuffer_count;
+
+	// Allocate primary command buffer
+	VkCommandBufferAllocateInfo allocInfo = {0};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = command_pool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = (uint32_t)command_buffer_count;
+
+	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, command_buffers);
+
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create command buffers - code %d", result);
+		return -1;
+	}
+	return 0;
 }
 
 void renderer_submit()
@@ -38,7 +98,7 @@ void renderer_submit()
 	}
 
 	// Rebuild command buffers if required
-	if(flag_rebuild == 1)
+	if (flag_rebuild == 1)
 	{
 		renderer_rebuild();
 	}
@@ -128,9 +188,11 @@ void renderer_submit()
 
 void renderer_begin()
 {
+
 	// Skip rendering if window is minimized
 	if (window_get_minimized(window))
 	{
+		SLEEP(0.1f);
 		return;
 	}
 
@@ -163,8 +225,12 @@ void renderer_flag_rebuild()
 	flag_rebuild = 1;
 }
 
-
 int renderer_get_frameindex()
 {
 	return image_index;
+}
+
+void renderer_terminate()
+{
+	vkDeviceWaitIdle(device);
 }
