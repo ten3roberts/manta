@@ -71,7 +71,19 @@ static Texture* texture_load(const char* file)
 {
 	LOG_S("Loading texture %s", file);
 	Texture* tex = malloc(sizeof(Texture));
-	tex->pixels = stbi_load(file, &tex->width, &tex->height, &tex->channels, STBI_rgb_alpha);
+	// Solid color requested
+	// Create a solid white 256*256 texture
+	if (strcmp(file, "col:white") == 0)
+	{
+		tex->width = 256;
+		tex->height = 256;
+		tex->pixels = calloc(4 * tex->width * tex->height, sizeof(tex->pixels));
+		memset(tex->pixels, 255, 4 * tex->width * tex->height);
+	}
+	else
+	{
+		tex->pixels = stbi_load(file, &tex->width, &tex->height, &tex->channels, STBI_rgb_alpha);
+	}
 	uint32_t image_size = tex->width * tex->height * 4;
 	if (tex->pixels == NULL)
 	{
@@ -86,9 +98,8 @@ static Texture* texture_load(const char* file)
 	// Create a staging bufer
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
-	buffer_create(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
-				  &staging_buffer_memory, NULL, NULL);
+	buffer_create(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory,
+				  NULL, NULL);
 
 	// Transfer image data to host visible staging buffer
 	void* data;
@@ -96,16 +107,13 @@ static Texture* texture_load(const char* file)
 	memcpy(data, tex->pixels, image_size);
 	vkUnmapMemory(device, staging_buffer_memory);
 
-	image_create(tex->width, tex->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				 &tex->image, &tex->memory, VK_SAMPLE_COUNT_1_BIT);
+	image_create(tex->width, tex->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &tex->image, &tex->memory, VK_SAMPLE_COUNT_1_BIT);
 
-	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-							VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	copy_buffer_to_image(staging_buffer, tex->image, tex->width, tex->height);
 
-	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-							VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Clean up staging buffers
 	vkDestroyBuffer(device, staging_buffer, NULL);
@@ -117,7 +125,9 @@ static Texture* texture_load(const char* file)
 	tex->sampler = sampler_create();
 
 	// Delete raw pixels
+	// Since this is just free(), it doesn't matter how the texture was created
 	stbi_image_free(tex->pixels);
+
 	tex->pixels = NULL;
 
 	// ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
@@ -150,7 +160,7 @@ void texture_destroy(Texture* tex)
 {
 	hashtable_remove(texture_table, tex->name);
 	// Last texture was removed
-	if(hashtable_get_count(texture_table) == 0)
+	if (hashtable_get_count(texture_table) == 0)
 	{
 
 		hashtable_destroy(texture_table);
@@ -161,7 +171,7 @@ void texture_destroy(Texture* tex)
 	vkFreeMemory(device, tex->memory, NULL);
 	vkDestroyImageView(device, tex->view, NULL);
 	vkDestroySampler(device, tex->sampler, NULL);
-	
+
 	free(tex);
 }
 

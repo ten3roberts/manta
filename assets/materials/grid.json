@@ -1,5 +1,5 @@
 {
-	"albedo": "./assets/textures/grid.png",
+	"albedo": "col:white",
 	"secondary": "./assets/textures/statue.jpg",
 	"factor": "./assets/textures/gradient.png",
 	"vertexshader": "./assets/shaders/standard.vert.spv",

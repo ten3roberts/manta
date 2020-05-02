@@ -12,6 +12,7 @@
 
 // A linked list tracking all loaded materials
 static hashtable_t* material_table = NULL;
+static Material* material_default = NULL;
 
 #define GLOBAL_DESCRIPTOR_INDEX	  0
 #define MATERIAL_DESCRIPTOR_INDEX 1
@@ -256,6 +257,33 @@ Material* material_get(const char* name)
 	if (material_table == NULL)
 		return NULL;
 	return hashtable_find(material_table, name);
+}
+
+Material* material_get_default()
+{
+	if (material_default)
+		return material_default;
+
+	// Create the default material
+	JSON* root = json_create_object();
+
+	json_add_member(root, "name", json_create_string("default"));
+	json_add_member(root, "albedo", json_create_string("col:white"));
+	json_add_member(root, "vertexshader", json_create_string("./assets/shaders/default.vert.spv"));
+	json_add_member(root, "fragmentshader", json_create_string("./assets/shaders/default.frag.spv"));
+	JSON* bindings = json_create_array();
+	JSON* binding = json_create_object();
+	json_add_member(binding, "binding", json_create_number(0));
+	json_add_member(binding, "texture", json_create_string("albedo"));
+	json_add_member(binding, "type", json_create_string("sampler"));
+	json_add_member(binding, "stage", json_create_string("fragment"));
+	json_add_element(bindings, binding);
+	json_add_member(root, "bindings", bindings);
+
+	material_default = material_load_internal(root);
+	
+	json_destroy(root);
+	return material_default;
 }
 
 void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame)
