@@ -134,7 +134,7 @@ int log_init()
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 	create_dirs("./logs");
-	strftime(fname, sizeof fname, "./logs/%F_%H.%M", timeinfo);
+	strftime(fname, sizeof fname, "./logs/%F_%H", timeinfo);
 	strcat(fname, ".log");
 	log_file = fopen(fname, "w");
 	if (log_file == NULL)
