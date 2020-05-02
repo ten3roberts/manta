@@ -7,7 +7,7 @@
 #include "uniforms.h"
 
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#define MAX_FRAMES_IN_FLIGHT 3
 
 #define GRAPHICS_FAMILY_VALID_BIT 0b1
 #define PRESENT_FAMILY_VALID_BIT  0b01

@@ -1,4 +1,6 @@
 #include "math/quaternion.h"
+#include <math.h>
+
 
 // Returns the normalized quaternion a
 quaternion quat_norm(quaternion a)

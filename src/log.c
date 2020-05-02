@@ -96,27 +96,27 @@ static size_t last_log_frame = 0;
 static int last_color = CONSOLE_WHITE;
 
 #ifdef DEBUG
-#define WRITE(s)                                                                                                       \
-	fputs(s, stdout), fputs(s, log_file);                                                                              \
-	fflush(log_file);                                                                                                  \
+#define WRITE(s)                          \
+	fputs(s, stdout), fputs(s, log_file); \
+	fflush(log_file);                     \
 	last_log_length += strlen(s);
 #else
-#define WRITE(s)                                                                                                       \
-	fputs(s, stdout);                                                                                                  \
-	fputs(s, log_file);                                                                                                \
+#define WRITE(s)        \
+	fputs(s, stdout);   \
+	fputs(s, log_file); \
 	last_log_length += strlen(s);
 
 #endif
-#define FLUSH_BUFCH                                                                                                    \
-	buffer[buffer_index] = '\0';                                                                                       \
-	WRITE(buffer);                                                                                                     \
+#define FLUSH_BUFCH              \
+	buffer[buffer_index] = '\0'; \
+	WRITE(buffer);               \
 	buffer_index = 0;
-#define WRITECH(c)                                                                                                     \
-	buffer[buffer_index] = c;                                                                                          \
-	buffer_index++;                                                                                                    \
-	if (buffer_index == 510)                                                                                           \
-	{                                                                                                                  \
-		FLUSH_BUFCH                                                                                                    \
+#define WRITECH(c)            \
+	buffer[buffer_index] = c; \
+	buffer_index++;           \
+	if (buffer_index == 510)  \
+	{                         \
+		FLUSH_BUFCH           \
 	};
 
 int log_init()

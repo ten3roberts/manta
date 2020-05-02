@@ -12,12 +12,35 @@ static uint32_t image_index;
 // 1: Resize event
 static int resize_event;
 
-void renderer_draw()
+static uint8_t flag_rebuild = 0;
+
+VkCommandBuffer command_buffers[3];
+
+VkCommandPool command_pool;
+
+static void renderer_rebuild()
+{
+
+}
+
+void renderer_init()
+{
+	// Create command buffers
+	command_buffer_count = 
+}
+
+void renderer_submit()
 {
 	// Don't render while user is resizing window
 	if (resize_event)
 	{
 		return;
+	}
+
+	// Rebuild command buffers if required
+	if(flag_rebuild == 1)
+	{
+		renderer_rebuild();
 	}
 
 	// Update uniform buffer
@@ -134,6 +157,12 @@ void renderer_resize()
 {
 	resize_event = 1;
 }
+
+void renderer_flag_rebuild()
+{
+	flag_rebuild = 1;
+}
+
 
 int renderer_get_frameindex()
 {

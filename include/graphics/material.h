@@ -14,6 +14,9 @@ Material* material_load(const char* file);
 // Returns a material that has been previosuly loaded into memory
 Material* material_get(const char* name);
 
+// Gets a default white material that can be used for whiteboxing
+Material* material_get_default();
+
 // Bind the material's pipeline
 // Binds a material's descriptors for the specified frame
 // If frame is -1, the current frame to render will be used (result of renderer_get_frame)

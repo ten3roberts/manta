@@ -772,7 +772,8 @@ int graphics_init()
 	descriptorlayout_create(bindings, 1, &global_descriptor_layout);
 	descriptorpack_create(global_descriptor_layout, bindings, 1, (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
 
-	material = material_load("./assets/materials/grid.json");
+	//material = material_load("./assets/materials/grid.json");
+	material = material_get_default("./assets/materials/grid.json");
 
 	if (create_color_buffer())
 	{
