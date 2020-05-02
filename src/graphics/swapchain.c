@@ -110,7 +110,6 @@ int swapchain_destroy()
 	vkDestroyImage(device, depth_image, NULL);
 	vkFreeMemory(device, depth_image_memory, NULL);
 
-	// vkDestroyDescriptorPool(device, descriptor_pool, NULL);
 	for (size_t i = 0; i < framebuffer_count; i++)
 		vkDestroyFramebuffer(device, framebuffers[i], NULL);
 

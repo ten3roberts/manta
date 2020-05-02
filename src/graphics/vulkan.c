@@ -21,10 +21,8 @@ Model* model;
 Material* material;
 VkDescriptorSetLayoutBinding bindings[2];
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-													 VkDebugUtilsMessageTypeFlagsEXT messageType,
-													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-													 void* pUserData)
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
+													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 		log_call(CONSOLE_RED, "Vulkan debug callback", "(%d)%s", messageSeverity, pCallbackData->pMessage);
@@ -35,12 +33,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	return VK_FALSE;
 }
 
-VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-										  const VkAllocationCallbacks* pAllocator,
+VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator,
 										  VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-					 const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) =
+	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) =
 		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 
 	if (func != NULL)
@@ -53,8 +49,7 @@ VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtil
 	}
 }
 
-void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-									   const VkAllocationCallbacks* pAllocator)
+void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
 	void (*func)(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator) =
 		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -71,12 +66,8 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT* cr
 	createInfo->pNext = NULL;
 	createInfo->flags = 0;
 	createInfo->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-							  VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-							  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo->pfnUserCallback = debug_callback;
 }
 
@@ -84,9 +75,9 @@ int create_instance()
 {
 	VkApplicationInfo appInfo = {0};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "crescent";
+	appInfo.pApplicationName = "cuttle";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = "crescent";
+	appInfo.pEngineName = "cuttle";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
@@ -459,8 +450,7 @@ int create_image_views()
 	size_t i = 0;
 	for (i = 0; i < swapchain_image_count; i++)
 	{
-		swapchain_image_views[i] =
-			image_view_create(swapchain_images[i], swapchain_image_format, VK_IMAGE_ASPECT_COLOR_BIT);
+		swapchain_image_views[i] = image_view_create(swapchain_images[i], swapchain_image_format, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 	return 0;
 }
@@ -555,14 +545,13 @@ int create_render_pass()
 	return 0;
 }
 
-
 int create_color_buffer()
 {
 	VkFormat colorFormat = swapchain_image_format;
 
 	image_create(swapchain_extent.width, swapchain_extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory, msaa_samples);
+				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory,
+				 msaa_samples);
 	color_image_view = image_view_create(color_image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	return 0;
 }
@@ -571,15 +560,13 @@ int create_depth_buffer()
 {
 	depth_image_format = find_depth_format();
 
-	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image,
-				 &depth_image_memory, msaa_samples);
+	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image, &depth_image_memory, msaa_samples);
 
 	depth_image_view = image_view_create(depth_image, depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// Transition image layout explicitely
-	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED,
-							VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	return 0;
 }
 
@@ -670,8 +657,7 @@ int create_command_buffers()
 		render_pass_info.framebuffer = framebuffers[i];
 		render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 		render_pass_info.renderArea.extent = swapchain_extent;
-		VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
-										{.depthStencil = {1.0f, 0.0f}}};
+		VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
 		render_pass_info.clearValueCount = 2;
 		render_pass_info.pClearValues = clear_values;
 		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -784,8 +770,7 @@ int graphics_init()
 	bindings[0].pImmutableSamplers = NULL; // Optional
 
 	descriptorlayout_create(bindings, 1, &global_descriptor_layout);
-	descriptorpack_create(global_descriptor_layout, bindings, 1,
-						  (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
+	descriptorpack_create(global_descriptor_layout, bindings, 1, (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
 
 	material = material_load("./assets/materials/grid.json");
 
@@ -838,9 +823,6 @@ void graphics_terminate()
 	ub_pools_destroy();
 
 	vb_pools_destroy();
-
-
-
 
 	// Wait for device to finish operations before cleaning up
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)

@@ -56,7 +56,7 @@ Material* material_load_internal(JSON* object)
 			ext_pos = tmp_name + strlen(tmp_name);
 		}
 		// Get the start of the fileNAME
-		// If not / succeeds, try \\ as crescent supports both (Win,Unix)
+		// If not / succeeds, try \\ as cuttle supports both (Win,Unix)
 		const char* path_pos = NULL;
 		path_pos = strrchr(tmp_name, '/');
 		if (path_pos == NULL)
@@ -267,7 +267,7 @@ void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame
 
 	// Get the layout from the pipeline
 	VkPipelineLayout pipeline_layout = pipeline_get_layout(mat->pipeline);
-	
+
 	// Bind global set 0
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &global_descriptors.sets[frame], 0, NULL);
 	// Bind material set 1

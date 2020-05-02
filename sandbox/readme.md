@@ -1,5 +1,5 @@
 # Sandbox
-This is a testing application used to develop the crescent engine
+This is a testing application used to develop the cuttle engine
 
 ## Building
 Make sure premake is installed

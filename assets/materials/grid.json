@@ -1,6 +1,6 @@
 {
 	"albedo": "./assets/textures/grid.png",
-	"secondary": "./assets/textures/concrete.png",
+	"secondary": "./assets/textures/statue.jpg",
 	"factor": "./assets/textures/gradient.png",
 	"vertexshader": "./assets/shaders/standard.vert.spv",
 	"fragmentshader": "./assets/shaders/standard.frag.spv",

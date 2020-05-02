@@ -52,7 +52,7 @@ project "*"
 		}
 
 
-project "crescent"
+project "cuttle"
 	kind "StaticLib"
 
 	language "C"
