@@ -89,10 +89,9 @@ void pipeline_destroy(Pipeline* pipeline)
 		pipeline_table = NULL;
 	}
 
-	// Free shadernames
-	free(pipeline->info.vertexshader);
-	free(pipeline->info.geometryshader);
-	free(pipeline->info.fragmentshader);
+	// Allocate on the material size
+	free(pipeline->info.descriptor_layouts);
+	free(pipeline->info.push_constants);
 
 	// Destroy vulkan objects
 	vkDestroyPipeline(device, pipeline->pipeline, NULL);
@@ -129,7 +128,8 @@ void pipeline_recreate(Pipeline* pipeline)
 	int result = pipeline_create(&pipeline->info, &pipeline->pipeline, &pipeline->layout);
 	if (result != 0)
 	{
-		LOG_E("Pipeline recreation using shaders %s, %s, and %s failed with code - %d", pipeline->info.vertexshader, pipeline->info.geometryshader, pipeline->info.fragmentshader, result);
+		LOG_E("Pipeline recreation using shaders %s, %s, and %s failed with code - %d", pipeline->info.vertexshader, pipeline->info.geometryshader, pipeline->info.fragmentshader,
+			  result);
 		return;
 	}
 }
@@ -331,8 +331,9 @@ static int pipeline_create(struct PipelineInfo* info, VkPipeline* pipeline, VkPi
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = info->descriptor_layout_count;
 	pipelineLayoutInfo.pSetLayouts = info->descriptor_layouts;
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // TODO
-	pipelineLayoutInfo.pPushConstantRanges = NULL; // TODO
+	pipelineLayoutInfo.pushConstantRangeCount = info->push_constant_count; // TODO
+	pipelineLayoutInfo.pPushConstantRanges = info->push_constants; // TODO
+	
 	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, layout);
 	if (result != VK_SUCCESS)
 	{

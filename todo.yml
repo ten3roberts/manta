@@ -27,3 +27,4 @@ General Features:
   - (done) Hashtable leak trace
   - Improve logging
   - Dynamic arrays
+  - Better model loadings

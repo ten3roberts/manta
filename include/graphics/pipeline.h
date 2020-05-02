@@ -5,12 +5,14 @@
 
 struct PipelineInfo
 {
-	char* vertexshader;
-	char* fragmentshader;
-	char* geometryshader;
+	char vertexshader[4096];
+	char fragmentshader[4096];
+	char geometryshader[4096];
 
 	VkDescriptorSetLayout* descriptor_layouts;
 	uint32_t descriptor_layout_count;
+	VkPushConstantRange* push_constants;
+	uint32_t push_constant_count;
 
 	VertexInputDescription vertex_description;
 };

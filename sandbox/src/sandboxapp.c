@@ -37,7 +37,8 @@ int application_start(int argc, char** argv)
 		renderer_begin();
 
 		scene_update(scene);
-		entity_get_transform(entity1)->position.z = sin(time_elapsed());
+		entity_get_transform(entity1)->position.z = -5;
+		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
 
 		input_update();
 

@@ -77,6 +77,10 @@ void entity_render(Entity* entity, VkCommandBuffer command_buffer, uint32_t fram
 	// Binding is done by renderer
 	material_bind(entity->material, command_buffer, frame);
 	model_bind(entity->model, command_buffer);
+
+	// Set push constant for model matrix
+	material_push_constants(entity->material, command_buffer, 0, &entity->transform.model_matrix[frame]);
+	
 	vkCmdDrawIndexed(command_buffer, model_get_index_count(entity->model), 1, 0, 0, 0);
 }
 

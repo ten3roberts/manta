@@ -29,6 +29,9 @@ struct Material
 	DescriptorPack material_descriptors;
 	Pipeline* pipeline;
 
+	VkPushConstantRange push_constants[4];
+	uint32_t push_constant_count;
+
 	// The material indexes are specified by the json bindings
 	uint32_t texture_count;
 	Texture* textures[7];
@@ -101,6 +104,7 @@ Material* material_load_internal(JSON* object)
 	}
 	const int material_binding_count = json_get_count(jbindings);
 
+	// Freed on destruction of pipeline
 	VkDescriptorSetLayoutBinding* material_bindings = malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
 	// Iterate and fill out the bindings
 	JSON* bindcur = json_get_elements(jbindings);
@@ -179,7 +183,6 @@ Material* material_load_internal(JSON* object)
 	// Create the material descriptors
 	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count, NULL, mat->textures, &mat->material_descriptors);
 
-	free(material_bindings);
 	// Load the shaders
 	// Get the shader names temporarily
 	const char* vertexshader = json_get_member_string(object, "vertexshader");
@@ -196,11 +199,22 @@ Material* material_load_internal(JSON* object)
 	struct PipelineInfo pipeline_info = {0};
 	pipeline_info.descriptor_layout_count = 2;
 	pipeline_info.descriptor_layouts = mat->descriptor_layouts;
+
+	snprintf(pipeline_info.vertexshader, sizeof pipeline_info.vertexshader, "%s", vertexshader);
+	snprintf(pipeline_info.fragmentshader, sizeof pipeline_info.fragmentshader, "%s", fragmentshader);
+	snprintf(pipeline_info.geometryshader, sizeof pipeline_info.geometryshader, "%s", "");
+
+	// Define one push constant for model matrix
+	mat->push_constant_count = 1;
+	mat->push_constants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	mat->push_constants[0].offset = 0;
+	mat->push_constants[0].size = PUSH_CONSTANT_SIZE;
+
+	pipeline_info.push_constant_count = 1;
+	pipeline_info.push_constants = malloc(pipeline_info.push_constant_count * sizeof(VkPushConstantRange));
+	memcpy(pipeline_info.push_constants, mat->push_constants, mat->push_constant_count * sizeof(VkPushConstantRange));
+
 	// Passed to pipeline. Freeing handled inside pipeline
-	pipeline_info.vertexshader = stringdup(vertexshader);
-	// Passed to pipeline. Freeing handled inside pipeline
-	pipeline_info.fragmentshader = stringdup(fragmentshader);
-	pipeline_info.geometryshader = NULL;
 	pipeline_info.vertex_description = vertex_get_description();
 	mat->pipeline = pipeline_get(&pipeline_info);
 	if (mat->pipeline == NULL)
@@ -300,6 +314,12 @@ void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &global_descriptors.sets[frame], 0, NULL);
 	// Bind material set 1
 	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 1, 1, &mat->material_descriptors.sets[frame], 0, NULL);
+}
+
+void material_push_constants(Material* mat, VkCommandBuffer command_buffer, uint32_t index, void* data)
+{
+	vkCmdPushConstants(command_buffer, pipeline_get_layout(mat->pipeline), mat->push_constants[index].stageFlags, mat->push_constants[index].offset,
+					   mat->push_constants[index].size, data);
 }
 
 void material_destroy(Material* mat)
