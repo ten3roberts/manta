@@ -343,8 +343,6 @@ void material_destroy(Material* mat)
 		texture_destroy(mat->textures[i]);
 	}
 
-	pipeline_destroy(mat->pipeline);
-
 	descriptorpack_destroy(&mat->material_descriptors);
 	vkDestroyDescriptorSetLayout(device, mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], NULL);
 

@@ -23,7 +23,7 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 	// Create the memory pool
 	if (entity_pool == NULL)
 	{
-		entity_pool = mempool_create(sizeof(Entity), 1024);
+		entity_pool = mempool_create(sizeof(Entity), 8);
 	}
 
 	Entity* entity = mempool_alloc(entity_pool);
@@ -92,5 +92,5 @@ void entity_destroy(Entity* entity)
 		mempool_destroy(entity_pool);
 		entity_pool = NULL;
 	}
-	scene_remove_entity(scene_get_current(), entity);
+	//scene_remove_entity(scene_get_current(), entity);
 }

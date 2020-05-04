@@ -14,6 +14,7 @@
 #include "magpie.h"
 #include "graphics/model.h"
 #include "graphics/material.h"
+#include "graphics/pipeline.h"
 #include <stdbool.h>
 
 Model* model_cube;
@@ -770,7 +771,7 @@ int graphics_init()
 	bindings[0].pImmutableSamplers = NULL; // Optional
 
 	descriptorlayout_create(bindings, 1, &global_descriptor_layout);
-	descriptorpack_create(global_descriptor_layout, bindings, 1, (UniformBuffer**)&ub, (Texture**)&tex, &global_descriptors);
+	descriptorpack_create(global_descriptor_layout, bindings, 1, (UniformBuffer**)&ub, NULL, &global_descriptors);
 
 	//material = material_load("./assets/materials/grid.json");
 	material = material_load("./assets/materials/grid.json");
@@ -817,6 +818,8 @@ void graphics_terminate()
 	material_destroy_all();
 	model_destroy_all();
 	texture_destroy_all();
+
+	pipeline_destroy_all();
 
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);

@@ -118,11 +118,13 @@ void scene_destroy_entities(Scene* scene)
 	{
 		entity_destroy(scene->entities[i]);
 	}
+	free(scene->entities);
+	scene->entity_count = 0;
+	scene->entities_size = 0;
 }
 
 // Destroys a scene and all entities within not marked with keep
 void scene_destroy(Scene* scene)
 {
-	free(scene->entities);
 	free(scene);
 }
