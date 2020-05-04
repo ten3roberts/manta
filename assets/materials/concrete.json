@@ -1,0 +1,13 @@
+{
+	"albedo": "./assets/textures/concrete.png",
+	"vertexshader": "./assets/shaders/default.vert.spv",
+	"fragmentshader": "./assets/shaders/default.frag.spv",
+	"bindings": [
+		{
+			"binding": 0,
+			"texture": "albedo",
+			"type": "sampler",
+			"stage": "fragment"
+		}
+	]
+}

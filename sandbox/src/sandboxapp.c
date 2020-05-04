@@ -29,6 +29,7 @@ int application_start(int argc, char** argv)
 	Scene* scene = scene_create("main");
 	(void)model_load_collada("./assets/models/cube.dae");
 	(void)material_load("./assets/materials/concrete.json");
+
 	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0,0,-1}, quat_identity, vec3_one});
 	Entity* entity2 = entity_create("entity2", "concrete", "Cube", (Transform){(vec3){5, 0.5, -10}, quat_identity, vec3_one});
 
@@ -39,6 +40,7 @@ int application_start(int argc, char** argv)
 		renderer_begin();
 
 		scene_update(scene);
+		
 		entity_get_transform(entity1)->position.z = -5;
 		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
 		entity_get_transform(entity2)->rotation = quat_euler((vec3){time_elapsed(), 0, 0});
