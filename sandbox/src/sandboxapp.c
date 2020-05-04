@@ -13,7 +13,7 @@ int application_start(int argc, char** argv)
 	settings_load();
 
 	window = window_create("sandbox", settings_get_resolution().x, settings_get_resolution().y, settings_get_window_style(), 1);
-
+	window_set_icon(window, "./assets/textures/ridge64.png", "./assets/textures/ridge1024.png");
 	if (window == NULL)
 		return -1;
 

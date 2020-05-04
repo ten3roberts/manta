@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include <GLFW/glfw3.h>
+#include "stb_image.h"
 
 #define WS_WINDOWED	  1
 #define WS_BORDERLESS 2
@@ -101,7 +102,7 @@ Window* window_create(char* title, int width, int height, int style, int resizab
 	// Make sure to initialize glfw once
 	if (!glfw_initialized && glfwInit())
 		glfw_initialized = 1;
-	
+
 	// Sets the resolution to native if res is set to -1
 	GLFWmonitor* primary = glfwGetPrimaryMonitor();
 	const GLFWvidmode* mode = glfwGetVideoMode(primary);
@@ -174,6 +175,39 @@ Window* window_create(char* title, int width, int height, int style, int resizab
 	glfwSetCursorPosCallback(window->raw_window, mouse_moved_callback);
 	window_count++;
 	return window;
+}
+
+int window_set_icon(Window* window, const char* small, const char* large)
+{
+	GLFWimage images[2]; //small,large
+	int channels = 0;
+	if ((images[0].pixels = stbi_load(small, &images[0].width, &images[0].height, &channels, STBI_rgb_alpha)) == NULL)
+	{
+		LOG_W("Failed to load small window icon %s", small);
+		return EXIT_FAILURE;
+	}
+	if ((images[1].pixels = stbi_load(large, &images[1].width, &images[1].height, &channels, STBI_rgb_alpha)) == NULL)
+	{
+		LOG_W("Failed to load large window icon %s", large);
+		return EXIT_FAILURE;
+	}
+
+	// Only supply one if either is NULL
+	GLFWimage* pimages = NULL;
+	int image_count = (small != NULL) + (large != NULL);
+	if (small)
+	{
+		pimages = images;
+	}
+	else if (large)
+	{
+		pimages = images + 1;
+	}
+
+	glfwSetWindowIcon(window->raw_window, image_count, pimages);
+	stbi_image_free(images[0].pixels);
+	stbi_image_free(images[1].pixels);
+	return EXIT_SUCCESS;
 }
 
 void window_destroy(Window* window)

@@ -9,8 +9,14 @@ typedef void Window;
 
 Window* window_create(char* title, int width, int height, int style, int resizable);
 
+// Sets the window icon from an image file
+// Chooses between the small and large versions of the image, either one can be NULL
+// Returns EXIT_SUCCESS on success
+int window_set_icon(Window* window, const char* small, const char* large);
+
 // Destroys a window and frees all resources
 void window_destroy(Window* window);
+
 
 void window_update(Window* window);
 

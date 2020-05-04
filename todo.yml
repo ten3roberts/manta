@@ -21,10 +21,12 @@ General bugs:
 Window:
   - Mouse pointer options
   - Hide cursor
-  - Window icon
+  - (done) Window icon
+
 
 General Features:
   - (done) Hashtable leak trace
   - Improve logging
   - Dynamic arrays
   - Better model loadings
+  - Libjson to use arrays rather than linked lists
