@@ -183,6 +183,8 @@ Material* material_load_internal(JSON* object)
 	// Create the material descriptors
 	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count, NULL, mat->textures, &mat->material_descriptors);
 
+
+	free(material_bindings);
 	// Load the shaders
 	// Get the shader names temporarily
 	const char* vertexshader = json_get_member_string(object, "vertexshader");

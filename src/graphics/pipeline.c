@@ -90,7 +90,6 @@ void pipeline_destroy(Pipeline* pipeline)
 	}
 
 	// Allocate on the material size
-	free(pipeline->info.descriptor_layouts);
 	free(pipeline->info.push_constants);
 
 	// Destroy vulkan objects
