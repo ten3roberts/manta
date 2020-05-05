@@ -6,7 +6,6 @@
 #include "utils.h"
 #include "math/math.h"
 #include "graphics/graphics.h"
-#include "uniforms.h"
 #include "settings.h"
 #include "cr_time.h"
 #include "graphics/texture.h"
@@ -16,13 +15,22 @@
 #include "graphics/material.h"
 #include "graphics/pipeline.h"
 #include <stdbool.h>
+#include "graphics/uniforms.h"
+#include "graphics/shadertypes.h"
+#include "graphics/texture.h"
+#include "graphics/camera.h"
+#include "scene.h"
 
-Model* model_cube;
-Model* model;
-Material* material;
-VkDescriptorSetLayoutBinding bindings[2];
+static UniformBuffer** global_uniform_buffers = NULL;
+static Texture** global_textures			  = NULL;
+// List that maps the bindings to the uniforms and textures
+static void** global_resource_map = NULL;
+static struct LayoutInfo global_layout_info;
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
+static Window* surface_window = NULL;
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+													 VkDebugUtilsMessageTypeFlagsEXT messageType,
 													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
@@ -34,10 +42,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 	return VK_FALSE;
 }
 
-VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator,
-										  VkDebugUtilsMessengerEXT* pDebugMessenger)
+VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+										  const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
-	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) =
+	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+					 const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) =
 		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 
 	if (func != NULL)
@@ -50,7 +59,8 @@ VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtil
 	}
 }
 
-void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+									   const VkAllocationCallbacks* pAllocator)
 {
 	void (*func)(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator) =
 		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -63,12 +73,15 @@ void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessenge
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT* createInfo)
 {
-	createInfo->pUserData = NULL;
-	createInfo->pNext = NULL;
-	createInfo->flags = 0;
-	createInfo->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo->pUserData		= NULL;
+	createInfo->pNext			= NULL;
+	createInfo->flags			= 0;
+	createInfo->sType			= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+							  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo->pfnUserCallback = debug_callback;
 }
 
@@ -83,8 +96,8 @@ int create_instance()
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
 	VkInstanceCreateInfo createInfo = {0};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo;
+	createInfo.sType				= VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pApplicationInfo		= &appInfo;
 
 	// Get the extensions required by glfw and application
 	uint32_t glfw_extension_count = 0;
@@ -94,7 +107,7 @@ int create_instance()
 
 	// Create and fill in array containing the extensions required by both glfw and the application
 	uint32_t required_extension_count = glfw_extension_count + enable_validation_layers;
-	const char** required_extensions = malloc(required_extension_count * sizeof(char*));
+	const char** required_extensions  = malloc(required_extension_count * sizeof(char*));
 
 	size_t i = 0;
 	for (i = 0; i < glfw_extension_count; i++)
@@ -103,7 +116,7 @@ int create_instance()
 	}
 	required_extensions[i++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
-	createInfo.enabledExtensionCount = required_extension_count;
+	createInfo.enabledExtensionCount   = required_extension_count;
 	createInfo.ppEnabledExtensionNames = required_extensions;
 
 	// Check the currently supported extensions
@@ -164,14 +177,14 @@ int create_instance()
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 	if (enable_validation_layers)
 	{
-		createInfo.enabledLayerCount = validation_layers_count;
+		createInfo.enabledLayerCount   = validation_layers_count;
 		createInfo.ppEnabledLayerNames = validation_layers;
 		populate_debug_messenger_create_info(&debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
 	{
-		createInfo.enabledLayerCount = 0;
+		createInfo.enabledLayerCount   = 0;
 		createInfo.ppEnabledLayerNames = NULL;
 	}
 
@@ -245,7 +258,7 @@ bool check_device_extension_support(VkPhysicalDevice device)
 
 int create_surface()
 {
-	VkResult result = glfwCreateWindowSurface(instance, window_get_raw(window), NULL, &surface);
+	VkResult result = glfwCreateWindowSurface(instance, window_get_raw(surface_window), NULL, &surface);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create KHR surface - code %d", result);
@@ -258,7 +271,7 @@ int pick_physical_device()
 	// Pick a suitable device
 
 	// Get all physical devices on the system
-	uint32_t device_count = 0;
+	uint32_t device_count	  = 0;
 	VkPhysicalDevice* devices = NULL;
 	vkEnumeratePhysicalDevices(instance, &device_count, NULL);
 	if (device_count == 0)
@@ -269,8 +282,8 @@ int pick_physical_device()
 
 	devices = malloc(device_count * sizeof(VkPhysicalDevice));
 	vkEnumeratePhysicalDevices(instance, &device_count, devices);
-	size_t i = 0;
-	int max_score = 0;
+	size_t i					 = 0;
+	int max_score				 = 0;
 	VkPhysicalDevice best_device = NULL;
 
 	// Enumerate them and select the best one by score
@@ -303,9 +316,9 @@ int pick_physical_device()
 		}
 
 		// Check to see if swap chain support is adequate
-		bool swapchain_adequate = false;
+		bool swapchain_adequate					  = false;
 		SwapchainSupportDetails swapchain_support = get_swapchain_support(devices[i]);
-		swapchain_adequate = swapchain_support.format_count && swapchain_support.present_mode_count;
+		swapchain_adequate						  = swapchain_support.format_count && swapchain_support.present_mode_count;
 		if (!swapchain_adequate)
 			continue;
 
@@ -319,7 +332,7 @@ int pick_physical_device()
 		score += deviceProperties.limits.maxImageDimension2D;
 		if (score > max_score)
 		{
-			max_score = score;
+			max_score	= score;
 			best_device = devices[i];
 		}
 	}
@@ -334,7 +347,7 @@ int pick_physical_device()
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(best_device, &deviceProperties);
 	LOG_OK("Picking graphical device '%s'", deviceProperties.deviceName);
-	physical_device = best_device;
+	physical_device						 = best_device;
 	VkSampleCountFlagBits wanted_samples = VK_SAMPLE_COUNT_1_BIT;
 	switch (settings_get_msaa())
 	{
@@ -395,25 +408,25 @@ int create_logical_device()
 	VkDeviceQueueCreateInfo queueCreateInfos[QUEUE_FAMILY_COUNT] = {0};
 	for (size_t i = 0; i < unique_queue_family_count; i++)
 	{
-		queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfos[i].sType			 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfos[i].queueFamilyIndex = *(&indices.graphics + i);
-		queueCreateInfos[i].queueCount = 1;
+		queueCreateInfos[i].queueCount		 = 1;
 
-		float queue_priority = 1.0f;
+		float queue_priority				 = 1.0f;
 		queueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
 
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
-	deviceFeatures.samplerAnisotropy = VK_TRUE;
+	deviceFeatures.samplerAnisotropy		= VK_TRUE;
 
-	VkDeviceCreateInfo createInfo = {0};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos = queueCreateInfos;
+	VkDeviceCreateInfo createInfo	= {0};
+	createInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos	= queueCreateInfos;
 	createInfo.queueCreateInfoCount = unique_queue_family_count;
 
 	// The device specific extension
 	// The physical device extension support has been checked before
-	createInfo.enabledExtensionCount = device_extensions_count;
+	createInfo.enabledExtensionCount   = device_extensions_count;
 	createInfo.ppEnabledExtensionNames = device_extensions;
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
@@ -421,7 +434,7 @@ int create_logical_device()
 	// Specify device validation layers for support with older implementations
 	if (enable_validation_layers)
 	{
-		createInfo.enabledLayerCount = validation_layers_count;
+		createInfo.enabledLayerCount   = validation_layers_count;
 		createInfo.ppEnabledLayerNames = validation_layers;
 	}
 	else
@@ -446,9 +459,9 @@ int create_logical_device()
 
 int create_image_views()
 {
-	swapchain_image_views = malloc(swapchain_image_count * sizeof(VkImageView));
+	swapchain_image_views	   = malloc(swapchain_image_count * sizeof(VkImageView));
 	swapchain_image_view_count = swapchain_image_count;
-	size_t i = 0;
+	size_t i				   = 0;
 	for (i = 0; i < swapchain_image_count; i++)
 	{
 		swapchain_image_views[i] = image_view_create(swapchain_images[i], swapchain_image_format, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -460,82 +473,82 @@ int create_render_pass()
 {
 	// Frame buffer
 	VkAttachmentDescription color_attachment = {0};
-	color_attachment.format = swapchain_image_format;
-	color_attachment.samples = msaa_samples;
-	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment.format					 = swapchain_image_format;
+	color_attachment.samples				 = msaa_samples;
+	color_attachment.loadOp					 = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment.storeOp				 = VK_ATTACHMENT_STORE_OP_STORE;
 
 	// Resolve msaa
 	VkAttachmentDescription colorAttachmentResolve = {0};
-	colorAttachmentResolve.format = swapchain_image_format;
-	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colorAttachmentResolve.format				   = swapchain_image_format;
+	colorAttachmentResolve.samples				   = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachmentResolve.loadOp				   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.storeOp				   = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachmentResolve.stencilLoadOp		   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.stencilStoreOp		   = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachmentResolve.initialLayout		   = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachmentResolve.finalLayout			   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentReference colorAttachmentResolveRef = {0};
-	colorAttachmentResolveRef.attachment = 2;
-	colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	colorAttachmentResolveRef.attachment			= 2;
+	colorAttachmentResolveRef.layout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	// Ignore stencil data since we don't have a depth buffer
-	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
 	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	color_attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment.finalLayout   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference color_attachment_ref = {0};
-	color_attachment_ref.attachment = 0;
-	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment_ref.attachment			   = 0;
+	color_attachment_ref.layout				   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	//  Depth buffer
 	VkAttachmentDescription depth_attachment = {0};
-	depth_attachment.format = find_depth_format();
-	depth_attachment.samples = msaa_samples;
-	depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depth_attachment.format					 = find_depth_format();
+	depth_attachment.samples				 = msaa_samples;
+	depth_attachment.loadOp					 = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depth_attachment.storeOp				 = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depth_attachment.stencilLoadOp			 = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depth_attachment.stencilStoreOp			 = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depth_attachment.initialLayout			 = VK_IMAGE_LAYOUT_UNDEFINED;
+	depth_attachment.finalLayout			 = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference depth_attachment_ref = {0};
-	depth_attachment_ref.attachment = 1;
-	depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depth_attachment_ref.attachment			   = 1;
+	depth_attachment_ref.layout				   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	// Subpasses
-	VkSubpassDescription subpass = {0};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &color_attachment_ref;
+	VkSubpassDescription subpass	= {0};
+	subpass.pipelineBindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount	= 1;
+	subpass.pColorAttachments		= &color_attachment_ref;
 	subpass.pDepthStencilAttachment = &depth_attachment_ref;
-	subpass.pResolveAttachments = &colorAttachmentResolveRef;
+	subpass.pResolveAttachments		= &colorAttachmentResolveRef;
 
 	// Subpass dependencies
 	VkSubpassDependency dependency = {0};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
+	dependency.srcSubpass		   = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass		   = 0;
 
 	// Specify what the subpass should wait for
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcStageMask	 = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.srcAccessMask = 0;
 
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstStageMask	 = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	// Render pass info
 	VkAttachmentDescription attachments[] = {color_attachment, depth_attachment, colorAttachmentResolve};
 	VkRenderPassCreateInfo renderPassInfo = {0};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
-	renderPassInfo.pAttachments = attachments;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
+	renderPassInfo.sType				  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount		  = sizeof(attachments) / sizeof(*attachments);
+	renderPassInfo.pAttachments			  = attachments;
+	renderPassInfo.subpassCount			  = 1;
+	renderPassInfo.pSubpasses			  = &subpass;
+	renderPassInfo.dependencyCount		  = 1;
+	renderPassInfo.pDependencies		  = &dependency;
 
 	VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass);
 	if (result != VK_SUCCESS)
@@ -551,8 +564,8 @@ int create_color_buffer()
 	VkFormat colorFormat = swapchain_image_format;
 
 	image_create(swapchain_extent.width, swapchain_extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory,
-				 msaa_samples);
+				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory, msaa_samples);
 	color_image_view = image_view_create(color_image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	return 0;
 }
@@ -561,33 +574,35 @@ int create_depth_buffer()
 {
 	depth_image_format = find_depth_format();
 
-	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image, &depth_image_memory, msaa_samples);
+	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL,
+				 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image,
+				 &depth_image_memory, msaa_samples);
 
 	depth_image_view = image_view_create(depth_image, depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// Transition image layout explicitely
-	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED,
+							VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	return 0;
 }
 
 int create_framebuffers()
 {
 	framebuffer_count = swapchain_image_view_count;
-	framebuffers = malloc(framebuffer_count * sizeof(VkFramebuffer));
+	framebuffers	  = malloc(framebuffer_count * sizeof(VkFramebuffer));
 
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
 	{
 		VkImageView attachments[] = {color_image_view, depth_image_view, swapchain_image_views[i]};
 
 		VkFramebufferCreateInfo framebufferInfo = {0};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = swapchain_extent.width;
-		framebufferInfo.height = swapchain_extent.height;
-		framebufferInfo.layers = 1;
+		framebufferInfo.sType					= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass				= renderPass;
+		framebufferInfo.attachmentCount			= sizeof(attachments) / sizeof(*attachments);
+		framebufferInfo.pAttachments			= attachments;
+		framebufferInfo.width					= swapchain_extent.width;
+		framebufferInfo.height					= swapchain_extent.height;
+		framebufferInfo.layers					= 1;
 
 		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers[i]);
 		if (result != VK_SUCCESS)
@@ -604,10 +619,10 @@ int create_command_pool()
 	QueueFamilies queueFamilyIndices = get_queue_families(physical_device);
 
 	VkCommandPoolCreateInfo poolInfo = {0};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphics;
+	poolInfo.sType					 = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex		 = queueFamilyIndices.graphics;
 	// Enables the renderer to individually reset command buffers
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
+	poolInfo.flags	= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
 	VkResult result = vkCreateCommandPool(device, &poolInfo, NULL, &command_pool);
 	if (result != VK_SUCCESS)
 	{
@@ -617,79 +632,99 @@ int create_command_pool()
 	return 0;
 }
 
-/*int create_command_buffers()
+int create_global_resources(struct LayoutInfo* layout_info)
 {
-	command_buffer_count = framebuffer_count;
-	command_buffers = malloc(command_buffer_count * sizeof(VkCommandBuffer));
-
-	VkCommandBufferAllocateInfo allocInfo = {0};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = command_pool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)command_buffer_count;
-
-	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, command_buffers);
-
-	if (result != VK_SUCCESS)
+	struct LayoutInfo default_layout = {0};
+	default_layout.binding_count	 = 1;
+	default_layout.bindings			 = &(VkDescriptorSetLayoutBinding){.binding			   = 0,
+															   .descriptorType	   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+															   .descriptorCount	   = 1,
+															   .stageFlags		   = VK_SHADER_STAGE_VERTEX_BIT,
+															   .pImmutableSamplers = NULL};
+	default_layout.buffer_sizes		 = &(uint32_t){sizeof(struct SceneData)};
+	// Use default layout
+	if (layout_info == NULL)
 	{
-		LOG_E("Failed to create command buffers - code %d", result);
-		return -1;
+		layout_info = &default_layout;
 	}
 
-	// Prerecord command buffers
-	for (size_t i = 0; i < command_buffer_count; i++)
+	// Find out how many of each type of descriptor type is required
+	uint32_t uniform_count = 0;
+	uint32_t sampler_count = 0;
+	uint32_t max_binding   = 0;
+	for (uint32_t i = 0; i < layout_info->binding_count; i++)
 	{
-		VkCommandBufferBeginInfo begin_info = {0};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = 0;
-		begin_info.pInheritanceInfo = NULL; // Optional
-
-		// Start recording
-		// If something was already recorded, it is reset
-		// It is not possible to append recordings to a command buffer
-		result = vkBeginCommandBuffer(command_buffers[i], &begin_info);
-		if (result != VK_SUCCESS)
+		if (layout_info->bindings[i].binding > max_binding)
+			max_binding = layout_info->bindings[i].binding;
+		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			LOG_E("Failed to begin recording command buffer %d - code %d", i, result);
+			uniform_count += layout_info->bindings[i].descriptorCount;
+		}
+		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			sampler_count += layout_info->bindings[i].descriptorCount;
+		}
+		else
+		{
+			LOG_W("Descriptor set creation: Unsupported descriptor type");
+		}
+	}
+
+	descriptorlayout_create(layout_info->bindings, layout_info->binding_count, &global_descriptor_layout);
+
+	// Allocate space for the resources
+	global_uniform_buffers = calloc(uniform_count, sizeof *global_uniform_buffers);
+	global_textures		   = calloc(sampler_count, sizeof *global_textures);
+	global_resource_map	   = calloc(max_binding, sizeof *global_resource_map);
+	uint32_t buffer_it	   = 0;
+	uint32_t sampler_it	   = 0;
+	// Create the resources for al bindings
+	for (uint32_t i = 0; i < layout_info->binding_count; i++)
+	{
+		// Add to map
+		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding);
+			global_resource_map[layout_info->bindings[i].binding] = global_uniform_buffers[buffer_it];
+			++buffer_it;
+		}
+		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			// TODO: create samplers
+			//global_textures[texture_it] = texture_create
+			global_resource_map[layout_info->bindings[i].binding] = global_textures[sampler_it];
+			++sampler_it;
+			LOG_W("Texture creation in global layout is not yet implemented");
+		}
+		else
+		{
+			LOG_E("Global resource creation: Unsupported descriptor type %d", layout_info->bindings[i].descriptorType);
 			return -2;
 		}
-		VkRenderPassBeginInfo render_pass_info = {0};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_info.renderPass = renderPass;
-		render_pass_info.framebuffer = framebuffers[i];
-		render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
-		render_pass_info.renderArea.extent = swapchain_extent;
-		VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
-		render_pass_info.clearValueCount = 2;
-		render_pass_info.pClearValues = clear_values;
-		vkCmdBeginRenderPass(command_buffers[i], &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-		if (material == NULL || model == NULL)
-			continue;
-		material_bind(material, command_buffers[i], i);
-
-		model_bind(model, command_buffers[i]);
-		vkCmdDrawIndexed(command_buffers[i], model_get_index_count(model), 1, 0, 0, 0);
-
-		result = vkEndCommandBuffer(command_buffers[i]);
-		if (result != VK_SUCCESS)
-		{
-			LOG_E("Failed to record command buffer");
-			return -3;
-		}
 	}
+
+	descriptorpack_create(global_descriptor_layout, layout_info->bindings, layout_info->binding_count, global_uniform_buffers,
+						  global_textures, &global_descriptors);
+
+	// Save global layout
+	global_layout_info.bindings = malloc(layout_info->binding_count * sizeof *global_layout_info.bindings);
+	memcpy(global_layout_info.bindings, layout_info->bindings,
+		   layout_info->binding_count * sizeof *global_layout_info.bindings);
+	global_layout_info.binding_count = layout_info->binding_count;
+	global_layout_info.buffer_sizes	 = layout_info->buffer_sizes;
 	return 0;
-}*/
+}
 
 int create_sync_objects()
 {
 	images_in_flight = calloc(swapchain_image_count, sizeof *images_in_flight);
 
 	VkSemaphoreCreateInfo semaphore_info = {0};
-	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphore_info.sType				 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 	VkFenceCreateInfo fence_info = {0};
-	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	fence_info.sType			 = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags			 = VK_FENCE_CREATE_SIGNALED_BIT;
 
 	VkResult result;
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -716,9 +751,9 @@ int create_sync_objects()
 	return 0;
 }
 
-int graphics_init()
+int graphics_init(Window* window, struct LayoutInfo* global_layout)
 {
-	window = application_get_window();
+	surface_window = window;
 	// Create a vulkan instance
 	if (create_instance())
 	{
@@ -756,26 +791,11 @@ int graphics_init()
 	{
 		return -12;
 	}
-
-	ub = ub_create(sizeof(TransformType), 0);
-
 	// model_cube = model_load_collada("./assets/models/cube.dae");
-	model = model_load_collada("./assets/models/plane.dae");
-
-	// Create uniform buffer layout
-
-	bindings[0].binding = 0;
-	bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	bindings[0].descriptorCount = 1;
-	bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	bindings[0].pImmutableSamplers = NULL; // Optional
-
-	descriptorlayout_create(bindings, 1, &global_descriptor_layout);
-	descriptorpack_create(global_descriptor_layout, bindings, 1, (UniformBuffer**)&ub, NULL, &global_descriptors);
-
-	//material = material_load("./assets/materials/grid.json");
-	material = material_load("./assets/materials/grid.json");
-
+	if (create_global_resources(global_layout))
+	{
+		return -13;
+	}
 	if (create_color_buffer())
 	{
 		return -13;
@@ -801,6 +821,37 @@ int graphics_init()
 	return 0;
 }
 
+Window* graphics_get_window()
+{
+	return surface_window;
+}
+
+int graphics_update_buffer(uint32_t binding, void* data, uint32_t offset, uint32_t size)
+{
+	UniformBuffer* ub = global_resource_map[binding];
+
+	ub_update(ub, data, offset, size, -1);
+	return 0;
+}
+
+int graphics_update_scene_data()
+{
+	struct SceneData data = {0};
+	data.background_color = vec4_zero;
+	data.camera_count	  = 1;
+	for (uint32_t i = 0; i < CAMERA_MAX; i++)
+	{
+		Camera* camera = scene_get_camera(scene_get_current(), i);
+		if (camera == NULL)
+			break;
+		++data.camera_count;
+		data.cameras[i].position = to_vec4(camera_get_transform(camera)->position, 1);
+		data.cameras[i].view	 = camera_get_view_matrix(camera);
+		data.cameras[i].proj	 = camera_get_projection_matrix(camera);
+	}
+	return graphics_update_buffer(0, &data, 0, sizeof(data));
+}
+
 void graphics_terminate()
 {
 	LOG_S("Terminating vulkan");
@@ -808,9 +859,6 @@ void graphics_terminate()
 	vkDeviceWaitIdle(device);
 
 	swapchain_destroy();
-
-	if (model)
-		model_destroy(model);
 
 	vkDestroyDescriptorSetLayout(device, global_descriptor_layout, NULL);
 
@@ -824,7 +872,9 @@ void graphics_terminate()
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
 
-	ub_destroy(ub);
+	free(global_uniform_buffers);
+	free(global_textures);
+
 	ub_pools_destroy();
 
 	vb_pools_destroy();

@@ -4,6 +4,7 @@
 #include "log.h"
 #include "stdlib.h"
 #include "buffer.h"
+#include "graphics/graphics.h"
 
 SwapchainSupportDetails get_swapchain_support(VkPhysicalDevice device)
 {
@@ -77,6 +78,7 @@ VkPresentModeKHR pick_swap_present_mode(VkPresentModeKHR* modes, size_t count)
 
 VkExtent2D pick_swap_extent(VkSurfaceCapabilitiesKHR* capabilities)
 {
+	Window* window = graphics_get_window();
 	if (capabilities->currentExtent.width != UINT32_MAX)
 	{
 		return capabilities->currentExtent;

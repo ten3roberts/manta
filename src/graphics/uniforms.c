@@ -70,8 +70,7 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 	// Make one allocation for the pool before returning
 	new_pool->alloc_count = 0;
 
-	LOG_S("Creating new descriptor pool with capacity for %d uniform types and %d sampler types",
-		  new_pool->uniform_count, new_pool->sampler_count);
+	LOG_S("Creating new descriptor pool with capacity for %d uniform types and %d sampler types", new_pool->uniform_count, new_pool->sampler_count);
 
 	VkDescriptorPoolSize poolSizes[2] = {0};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

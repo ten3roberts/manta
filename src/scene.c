@@ -13,6 +13,8 @@ struct Scene
 	// The size of the array
 	uint32_t entities_size;
 	Entity** entities;
+	uint32_t camera_count;
+	Camera* cameras[CAMERA_MAX];
 };
 
 static Scene* scene_current = NULL;
@@ -30,7 +32,7 @@ Scene* scene_create(const char* name)
 
 Scene* scene_set_current(Scene* scene)
 {
-	Scene* old = scene_current;
+	Scene* old	  = scene_current;
 	scene_current = scene;
 	return old;
 }
@@ -46,13 +48,13 @@ void scene_add_entity(Scene* scene, Entity* entity)
 	if (scene->entities == NULL)
 	{
 		scene->entities_size = 4;
-		scene->entities = malloc(scene->entities_size * sizeof(Entity*));
+		scene->entities		 = malloc(scene->entities_size * sizeof(Entity*));
 	}
 	// Resize array up
 	if (scene->entity_count + 1 >= scene->entities_size)
 	{
 		scene->entities_size = scene->entities_size << 1;
-		scene->entities = realloc(scene->entities, scene->entities_size);
+		scene->entities		 = realloc(scene->entities, scene->entities_size);
 	}
 	// Add at end of array
 	scene->entities[scene->entity_count] = entity;
@@ -75,7 +77,7 @@ void scene_remove_entity(Scene* scene, Entity* entity)
 			if (scene->entity_count < scene->entities_size / 2)
 			{
 				scene->entities_size = scene->entities_size >> 1;
-				scene->entities = realloc(scene->entities, scene->entities_size);
+				scene->entities		 = realloc(scene->entities, scene->entities_size);
 			}
 			renderer_flag_rebuild();
 			return;
@@ -104,11 +106,35 @@ Entity* scene_get_entity(Scene* scene, uint32_t index)
 	return scene->entities[index];
 }
 
+void scene_add_camera(Scene* scene, Camera* camera)
+{
+	if (scene->camera_count >= CAMERA_MAX)
+	{
+		LOG_W("Failed to add camera to scene, max camera count of %d is reached", CAMERA_MAX);
+		return;
+	}
+	scene->cameras[scene->camera_count] = camera;
+	++scene->camera_count;
+}
+
+Camera* scene_get_camera(Scene* scene, uint32_t index)
+{
+	if (index >= scene->camera_count)
+		return NULL;
+	return scene->cameras[index];
+}
+
 void scene_update(Scene* scene)
 {
+	// Update entities
 	for (uint32_t i = 0; i < scene->entity_count; i++)
 	{
 		entity_update(scene->entities[i]);
+	}
+	// Update cameras
+	for (uint32_t i = 0; i < scene->camera_count; i++)
+	{
+		camera_update(scene->cameras[i]);
 	}
 }
 
@@ -119,7 +145,7 @@ void scene_destroy_entities(Scene* scene)
 		entity_destroy(scene->entities[i]);
 	}
 	free(scene->entities);
-	scene->entity_count = 0;
+	scene->entity_count	 = 0;
 	scene->entities_size = 0;
 }
 

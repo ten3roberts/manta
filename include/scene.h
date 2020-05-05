@@ -1,6 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 #include "entity.h"
+#include "graphics/camera.h"
 // A scene contains all entities
 // The scene makes sure to render and update all entities
 typedef struct Scene Scene;
@@ -27,10 +28,20 @@ void scene_remove_entity(Scene* scene, Entity* entity);
 // Finds an entity in the scene by name
 // Returns NULL if it doesn't exist
 Entity* scene_find_entity(Scene* scene, const char* name);
+
 // Get the entity at index
 // Returns NULL if out of bounds
 Entity* scene_get_entity(Scene* scene, uint32_t index);
 
+// Adds a camera to the scene
+// Note: there cannot be more than CAMERA_MAX cameras in a scene due to shaderdata constraints
+void scene_add_camera(Scene* scene, Camera* camera);
+
+// Get the entity at index
+// Returns NULL if out of bounds
+Camera* scene_get_camera(Scene* scene, uint32_t index);
+
+// Updates all entities and cameras in the scene
 void scene_update(Scene* scene);
 
 // Will destroy all entities in the scene

@@ -91,9 +91,6 @@ extern VkFence* images_in_flight;
 // Keep track of frames in advance, I.e; frames in flight
 extern uint32_t current_frame;
 
-// A pointer to the current window
-extern Window* window;
-
 // Rendering
 extern VkRenderPass renderPass;
 

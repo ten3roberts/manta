@@ -48,9 +48,6 @@ VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT] = {0};
 VkFence* images_in_flight = NULL;
 uint32_t current_frame = 0;
 
-// A pointer to the current window
-Window* window = NULL;
-
 // Rendering
 VkRenderPass renderPass;
 

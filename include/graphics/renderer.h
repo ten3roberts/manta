@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "entity.h"
+#include "graphics/shadertypes.h"
 
 // Initializes the renderer
 int renderer_init();

@@ -11,10 +11,13 @@ Entities:
   - Transform and Rigidbodies
   - Collision detection
   - Quadtree collision pruning
+  - Maybe not automatically add to scene
 
-Vulkan bugs:
+Vulkan:
   - Image extent outside of bounds when resizing (nonfatal)
   - When skipping image aquire when waiting for resizes, there is a chance that uniform updates could get an invalid frame
+  - Separate Images from Sampler
+  - Specify graphics device support
 
 General bugs:
   

@@ -6,6 +6,8 @@
 #include "graphics/uniforms.h"
 #include "graphics/pipeline.h"
 
+
+
 int swapchain_create()
 {
 	SwapchainSupportDetails support = get_swapchain_support(physical_device);
@@ -86,7 +88,7 @@ int swapchain_recreate()
 
 	swapchain_destroy();
 
-	swapchain_create();
+	swapchain_create(NULL);
 	create_image_views();
 	create_render_pass();
 
