@@ -46,8 +46,26 @@ int application_start(int argc, char** argv)
 		entity_get_transform(entity1)->rotation	  = quat_euler((vec3){0, time_elapsed(), 0});
 		entity_get_transform(entity2)->rotation	  = quat_euler((vec3){time_elapsed(), 0, 0});
 
+
+		vec3 cam_move = vec3_zero;
+		if(input_key(KEY_W))
+		{
+			cam_move.z = -5;
+		}
+		if(input_key(KEY_S))
+		{
+			cam_move.z = 5;
+		}
+		if(input_key(KEY_A))
+		{
+			cam_move.x = -5;
+		}
+		if(input_key(KEY_D))
+		{
+			cam_move.x = 5;
+		}
 		// Spin camera
-		camera_get_transform(camera)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
+		camera_get_transform(camera)->position = vec3_add(camera_get_transform(camera)->position, vec3_scale(cam_move, time_delta()));
 		graphics_update_scene_data();
 		input_update();
 

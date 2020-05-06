@@ -7,8 +7,8 @@
 
 Window* _window;
 
-int keys[CS_KEY_LAST + 1];
-int prev_keys[CS_KEY_LAST + 1];
+int keys[KEY_LAST + 1];
+int prev_keys[KEY_LAST + 1];
 
 vec2 mouse_pos;
 

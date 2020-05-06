@@ -75,11 +75,11 @@ void mouse_button_callback(GLFWwindow* raw_window, int key, int action, int mods
 	switch (action)
 	{
 	case GLFW_PRESS: {
-		application_send_event((Event){EVENT_KEY, .idata = {CS_MOUSE_1 + key, 1}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {MOUSE_1 + key, 1}, 0});
 		break;
 	}
 	case GLFW_RELEASE: {
-		application_send_event((Event){EVENT_KEY, .idata = {CS_MOUSE_1 + key, 0}, 0});
+		application_send_event((Event){EVENT_KEY, .idata = {MOUSE_1 + key, 0}, 0});
 		break;
 	}
 	default:

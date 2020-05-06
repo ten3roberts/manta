@@ -28,6 +28,7 @@ static void** global_resource_map = NULL;
 static struct LayoutInfo global_layout_info;
 
 static Window* surface_window = NULL;
+// src/graphics/vulkan.c
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 													 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -46,6 +47,7 @@ VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtil
 										  const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
 	VkResult (*func)(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+
 					 const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) =
 		(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 
