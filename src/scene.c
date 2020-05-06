@@ -54,7 +54,7 @@ void scene_add_entity(Scene* scene, Entity* entity)
 	if (scene->entity_count + 1 >= scene->entities_size)
 	{
 		scene->entities_size = scene->entities_size << 1;
-		scene->entities		 = realloc(scene->entities, scene->entities_size);
+		scene->entities		 = realloc(scene->entities, scene->entities_size * sizeof(*scene->entities));
 	}
 	// Add at end of array
 	scene->entities[scene->entity_count] = entity;
@@ -77,7 +77,7 @@ void scene_remove_entity(Scene* scene, Entity* entity)
 			if (scene->entity_count < scene->entities_size / 2)
 			{
 				scene->entities_size = scene->entities_size >> 1;
-				scene->entities		 = realloc(scene->entities, scene->entities_size);
+				scene->entities		 = realloc(scene->entities, scene->entities_size * sizeof(*scene->entities));
 			}
 			renderer_flag_rebuild();
 			return;
