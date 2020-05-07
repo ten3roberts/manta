@@ -13,13 +13,13 @@ float vec3_largest(vec3 a)
 		else
 			return a.z;
 	}
-	if (a.y > a.x)
+	else if (a.y > a.x)
 	{
 		if (a.y > a.z)
 			return a.y;
 		return a.z;
 	}
-	if (a.z > a.x)
+	else if (a.z > a.x)
 	{
 		if (a.z > a.y)
 			return a.z;
@@ -40,13 +40,13 @@ float vec3_smallest(vec3 a)
 		else
 			return a.z;
 	}
-	if (a.y < a.x)
+	else if (a.y < a.x)
 	{
 		if (a.y < a.z)
 			return a.y;
 		return a.z;
 	}
-	if (a.z < a.x)
+	else if (a.z < a.x)
 	{
 		if (a.z < a.y)
 			return a.z;
