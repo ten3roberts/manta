@@ -2,6 +2,56 @@
 #include "math/math.h"
 #include <stdlib.h>
 
+// Returns the largest component
+// Uses the least amount of comparations
+float vec3_largest(vec3 a)
+{
+	if (a.x > a.y)
+	{
+		if (a.x > a.z)
+			return a.x;
+		else
+			return a.z;
+	}
+	if (a.y > a.x)
+	{
+		if (a.y > a.z)
+			return a.y;
+		return a.z;
+	}
+	if (a.z > a.x)
+	{
+		if (a.z > a.y)
+			return a.z;
+		return a.y;
+	}
+}
+
+// Returns the smallest component
+// Uses the least amount of comparations
+float vec3_smallest(vec3 a)
+{
+	if (a.x < a.y)
+	{
+		if (a.x < a.z)
+			return a.x;
+		else
+			return a.z;
+	}
+	if (a.y < a.x)
+	{
+		if (a.y < a.z)
+			return a.y;
+		return a.z;
+	}
+	if (a.z < a.x)
+	{
+		if (a.z < a.y)
+			return a.z;
+		return a.y;
+	}
+}
+
 // Returns the normalized vector a
 vec3 vec3_norm(vec3 a)
 {
@@ -19,7 +69,7 @@ vec3 vec3_reflect(vec3 ray, vec3 n)
 // Projects vector a onto vector b
 vec3 vec3_proj(vec3 a, vec3 b)
 {
-	b = vec3_norm(b);
+	b		  = vec3_norm(b);
 	float dot = vec3_dot(a, b);
 	return vec3_scale(b, dot);
 }
@@ -27,7 +77,7 @@ vec3 vec3_proj(vec3 a, vec3 b)
 // Projects vector a onto a plane specified by the normal n
 vec3 vec3_proj_plane(vec3 a, vec3 n)
 {
-	n = vec3_norm(n);
+	n		  = vec3_norm(n);
 	float dot = vec3_dot(a, n);
 	return vec3_sub(a, vec3_scale(n, dot));
 }
@@ -59,11 +109,11 @@ vec3 vec3_hsv(vec3 hsv)
 	if (hh >= 1)
 		hh = 0.0f;
 	hh /= 1 / 6.0f;
-	i = (long)hh;
+	i  = (long)hh;
 	ff = hh - i;
-	p = hsv.z * (1.0f - hsv.y);
-	q = hsv.z * (1.0f - (hsv.y * ff));
-	t = hsv.z * (1.0f - (hsv.y * (1.0f - ff)));
+	p  = hsv.z * (1.0f - hsv.y);
+	q  = hsv.z * (1.0f - (hsv.y * ff));
+	t  = hsv.z * (1.0f - (hsv.y * (1.0f - ff)));
 
 	switch (i)
 	{
@@ -125,7 +175,7 @@ vec3 vec3_random_sphere_even(float minr, float maxr)
 	result = vec3_norm(result);
 
 	float randomLength = sqrtf(((float)rand() / RAND_MAX) / M_PI); // Accounting sparser distrobution
-	result = vec3_scale(result, randomLength * (maxr - minr) + minr);
+	result			   = vec3_scale(result, randomLength * (maxr - minr) + minr);
 
 	return result;
 }
@@ -142,7 +192,7 @@ vec3 vec3_random_sphere(float minr, float maxr)
 	result = vec3_norm(result);
 
 	float randomLength = (float)rand() / RAND_MAX;
-	result = vec3_scale(result, randomLength * (maxr - minr) + minr);
+	result			   = vec3_scale(result, randomLength * (maxr - minr) + minr);
 
 	return result;
 }
@@ -160,7 +210,7 @@ vec4 to_vec4(vec3 a, float w)
 }
 
 // Converts a vector to a comma separated string with the components
-void vec3_string(vec3 a, char * buf, int precision)
+void vec3_string(vec3 a, char* buf, int precision)
 {
 	buf += ftos(a.x, buf, precision);
 	*buf++ = ',';
@@ -172,7 +222,7 @@ void vec3_string(vec3 a, char * buf, int precision)
 }
 
 // Converts a vector to a comma separated string with the components and magnitude
-void vec3_string_long(vec3 a, char * buf, int precision)
+void vec3_string_long(vec3 a, char* buf, int precision)
 {
 	buf += ftos(a.x, buf, precision);
 	*buf++ = ',';
