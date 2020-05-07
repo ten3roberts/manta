@@ -25,6 +25,8 @@ float vec3_largest(vec3 a)
 			return a.z;
 		return a.y;
 	}
+	// All are equal
+	return a.x;
 }
 
 // Returns the smallest component
@@ -50,6 +52,8 @@ float vec3_smallest(vec3 a)
 			return a.z;
 		return a.y;
 	}
+	// All are equal
+	return a.x;
 }
 
 // Returns the normalized vector a
