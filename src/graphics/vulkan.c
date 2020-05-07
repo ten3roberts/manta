@@ -21,11 +21,12 @@
 #include "graphics/camera.h"
 #include "scene.h"
 
+static uint32_t global_uniform_count = 0;
+static uint32_t global_sampler_count = 0;
 static UniformBuffer** global_uniform_buffers = NULL;
 static Texture** global_textures			  = NULL;
 // List that maps the bindings to the uniforms and textures
 static void** global_resource_map = NULL;
-static struct LayoutInfo global_layout_info;
 
 static Window* surface_window = NULL;
 // src/graphics/vulkan.c
@@ -651,8 +652,6 @@ int create_global_resources(struct LayoutInfo* layout_info)
 	}
 
 	// Find out how many of each type of descriptor type is required
-	uint32_t uniform_count = 0;
-	uint32_t sampler_count = 0;
 	uint32_t max_binding   = 0;
 	for (uint32_t i = 0; i < layout_info->binding_count; i++)
 	{
@@ -660,11 +659,11 @@ int create_global_resources(struct LayoutInfo* layout_info)
 			max_binding = layout_info->bindings[i].binding;
 		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			uniform_count += layout_info->bindings[i].descriptorCount;
+			global_uniform_count += layout_info->bindings[i].descriptorCount;
 		}
 		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 		{
-			sampler_count += layout_info->bindings[i].descriptorCount;
+			global_sampler_count += layout_info->bindings[i].descriptorCount;
 		}
 		else
 		{
@@ -675,9 +674,9 @@ int create_global_resources(struct LayoutInfo* layout_info)
 	descriptorlayout_create(layout_info->bindings, layout_info->binding_count, &global_descriptor_layout);
 
 	// Allocate space for the resources
-	global_uniform_buffers = calloc(uniform_count, sizeof *global_uniform_buffers);
-	global_textures		   = calloc(sampler_count, sizeof *global_textures);
-	global_resource_map	   = calloc(max_binding, sizeof *global_resource_map);
+	global_uniform_buffers = calloc(global_uniform_count, sizeof *global_uniform_buffers);
+	global_textures		   = calloc(global_sampler_count, sizeof *global_textures);
+	global_resource_map	   = calloc(max_binding + 1, sizeof *global_resource_map);
 	uint32_t buffer_it	   = 0;
 	uint32_t sampler_it	   = 0;
 	// Create the resources for al bindings
@@ -707,13 +706,6 @@ int create_global_resources(struct LayoutInfo* layout_info)
 
 	descriptorpack_create(global_descriptor_layout, layout_info->bindings, layout_info->binding_count, global_uniform_buffers,
 						  global_textures, &global_descriptors);
-
-	// Save global layout
-	global_layout_info.bindings = malloc(layout_info->binding_count * sizeof *global_layout_info.bindings);
-	memcpy(global_layout_info.bindings, layout_info->bindings,
-		   layout_info->binding_count * sizeof *global_layout_info.bindings);
-	global_layout_info.binding_count = layout_info->binding_count;
-	global_layout_info.buffer_sizes	 = layout_info->buffer_sizes;
 	return 0;
 }
 
@@ -869,13 +861,21 @@ void graphics_terminate()
 	model_destroy_all();
 	texture_destroy_all();
 
+	// Free global resources
+	for(uint32_t i = 0; i < global_uniform_count; i++)
+	{
+		ub_destroy(global_uniform_buffers[i]);
+	}
+
+	free(global_uniform_buffers);
+	free(global_resource_map);
+	global_uniform_count = 0;
+
 	pipeline_destroy_all();
 
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
 
-	free(global_uniform_buffers);
-	free(global_textures);
 
 	ub_pools_destroy();
 
