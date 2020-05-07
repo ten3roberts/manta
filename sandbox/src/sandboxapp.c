@@ -29,10 +29,15 @@ int application_start(int argc, char** argv)
 	(void)material_load("./assets/materials/concrete.json");
 	(void)material_load("./assets/materials/grid.json");
 
-	Camera* camera = camera_create_perspective("main", (Transform){(vec3){5, 0, 0}}, window_get_aspect(window), 1, 0.1, 100);
+	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, 0, 0}}, window_get_aspect(window), 1, 0.1, 100);
 
-	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0, 0, -1}, quat_identity, vec3_one});
-	Entity* entity2 = entity_create("entity2", "concrete", "Cube", (Transform){(vec3){5, 0.5, 10}, quat_identity, vec3_one});
+	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one});
+	Entity* entity2 = entity_create("entity2", "concrete", "Cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one});
+
+	/*for (int i = 0; i < 1000; i++)
+	{
+		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
+	}*/
 
 	while (!window_get_close(window))
 	{
@@ -42,34 +47,46 @@ int application_start(int argc, char** argv)
 
 		scene_update(scene);
 
-		entity_get_transform(entity1)->position.z = -5;
-		entity_get_transform(entity1)->rotation	  = quat_euler((vec3){0, time_elapsed(), 0});
-		entity_get_transform(entity2)->rotation	  = quat_euler((vec3){time_elapsed(), 0, 0});
-
+		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
+		entity_get_transform(entity2)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
 
 		vec3 cam_move = vec3_zero;
-		if(input_key(KEY_W))
+		if (input_key(KEY_W))
 		{
 			cam_move.z = -5;
 		}
-		if(input_key(KEY_S))
+		if (input_key(KEY_S))
 		{
 			cam_move.z = 5;
 		}
-		if(input_key(KEY_A))
+		if (input_key(KEY_A))
 		{
 			cam_move.x = -5;
 		}
-		if(input_key(KEY_D))
+		if (input_key(KEY_D))
 		{
 			cam_move.x = 5;
 		}
 		// Spin camera
-		camera_get_transform(camera)->position = vec3_add(camera_get_transform(camera)->position, vec3_scale(cam_move, time_delta()));
+		/*camera_get_transform(camera)->position =	vec3_add(camera_get_transform(camera)->position, vec3_scale(cam_move, time_delta()));*/
+		entity_get_transform(entity2)->position = vec3_add(entity_get_transform(entity2)->position, vec3_scale(cam_move, time_delta()));
 		graphics_update_scene_data();
 		input_update();
 
 		time_update();
+
+		const SphereCollider* bound1 = entity_get_boundingsphere(entity1);
+		const SphereCollider* bound2 = entity_get_boundingsphere(entity2);
+
+		if (spherecollider_intersect(bound1, bound2))
+		{
+			LOG("Colliding");
+		}
+		else
+		{
+			LOG("Not Colliding");
+		}
+
 		renderer_submit();
 
 		if (timer_duration(&timer) > 2.0f)
@@ -79,6 +96,8 @@ int application_start(int argc, char** argv)
 		}
 	}
 	scene_destroy_entities(scene);
+
+	camera_destroy(camera);
 	scene_destroy(scene);
 	graphics_terminate();
 	LOG_S("Terminating");
@@ -96,10 +115,9 @@ void application_send_event(Event event)
 		LOG("%d %d", event.idata[0], event.idata[1]);
 		renderer_resize();
 	}
-	if (event.type == EVENT_KEY)
-		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);
-	if (event.type == EVENT_KEY || event.type == EVENT_MOUSE_MOVED || event.type == EVENT_MOUSE_SCROLLED)
-		input_send_event(&event);
+	/*if (event.type == EVENT_KEY)
+		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);*/
+	input_send_event(&event);
 }
 
 void* application_get_window()

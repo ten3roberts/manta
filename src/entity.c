@@ -16,6 +16,7 @@ struct Entity
 	Transform transform;
 	Material* material;
 	Model* model;
+	SphereCollider boundingsphere;
 };
 
 Entity* entity_create(const char* name, const char* material_name, const char* model_name, Transform transform)
@@ -44,6 +45,9 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 		LOG_E("Unknown model %s", model_name);
 	}
 
+	// Create bounding sphere from model and bind the transform to it
+	entity->boundingsphere = spherecollider_create(model_max_distance(entity->model), vec3_zero, &entity->transform);
+
 	// Add to scene
 	scene_add_entity(scene_get_current(), entity);
 	return entity;
@@ -64,6 +68,11 @@ Material* entity_get_material(Entity* entity)
 Model* entity_get_model(Entity* entity)
 {
 	return entity->model;
+}
+
+const SphereCollider* entity_get_boundingsphere(Entity* entity)
+{
+	return &entity->boundingsphere;
 }
 
 void entity_update(Entity* entity)

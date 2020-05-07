@@ -16,6 +16,7 @@ struct Model
 	IndexBuffer* ib;
 	uint32_t index_count;
 	uint32_t vertex_count;
+	float max_distance;
 };
 
 struct Face
@@ -25,7 +26,9 @@ struct Face
 
 Model* model_load_collada(const char* filepath)
 {
-	Model* model = malloc(sizeof(Model));
+	Model* model		= malloc(sizeof(Model));
+	model->max_distance = 0;
+
 	LOG("Loading model %s", filepath);
 	XMLNode* root = xml_loadfile(filepath);
 	if (root == NULL)
@@ -34,7 +37,7 @@ Model* model_load_collada(const char* filepath)
 		return NULL;
 	}
 	XMLNode* mesh = xml_get_child(root, "library_geometries");
-	mesh = xml_get_children(mesh);
+	mesh		  = xml_get_children(mesh);
 	snprintf(model->name, sizeof model->name, "%s", xml_get_attribute(mesh, "name"));
 
 	// Insert into table
@@ -53,10 +56,9 @@ Model* model_load_collada(const char* filepath)
 	// Insert into table
 	hashtable_insert(model_table, model->name, model);
 
-
-	model->id = stringdup(xml_get_attribute(mesh, "id"));
-	mesh = xml_get_children(mesh);
-	XMLNode* sources = xml_get_children(mesh);
+	model->id				= stringdup(xml_get_attribute(mesh, "id"));
+	mesh					= xml_get_children(mesh);
+	XMLNode* sources		= xml_get_children(mesh);
 	XMLNode* triangles_node = xml_get_child(mesh, "triangles");
 
 	char* source_names[3];
@@ -73,8 +75,8 @@ Model* model_load_collada(const char* filepath)
 	strcat(source_names[2], "-normals");
 
 	float* positions = NULL;
-	float* uvs = NULL;
-	float* normals = NULL;
+	float* uvs		 = NULL;
+	float* normals	 = NULL;
 
 	// Load all sources
 	while (sources != NULL)
@@ -92,12 +94,12 @@ Model* model_load_collada(const char* filepath)
 		{
 			XMLNode* array = xml_get_child(sources, "float_array");
 			uint32_t count = atoi(xml_get_attribute(array, "count"));
-			positions = malloc(count * sizeof(*positions));
-			char* cont = xml_get_content(array);
+			positions	   = malloc(count * sizeof(*positions));
+			char* cont	   = xml_get_content(array);
 			for (uint32_t i = 0; i < count; i++)
 			{
 				positions[i] = atof(cont);
-				cont = strchr(cont + 1, ' ');
+				cont		 = strchr(cont + 1, ' ');
 			}
 		}
 
@@ -106,12 +108,12 @@ Model* model_load_collada(const char* filepath)
 		{
 			XMLNode* array = xml_get_child(sources, "float_array");
 			uint32_t count = atoi(xml_get_attribute(array, "count"));
-			uvs = malloc(count * sizeof(*uvs));
-			char* cont = xml_get_content(array);
+			uvs			   = malloc(count * sizeof(*uvs));
+			char* cont	   = xml_get_content(array);
 			for (uint32_t i = 0; i < count; i++)
 			{
 				uvs[i] = atof(cont);
-				cont = strchr(cont + 1, ' ');
+				cont   = strchr(cont + 1, ' ');
 			}
 		}
 
@@ -120,12 +122,12 @@ Model* model_load_collada(const char* filepath)
 		{
 			XMLNode* array = xml_get_child(sources, "float_array");
 			uint32_t count = atoi(xml_get_attribute(array, "count"));
-			normals = malloc(count * sizeof(*normals));
-			char* cont = xml_get_content(array);
+			normals		   = malloc(count * sizeof(*normals));
+			char* cont	   = xml_get_content(array);
 			for (uint32_t i = 0; i < count; i++)
 			{
 				normals[i] = atof(cont);
-				cont = strchr(cont + 1, ' ');
+				cont	   = strchr(cont + 1, ' ');
 			}
 		}
 		sources = xml_get_next(sources);
@@ -151,12 +153,12 @@ Model* model_load_collada(const char* filepath)
 	// Triangles
 	// How many sets there are, each set contains 3 ints
 	uint32_t triangle_count = atoi(xml_get_attribute(triangles_node, "count"));
-	char* triangle_cont = xml_get_content(xml_get_child(triangles_node, "p"));
+	char* triangle_cont		= xml_get_content(xml_get_child(triangles_node, "p"));
 
 	// Max number of sets expected
 	// Three vertices per face
 	// A set describes the index of the set of positions, normals, and uvs
-	struct Face* sets = malloc(triangle_count * sizeof(struct Face) * 3);
+	struct Face* sets  = malloc(triangle_count * sizeof(struct Face) * 3);
 	uint32_t set_count = 0;
 
 	// Max number of indices expected if no reusage
@@ -167,13 +169,13 @@ Model* model_load_collada(const char* filepath)
 	for (uint32_t i = 0; i < triangle_count * 3; i++)
 	{
 		uint32_t pos_index = atoi(triangle_cont);
-		triangle_cont = strchr(triangle_cont + 1, ' ');
+		triangle_cont	   = strchr(triangle_cont + 1, ' ');
 
 		uint32_t normal_index = atoi(triangle_cont);
-		triangle_cont = strchr(triangle_cont + 1, ' ');
+		triangle_cont		  = strchr(triangle_cont + 1, ' ');
 
 		uint32_t uv_index = atoi(triangle_cont);
-		triangle_cont = strchr(triangle_cont + 1, ' ');
+		triangle_cont	  = strchr(triangle_cont + 1, ' ');
 
 		int found = 0;
 		for (uint32_t j = 0; j < 1; j++)
@@ -183,7 +185,7 @@ Model* model_load_collada(const char* filepath)
 			{
 				// Reuse index
 				indices[index_count++] = j;
-				found = 1;
+				found				   = 1;
 				LOG("Reusing index");
 				break;
 			}
@@ -192,7 +194,7 @@ Model* model_load_collada(const char* filepath)
 		{
 			// Add new unique index
 			indices[index_count++] = set_count;
-			sets[set_count++] = (struct Face){pos_index, normal_index, uv_index};
+			sets[set_count++]	   = (struct Face){pos_index, normal_index, uv_index};
 		}
 	}
 
@@ -203,12 +205,16 @@ Model* model_load_collada(const char* filepath)
 	for (uint32_t i = 0; i < set_count; i++)
 	{
 		vertices[i].position = *(vec3*)&positions[3 * sets[i].pos_index];
+		if (vec3_sqrmag(vertices[i].position) > model->max_distance * model->max_distance)
+		{
+			model->max_distance = vec3_mag(vertices[i].position);
+		}
 		vertices[i].uv = *(vec2*)&uvs[2 * sets[i].uv_index];
 	}
 
-	model->vb = vb_create(vertices, set_count);
-	model->ib = ib_create(indices, index_count);
-	model->index_count = index_count;
+	model->vb			= vb_create(vertices, set_count);
+	model->ib			= ib_create(indices, index_count);
+	model->index_count	= index_count;
 	model->vertex_count = set_count;
 	xml_destroy(root);
 
@@ -227,6 +233,11 @@ void model_bind(Model* model, VkCommandBuffer command_buffer)
 	ib_bind(model->ib, command_buffer);
 }
 
+float model_max_distance(Model* model)
+{
+	return model->max_distance;
+}
+
 uint32_t model_get_index_count(Model* model)
 {
 	return model->index_count;
@@ -243,7 +254,6 @@ Model* model_get(const char* name)
 		return NULL;
 	return hashtable_find(model_table, name);
 }
-
 
 void model_destroy(Model* model)
 {

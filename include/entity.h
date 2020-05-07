@@ -3,6 +3,7 @@
 #include "transform.h"
 #include "graphics/model.h"
 #include "graphics/material.h"
+#include "colliders.h"
 
 typedef struct Entity Entity;
 
@@ -14,6 +15,7 @@ const char* entity_get_name(Entity* entity);
 Transform* entity_get_transform(Entity* entity);
 Material* entity_get_material(Entity* entity);
 Model* entity_get_model(Entity* entity);
+const SphereCollider* entity_get_boundingsphere(Entity* entity);
 
 // Is called once a frame
 void entity_update(Entity* entity);
