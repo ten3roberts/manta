@@ -20,8 +20,8 @@ void input_init(Window* window)
 	memset(keys, 0, sizeof(keys));
 	memset(prev_keys, 0, sizeof(prev_keys));
 
-	mouse_pos = (vec2){0, 0};
-	scroll = (vec2){0, 0};
+	mouse_pos  = (vec2){0, 0};
+	scroll	   = (vec2){0, 0};
 	rel_scroll = (vec2){0, 0};
 
 	_window = window;
@@ -39,7 +39,7 @@ void input_send_event(Event* event)
 		// If event is handled, only release the key without triggering input_key_release
 		else if (event->idata[1] == 0)
 		{
-			keys[event->idata[0]] = 0;
+			keys[event->idata[0]]	   = 0;
 			prev_keys[event->idata[0]] = 0;
 		}
 	}
@@ -56,6 +56,10 @@ void input_send_event(Event* event)
 		scroll.y += event->fdata[1];
 		rel_scroll.x += event->fdata[0];
 		rel_scroll.y += event->fdata[1];
+	}
+	else
+	{
+		return;
 	}
 	event->handled = 1;
 }
