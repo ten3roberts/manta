@@ -21,10 +21,10 @@
 #include "graphics/camera.h"
 #include "scene.h"
 
-static uint32_t global_uniform_count		  = 0;
-static uint32_t global_sampler_count		  = 0;
+static uint32_t global_uniform_count = 0;
+static uint32_t global_sampler_count = 0;
 static UniformBuffer** global_uniform_buffers = NULL;
-static Texture** global_textures			  = NULL;
+static Texture** global_textures = NULL;
 // List that maps the bindings to the uniforms and textures
 static void** global_resource_map = NULL;
 
@@ -75,10 +75,10 @@ void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessenge
 
 void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT* createInfo)
 {
-	createInfo->pUserData		= NULL;
-	createInfo->pNext			= NULL;
-	createInfo->flags			= 0;
-	createInfo->sType			= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	createInfo->pUserData = NULL;
+	createInfo->pNext = NULL;
+	createInfo->flags = 0;
+	createInfo->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
@@ -97,8 +97,8 @@ int create_instance()
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
 	VkInstanceCreateInfo createInfo = {0};
-	createInfo.sType				= VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo		= &appInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	createInfo.pApplicationInfo = &appInfo;
 
 	// Get the extensions required by glfw and application
 	uint32_t glfw_extension_count = 0;
@@ -108,7 +108,7 @@ int create_instance()
 
 	// Create and fill in array containing the extensions required by both glfw and the application
 	uint32_t required_extension_count = glfw_extension_count + enable_validation_layers;
-	const char** required_extensions  = malloc(required_extension_count * sizeof(char*));
+	const char** required_extensions = malloc(required_extension_count * sizeof(char*));
 
 	size_t i = 0;
 	for (i = 0; i < glfw_extension_count; i++)
@@ -117,7 +117,7 @@ int create_instance()
 	}
 	required_extensions[i++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
 
-	createInfo.enabledExtensionCount   = required_extension_count;
+	createInfo.enabledExtensionCount = required_extension_count;
 	createInfo.ppEnabledExtensionNames = required_extensions;
 
 	// Check the currently supported extensions
@@ -178,14 +178,14 @@ int create_instance()
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
 	if (enable_validation_layers)
 	{
-		createInfo.enabledLayerCount   = validation_layers_count;
+		createInfo.enabledLayerCount = validation_layers_count;
 		createInfo.ppEnabledLayerNames = validation_layers;
 		populate_debug_messenger_create_info(&debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else
 	{
-		createInfo.enabledLayerCount   = 0;
+		createInfo.enabledLayerCount = 0;
 		createInfo.ppEnabledLayerNames = NULL;
 	}
 
@@ -272,7 +272,7 @@ int pick_physical_device()
 	// Pick a suitable device
 
 	// Get all physical devices on the system
-	uint32_t device_count	  = 0;
+	uint32_t device_count = 0;
 	VkPhysicalDevice* devices = NULL;
 	vkEnumeratePhysicalDevices(instance, &device_count, NULL);
 	if (device_count == 0)
@@ -283,8 +283,8 @@ int pick_physical_device()
 
 	devices = malloc(device_count * sizeof(VkPhysicalDevice));
 	vkEnumeratePhysicalDevices(instance, &device_count, devices);
-	size_t i					 = 0;
-	int max_score				 = 0;
+	size_t i = 0;
+	int max_score = 0;
 	VkPhysicalDevice best_device = NULL;
 
 	// Enumerate them and select the best one by score
@@ -317,9 +317,9 @@ int pick_physical_device()
 		}
 
 		// Check to see if swap chain support is adequate
-		bool swapchain_adequate					  = false;
+		bool swapchain_adequate = false;
 		SwapchainSupportDetails swapchain_support = get_swapchain_support(devices[i]);
-		swapchain_adequate						  = swapchain_support.format_count && swapchain_support.present_mode_count;
+		swapchain_adequate = swapchain_support.format_count && swapchain_support.present_mode_count;
 		if (!swapchain_adequate)
 			continue;
 
@@ -333,7 +333,7 @@ int pick_physical_device()
 		score += deviceProperties.limits.maxImageDimension2D;
 		if (score > max_score)
 		{
-			max_score	= score;
+			max_score = score;
 			best_device = devices[i];
 		}
 	}
@@ -348,7 +348,7 @@ int pick_physical_device()
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(best_device, &deviceProperties);
 	LOG_OK("Picking graphical device '%s'", deviceProperties.deviceName);
-	physical_device						 = best_device;
+	physical_device = best_device;
 	VkSampleCountFlagBits wanted_samples = VK_SAMPLE_COUNT_1_BIT;
 	switch (settings_get_msaa())
 	{
@@ -409,25 +409,25 @@ int create_logical_device()
 	VkDeviceQueueCreateInfo queueCreateInfos[QUEUE_FAMILY_COUNT] = {0};
 	for (size_t i = 0; i < unique_queue_family_count; i++)
 	{
-		queueCreateInfos[i].sType			 = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfos[i].queueFamilyIndex = *(&indices.graphics + i);
-		queueCreateInfos[i].queueCount		 = 1;
+		queueCreateInfos[i].queueCount = 1;
 
-		float queue_priority				 = 1.0f;
+		float queue_priority = 1.0f;
 		queueCreateInfos[i].pQueuePriorities = &queue_priority;
 	}
 
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
-	deviceFeatures.samplerAnisotropy		= VK_TRUE;
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
-	VkDeviceCreateInfo createInfo	= {0};
-	createInfo.sType				= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos	= queueCreateInfos;
+	VkDeviceCreateInfo createInfo = {0};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos = queueCreateInfos;
 	createInfo.queueCreateInfoCount = unique_queue_family_count;
 
 	// The device specific extension
 	// The physical device extension support has been checked before
-	createInfo.enabledExtensionCount   = device_extensions_count;
+	createInfo.enabledExtensionCount = device_extensions_count;
 	createInfo.ppEnabledExtensionNames = device_extensions;
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
@@ -435,7 +435,7 @@ int create_logical_device()
 	// Specify device validation layers for support with older implementations
 	if (enable_validation_layers)
 	{
-		createInfo.enabledLayerCount   = validation_layers_count;
+		createInfo.enabledLayerCount = validation_layers_count;
 		createInfo.ppEnabledLayerNames = validation_layers;
 	}
 	else
@@ -460,9 +460,9 @@ int create_logical_device()
 
 int create_image_views()
 {
-	swapchain_image_views	   = malloc(swapchain_image_count * sizeof(VkImageView));
+	swapchain_image_views = malloc(swapchain_image_count * sizeof(VkImageView));
 	swapchain_image_view_count = swapchain_image_count;
-	size_t i				   = 0;
+	size_t i = 0;
 	for (i = 0; i < swapchain_image_count; i++)
 	{
 		swapchain_image_views[i] = image_view_create(swapchain_images[i], swapchain_image_format, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -474,82 +474,82 @@ int create_render_pass()
 {
 	// Frame buffer
 	VkAttachmentDescription color_attachment = {0};
-	color_attachment.format					 = swapchain_image_format;
-	color_attachment.samples				 = msaa_samples;
-	color_attachment.loadOp					 = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	color_attachment.storeOp				 = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment.format = swapchain_image_format;
+	color_attachment.samples = msaa_samples;
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
 	// Resolve msaa
 	VkAttachmentDescription colorAttachmentResolve = {0};
-	colorAttachmentResolve.format				   = swapchain_image_format;
-	colorAttachmentResolve.samples				   = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachmentResolve.loadOp				   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentResolve.storeOp				   = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachmentResolve.stencilLoadOp		   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachmentResolve.stencilStoreOp		   = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachmentResolve.initialLayout		   = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachmentResolve.finalLayout			   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	colorAttachmentResolve.format = swapchain_image_format;
+	colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
 	VkAttachmentReference colorAttachmentResolveRef = {0};
-	colorAttachmentResolveRef.attachment			= 2;
-	colorAttachmentResolveRef.layout				= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	colorAttachmentResolveRef.attachment = 2;
+	colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	// Ignore stencil data since we don't have a depth buffer
-	color_attachment.stencilLoadOp	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
 	color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	color_attachment.finalLayout   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference color_attachment_ref = {0};
-	color_attachment_ref.attachment			   = 0;
-	color_attachment_ref.layout				   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment_ref.attachment = 0;
+	color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 	//  Depth buffer
 	VkAttachmentDescription depth_attachment = {0};
-	depth_attachment.format					 = find_depth_format();
-	depth_attachment.samples				 = msaa_samples;
-	depth_attachment.loadOp					 = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	depth_attachment.storeOp				 = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depth_attachment.stencilLoadOp			 = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	depth_attachment.stencilStoreOp			 = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	depth_attachment.initialLayout			 = VK_IMAGE_LAYOUT_UNDEFINED;
-	depth_attachment.finalLayout			 = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depth_attachment.format = find_depth_format();
+	depth_attachment.samples = msaa_samples;
+	depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	VkAttachmentReference depth_attachment_ref = {0};
-	depth_attachment_ref.attachment			   = 1;
-	depth_attachment_ref.layout				   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depth_attachment_ref.attachment = 1;
+	depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 	// Subpasses
-	VkSubpassDescription subpass	= {0};
-	subpass.pipelineBindPoint		= VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount	= 1;
-	subpass.pColorAttachments		= &color_attachment_ref;
+	VkSubpassDescription subpass = {0};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &color_attachment_ref;
 	subpass.pDepthStencilAttachment = &depth_attachment_ref;
-	subpass.pResolveAttachments		= &colorAttachmentResolveRef;
+	subpass.pResolveAttachments = &colorAttachmentResolveRef;
 
 	// Subpass dependencies
 	VkSubpassDependency dependency = {0};
-	dependency.srcSubpass		   = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass		   = 0;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
 
 	// Specify what the subpass should wait for
-	dependency.srcStageMask	 = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.srcAccessMask = 0;
 
-	dependency.dstStageMask	 = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	// Render pass info
 	VkAttachmentDescription attachments[] = {color_attachment, depth_attachment, colorAttachmentResolve};
 	VkRenderPassCreateInfo renderPassInfo = {0};
-	renderPassInfo.sType				  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount		  = sizeof(attachments) / sizeof(*attachments);
-	renderPassInfo.pAttachments			  = attachments;
-	renderPassInfo.subpassCount			  = 1;
-	renderPassInfo.pSubpasses			  = &subpass;
-	renderPassInfo.dependencyCount		  = 1;
-	renderPassInfo.pDependencies		  = &dependency;
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
+	renderPassInfo.pAttachments = attachments;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
 
 	VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &renderPass);
 	if (result != VK_SUCCESS)
@@ -588,20 +588,20 @@ int create_depth_buffer()
 int create_framebuffers()
 {
 	framebuffer_count = swapchain_image_view_count;
-	framebuffers	  = malloc(framebuffer_count * sizeof(VkFramebuffer));
+	framebuffers = malloc(framebuffer_count * sizeof(VkFramebuffer));
 
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
 	{
 		VkImageView attachments[] = {color_image_view, depth_image_view, swapchain_image_views[i]};
 
 		VkFramebufferCreateInfo framebufferInfo = {0};
-		framebufferInfo.sType					= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass				= renderPass;
-		framebufferInfo.attachmentCount			= sizeof(attachments) / sizeof(*attachments);
-		framebufferInfo.pAttachments			= attachments;
-		framebufferInfo.width					= swapchain_extent.width;
-		framebufferInfo.height					= swapchain_extent.height;
-		framebufferInfo.layers					= 1;
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = swapchain_extent.width;
+		framebufferInfo.height = swapchain_extent.height;
+		framebufferInfo.layers = 1;
 
 		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers[i]);
 		if (result != VK_SUCCESS)
@@ -613,17 +613,16 @@ int create_framebuffers()
 	return 0;
 }
 
-
 int create_global_resources(struct LayoutInfo* layout_info)
 {
 	struct LayoutInfo default_layout = {0};
-	default_layout.binding_count	 = 1;
-	default_layout.bindings			 = &(VkDescriptorSetLayoutBinding){.binding			   = 0,
-															   .descriptorType	   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-															   .descriptorCount	   = 1,
-															   .stageFlags		   = VK_SHADER_STAGE_VERTEX_BIT,
-															   .pImmutableSamplers = NULL};
-	default_layout.buffer_sizes		 = &(uint32_t){sizeof(struct SceneData)};
+	default_layout.binding_count = 1;
+	default_layout.bindings = &(VkDescriptorSetLayoutBinding){.binding = 0,
+															  .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+															  .descriptorCount = 1,
+															  .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+															  .pImmutableSamplers = NULL};
+	default_layout.buffer_sizes = &(uint32_t){sizeof(struct SceneData)};
 	// Use default layout
 	if (layout_info == NULL)
 	{
@@ -658,7 +657,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 	if (global_sampler_count)
 		global_textures = calloc(global_sampler_count, sizeof *global_textures);
 	global_resource_map = calloc(max_binding + 1, sizeof *global_resource_map);
-	uint32_t buffer_it	= 0;
+	uint32_t buffer_it = 0;
 	uint32_t sampler_it = 0;
 	// Create the resources for al bindings
 	for (uint32_t i = 0; i < layout_info->binding_count; i++)
@@ -666,7 +665,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 		// Add to map
 		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			global_uniform_buffers[buffer_it]					  = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding);
+			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding);
 			global_resource_map[layout_info->bindings[i].binding] = global_uniform_buffers[buffer_it];
 			++buffer_it;
 		}
@@ -695,11 +694,11 @@ int create_sync_objects()
 	images_in_flight = calloc(swapchain_image_count, sizeof *images_in_flight);
 
 	VkSemaphoreCreateInfo semaphore_info = {0};
-	semaphore_info.sType				 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 	VkFenceCreateInfo fence_info = {0};
-	fence_info.sType			 = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.flags			 = VK_FENCE_CREATE_SIGNALED_BIT;
+	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 	VkResult result;
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -810,7 +809,7 @@ int graphics_update_scene_data()
 {
 	struct SceneData data = {0};
 	data.background_color = vec4_zero;
-	data.camera_count	  = 1;
+	data.camera_count = 1;
 	for (uint32_t i = 0; i < CAMERA_MAX; i++)
 	{
 		Camera* camera = scene_get_camera(scene_get_current(), i);
@@ -818,8 +817,8 @@ int graphics_update_scene_data()
 			break;
 		++data.camera_count;
 		data.cameras[i].position = to_vec4(camera_get_transform(camera)->position, 1);
-		data.cameras[i].view	 = camera_get_view_matrix(camera);
-		data.cameras[i].proj	 = camera_get_projection_matrix(camera);
+		data.cameras[i].view = camera_get_view_matrix(camera);
+		data.cameras[i].proj = camera_get_projection_matrix(camera);
 	}
 	return graphics_update_buffer(0, &data, 0, sizeof(data));
 }
@@ -866,7 +865,7 @@ void graphics_terminate()
 		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
 
-commandbuffer_destroy_pools();
+	commandbuffer_destroy_pools();
 	vkDestroyDevice(device, NULL);
 	if (enable_validation_layers)
 	{
