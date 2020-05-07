@@ -176,7 +176,7 @@ vec3 vec3_proj(vec3 a, vec3 b);
 vec3 vec3_proj_plane(vec3 a, vec3 n);
 
 // Returns the squared distance between two vectors
-float vec3_sqrdistance(vec3 a, vec3 b)
+static inline float vec3_sqrdistance(vec3 a, vec3 b)
 {
 	return vec3_sqrmag(vec3_sub(a, b));
 }
