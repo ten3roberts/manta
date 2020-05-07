@@ -21,8 +21,8 @@
 #include "graphics/camera.h"
 #include "scene.h"
 
-static uint32_t global_uniform_count = 0;
-static uint32_t global_sampler_count = 0;
+static uint32_t global_uniform_count		  = 0;
+static uint32_t global_sampler_count		  = 0;
 static UniformBuffer** global_uniform_buffers = NULL;
 static Texture** global_textures			  = NULL;
 // List that maps the bindings to the uniforms and textures
@@ -62,8 +62,7 @@ VkResult create_debug_utils_messenger_ext(VkInstance instance, const VkDebugUtil
 	}
 }
 
-void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-									   const VkAllocationCallbacks* pAllocator)
+void destroy_debug_utils_messenger_ext(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 {
 	void (*func)(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator) =
 		(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -80,8 +79,7 @@ void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT* cr
 	createInfo->pNext			= NULL;
 	createInfo->flags			= 0;
 	createInfo->sType			= VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+	createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 								  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 							  VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
@@ -567,8 +565,8 @@ int create_color_buffer()
 	VkFormat colorFormat = swapchain_image_format;
 
 	image_create(swapchain_extent.width, swapchain_extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory, msaa_samples);
+				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image,
+				 &color_image_memory, msaa_samples);
 	color_image_view = image_view_create(color_image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	return 0;
 }
@@ -578,14 +576,12 @@ int create_depth_buffer()
 	depth_image_format = find_depth_format();
 
 	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image,
-				 &depth_image_memory, msaa_samples);
+				 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image, &depth_image_memory, msaa_samples);
 
 	depth_image_view = image_view_create(depth_image, depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// Transition image layout explicitely
-	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED,
-							VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	return 0;
 }
 
@@ -617,23 +613,6 @@ int create_framebuffers()
 	return 0;
 }
 
-int create_command_pool()
-{
-	QueueFamilies queueFamilyIndices = get_queue_families(physical_device);
-
-	VkCommandPoolCreateInfo poolInfo = {0};
-	poolInfo.sType					 = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex		 = queueFamilyIndices.graphics;
-	// Enables the renderer to individually reset command buffers
-	poolInfo.flags	= VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; // Optional
-	VkResult result = vkCreateCommandPool(device, &poolInfo, NULL, &command_pool);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to create command pool - code %d", result);
-		return -1;
-	}
-	return 0;
-}
 
 int create_global_resources(struct LayoutInfo* layout_info)
 {
@@ -652,7 +631,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 	}
 
 	// Find out how many of each type of descriptor type is required
-	uint32_t max_binding   = 0;
+	uint32_t max_binding = 0;
 	for (uint32_t i = 0; i < layout_info->binding_count; i++)
 	{
 		if (layout_info->bindings[i].binding > max_binding)
@@ -674,18 +653,20 @@ int create_global_resources(struct LayoutInfo* layout_info)
 	descriptorlayout_create(layout_info->bindings, layout_info->binding_count, &global_descriptor_layout);
 
 	// Allocate space for the resources
-	global_uniform_buffers = calloc(global_uniform_count, sizeof *global_uniform_buffers);
-	global_textures		   = calloc(global_sampler_count, sizeof *global_textures);
-	global_resource_map	   = calloc(max_binding + 1, sizeof *global_resource_map);
-	uint32_t buffer_it	   = 0;
-	uint32_t sampler_it	   = 0;
+	if (global_uniform_count)
+		global_uniform_buffers = calloc(global_uniform_count, sizeof *global_uniform_buffers);
+	if (global_sampler_count)
+		global_textures = calloc(global_sampler_count, sizeof *global_textures);
+	global_resource_map = calloc(max_binding + 1, sizeof *global_resource_map);
+	uint32_t buffer_it	= 0;
+	uint32_t sampler_it = 0;
 	// Create the resources for al bindings
 	for (uint32_t i = 0; i < layout_info->binding_count; i++)
 	{
 		// Add to map
 		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding);
+			global_uniform_buffers[buffer_it]					  = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding);
 			global_resource_map[layout_info->bindings[i].binding] = global_uniform_buffers[buffer_it];
 			++buffer_it;
 		}
@@ -704,8 +685,8 @@ int create_global_resources(struct LayoutInfo* layout_info)
 		}
 	}
 
-	descriptorpack_create(global_descriptor_layout, layout_info->bindings, layout_info->binding_count, global_uniform_buffers,
-						  global_textures, &global_descriptors);
+	descriptorpack_create(global_descriptor_layout, layout_info->bindings, layout_info->binding_count, global_uniform_buffers, global_textures,
+						  &global_descriptors);
 	return 0;
 }
 
@@ -781,10 +762,7 @@ int graphics_init(Window* window, struct LayoutInfo* global_layout)
 	{
 		return -8;
 	}
-	if (create_command_pool())
-	{
-		return -12;
-	}
+
 	// model_cube = model_load_collada("./assets/models/cube.dae");
 	if (create_global_resources(global_layout))
 	{
@@ -862,7 +840,7 @@ void graphics_terminate()
 	texture_destroy_all();
 
 	// Free global resources
-	for(uint32_t i = 0; i < global_uniform_count; i++)
+	for (uint32_t i = 0; i < global_uniform_count; i++)
 	{
 		ub_destroy(global_uniform_buffers[i]);
 	}
@@ -876,7 +854,6 @@ void graphics_terminate()
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
 
-
 	ub_pools_destroy();
 
 	vb_pools_destroy();
@@ -889,8 +866,7 @@ void graphics_terminate()
 		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
 
-	vkDestroyCommandPool(device, command_pool, NULL);
-
+commandbuffer_destroy_pools();
 	vkDestroyDevice(device, NULL);
 	if (enable_validation_layers)
 	{

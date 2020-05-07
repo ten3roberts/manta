@@ -6,6 +6,7 @@
 #include "math/quaternion.h"
 #include "graphics/pipeline.h"
 #include "scene.h"
+#include "graphics/renderprune.h"
 
 static uint32_t image_index;
 
@@ -15,15 +16,14 @@ static int resize_event;
 
 static uint8_t flag_rebuild = 0;
 
-VkCommandBuffer command_buffers[3];
+CommandBuffer commandbuffers[3];
 
-VkCommandPool command_pool;
 
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
 static void renderer_rebuild()
 {
-	VkCommandBuffer command_buffer = command_buffers[image_index];
+	VkCommandBuffer command_buffer = commandbuffers[image_index].buffer;
 	vkResetCommandBuffer(command_buffer, 0);
 	VkCommandBufferBeginInfo begin_info = {0};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -69,22 +69,10 @@ static void renderer_rebuild()
 
 int renderer_init()
 {
-	// Create command buffers
-	uint32_t command_buffer_count = framebuffer_count;
-
-	// Allocate primary command buffer
-	VkCommandBufferAllocateInfo allocInfo = {0};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = command_pool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)command_buffer_count;
-
-	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, command_buffers);
-
-	if (result != VK_SUCCESS)
+	// Create primary command buffers
+	for (int i = 0; i < 3; i++)
 	{
-		LOG_E("Failed to create command buffers - code %d", result);
-		return -1;
+		commandbuffers[i] = commandbuffer_create_primary(0);
 	}
 	return 0;
 }
@@ -139,7 +127,7 @@ void renderer_submit()
 
 	// Specify which command buffers to submit for execution
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &command_buffers[image_index];
+	submit_info.pCommandBuffers = &commandbuffers[image_index].buffer;
 
 	// Specify which semaphores to signal on completion
 	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};

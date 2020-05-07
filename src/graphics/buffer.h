@@ -2,6 +2,8 @@
 #define BUFFER_H
 
 #include <vulkan/vulkan.h>
+#include "graphics/commandbuffer.h"
+
 
 // Defines a buffer pool that can be used to create pools for different buffer types
 struct BufferPoolBlock
@@ -67,9 +69,10 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 
 // Command buffers
 // Allocates and starts a single use command buffer
-VkCommandBuffer single_use_commands_begin();
+CommandBuffer single_use_commands_begin();
+
 // Ends and frees a single time command buffer
-void single_use_commands_end(VkCommandBuffer command_buffer);
+void single_use_commands_end(CommandBuffer* command_buffer);
 
 void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
 				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory,

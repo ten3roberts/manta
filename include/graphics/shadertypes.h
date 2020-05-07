@@ -34,4 +34,10 @@ struct SceneData
 	uint32_t camera_count;
 };
 
+struct EntityData
+{
+	mat4 model_matrix;
+	vec4 color;
+};
+
 #endif

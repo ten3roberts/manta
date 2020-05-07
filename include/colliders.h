@@ -1,3 +1,5 @@
+#ifndef COLLIDERS_H
+#define COLLIDERS_H
 #include "math/vec.h"
 #include "transform.h"
 #include <stdbool.h>
@@ -29,3 +31,4 @@ bool spherecollider_intersect(const SphereCollider* a, const SphereCollider* b);
 
 // Returns true if two colliders intersect
 bool collider_intersect(const BaseCollider* a, const BaseCollider* b);
+#endif

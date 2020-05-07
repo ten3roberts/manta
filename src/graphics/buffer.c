@@ -19,8 +19,8 @@ void buffer_pool_add(BufferPool* pool, uint32_t size)
 	// Get a pointer to the new pool
 	struct BufferPoolBlock* new_block = &pool->blocks[pool->block_count - 1];
 	// Create the buffer and memory for vulkan
-	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				  &new_block->buffer, &new_block->memory, &pool->alignment, NULL);
+	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &new_block->buffer,
+				  &new_block->memory, &pool->alignment, NULL);
 
 	// No blocks have been allocated nor freed, so initialize to 0
 	new_block->free_blocks = NULL;
@@ -220,8 +220,8 @@ uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties
 	return 0;
 }
 
-int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer,
-				  VkDeviceMemory* buffer_memory, uint32_t* alignment, uint32_t* corrected_size)
+int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory,
+				  uint32_t* alignment, uint32_t* corrected_size)
 {
 	// Create the vertex buffer
 	VkBufferCreateInfo bufferInfo = {0};
@@ -263,58 +263,38 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 
 void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset)
 {
-	VkCommandBuffer command_buffer = single_use_commands_begin();
+	CommandBuffer commandbuffer = single_use_commands_begin();
 
 	VkBufferCopy copyRegion = {0};
 	copyRegion.srcOffset = src_offset;
 	copyRegion.dstOffset = dst_offset;
 	copyRegion.size = size;
-	vkCmdCopyBuffer(command_buffer, src, dst, 1, &copyRegion);
+	vkCmdCopyBuffer(commandbuffer.buffer, src, dst, 1, &copyRegion);
 
-	single_use_commands_end(command_buffer);
+	single_use_commands_end(&commandbuffer);
 }
 
 // Command Buffers
-VkCommandBuffer single_use_commands_begin()
+CommandBuffer single_use_commands_begin()
 {
-
-
-	VkCommandBufferAllocateInfo allocInfo = {0};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = command_pool;
-	allocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+	CommandBuffer commandbuffer = commandbuffer_create_primary(0);
 
 	VkCommandBufferBeginInfo beginInfo = {0};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+	vkBeginCommandBuffer(commandbuffer.buffer, &beginInfo);
 
-	return commandBuffer;
+	return commandbuffer;
 }
 
-void single_use_commands_end(VkCommandBuffer command_buffer)
+void single_use_commands_end(CommandBuffer* commandbuffer)
 {
-	vkEndCommandBuffer(command_buffer);
-
-	VkSubmitInfo submitInfo = {0};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &command_buffer;
-
-	vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(graphics_queue);
-
-	vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+	commandbuffer_destroy(commandbuffer);
 }
 
-void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-				  VkMemoryPropertyFlags properties, VkImage* image, VkDeviceMemory* memory,
-				  VkSampleCountFlagBits num_samples)
+void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
+				  VkImage* image, VkDeviceMemory* memory, VkSampleCountFlagBits num_samples)
 {
 	// Create the VKImage
 	VkImageCreateInfo imageInfo = {0};
@@ -389,7 +369,7 @@ VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags
 
 void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout)
 {
-	VkCommandBuffer command_buffer = single_use_commands_begin();
+	CommandBuffer commandbuffer = single_use_commands_begin();
 
 	VkImageMemoryBarrier barrier = {0};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -430,8 +410,7 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	}
-	else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
-			 new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	else if (old_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 	{
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
@@ -444,8 +423,7 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 	else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
 	{
 		barrier.srcAccessMask = 0;
-		barrier.dstAccessMask =
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -456,14 +434,14 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 		return;
 	}
 
-	vkCmdPipelineBarrier(command_buffer, sourceStage, destinationStage, 0, 0, NULL, 0, NULL, 1, &barrier);
+	vkCmdPipelineBarrier(commandbuffer.buffer, sourceStage, destinationStage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
-	single_use_commands_end(command_buffer);
+	single_use_commands_end(&commandbuffer);
 }
 
 void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-	VkCommandBuffer command_buffer = single_use_commands_begin();
+	CommandBuffer commandbuffer = single_use_commands_begin();
 
 	VkBufferImageCopy region = {0};
 	region.bufferOffset = 0;
@@ -478,7 +456,7 @@ void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32
 	region.imageOffset = (VkOffset3D){0, 0, 0};
 	region.imageExtent = (VkExtent3D){width, height, 1};
 
-	vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyBufferToImage(commandbuffer.buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-	single_use_commands_end(command_buffer);
+	single_use_commands_end(&commandbuffer);
 }

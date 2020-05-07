@@ -5,6 +5,7 @@
 #include "mempool.h"
 #include "scene.h"
 #include "graphics/model.h"
+#include "graphics/renderprune.h"
 #include <stdio.h>
 
 // Pool entity creation to allow for faster allocations and reduce memory fragmentation
@@ -17,6 +18,7 @@ struct Entity
 	Material* material;
 	Model* model;
 	SphereCollider boundingsphere;
+	RenderTreeNode render_node;
 };
 
 Entity* entity_create(const char* name, const char* material_name, const char* model_name, Transform transform)

@@ -4,10 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "window.h"
-#include "uniforms.h"
-
-
-#define MAX_FRAMES_IN_FLIGHT 3
+#include "graphics/uniforms.h"
+#include "defines.h"
 
 #define GRAPHICS_FAMILY_VALID_BIT 0b1
 #define PRESENT_FAMILY_VALID_BIT  0b01

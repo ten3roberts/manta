@@ -34,3 +34,4 @@ General Features:
   - Dynamic arrays
   - Better model loadings
   - Libjson to use arrays rather than linked lists
+  - LOG_E to abort
