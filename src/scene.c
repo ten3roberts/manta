@@ -3,6 +3,7 @@
 #include "hashtable.h"
 #include "log.h"
 #include "graphics/renderer.h"
+#include "graphics/rendertree.h"
 
 struct Scene
 {
@@ -15,6 +16,7 @@ struct Scene
 	Entity** entities;
 	uint32_t camera_count;
 	Camera* cameras[CAMERA_MAX];
+	RenderTreeNode* rendertree_root;
 };
 
 static Scene* scene_current = NULL;
@@ -27,12 +29,16 @@ Scene* scene_create(const char* name)
 
 	if (scene_current == NULL)
 		(void)scene_set_current(scene);
+
+	// Create the render tree root node
+	scene->rendertree_root = rendertree_create(100, vec3_zero, 0);
+
 	return scene;
 }
 
 Scene* scene_set_current(Scene* scene)
 {
-	Scene* old	  = scene_current;
+	Scene* old = scene_current;
 	scene_current = scene;
 	return old;
 }
@@ -48,17 +54,18 @@ void scene_add_entity(Scene* scene, Entity* entity)
 	if (scene->entities == NULL)
 	{
 		scene->entities_size = 4;
-		scene->entities		 = malloc(scene->entities_size * sizeof(Entity*));
+		scene->entities = malloc(scene->entities_size * sizeof(Entity*));
 	}
 	// Resize array up
 	if (scene->entity_count + 1 >= scene->entities_size)
 	{
 		scene->entities_size = scene->entities_size << 1;
-		scene->entities		 = realloc(scene->entities, scene->entities_size * sizeof(*scene->entities));
+		scene->entities = realloc(scene->entities, scene->entities_size * sizeof(*scene->entities));
 	}
 	// Add at end of array
 	scene->entities[scene->entity_count] = entity;
 	++scene->entity_count;
+	rendertree_place(scene->rendertree_root, entity);
 	renderer_flag_rebuild();
 }
 
@@ -70,14 +77,14 @@ void scene_remove_entity(Scene* scene, Entity* entity)
 		if (scene->entities[i] == entity)
 		{
 			// Fill gap
-			memmove(scene->entities + i, scene->entities + i + 1, scene->entity_count - i - 1);
+			memmove(scene->entities + i, scene->entities + i + 1, (scene->entity_count - i - 1) * sizeof *scene->entities);
 			--scene->entity_count;
 
 			// Resize array down
 			if (scene->entity_count < scene->entities_size / 2)
 			{
 				scene->entities_size = scene->entities_size >> 1;
-				scene->entities		 = realloc(scene->entities, scene->entities_size * sizeof(*scene->entities));
+				scene->entities = realloc(scene->entities, scene->entities_size * sizeof(*scene->entities));
 			}
 			renderer_flag_rebuild();
 			return;
@@ -127,10 +134,8 @@ Camera* scene_get_camera(Scene* scene, uint32_t index)
 void scene_update(Scene* scene)
 {
 	// Update entities
-	for (uint32_t i = 0; i < scene->entity_count; i++)
-	{
-		entity_update(scene->entities[i]);
-	}
+	rendertree_update(scene->rendertree_root);
+
 	// Update cameras
 	for (uint32_t i = 0; i < scene->camera_count; i++)
 	{
@@ -145,7 +150,7 @@ void scene_destroy_entities(Scene* scene)
 		entity_destroy(scene->entities[i]);
 	}
 	free(scene->entities);
-	scene->entity_count	 = 0;
+	scene->entity_count = 0;
 	scene->entities_size = 0;
 }
 

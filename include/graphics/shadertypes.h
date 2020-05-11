@@ -7,6 +7,8 @@
 
 // Defines the maximum amount of cameras in a scene
 #define CAMERA_MAX 8
+// Defines the maximum amount of entities rendering in a scene
+#define ENTITY_MAX 64
 
 //@Shader Types@ Defines several structs to match shader uniform structs
 
@@ -26,18 +28,20 @@ struct CameraData
 	mat4 proj;
 };
 
+struct EntityData
+{
+	mat4 model_matrix;
+	vec4 color;
+};
+
 // Defines scene data in the shader
 struct SceneData
 {
 	vec4 background_color;
 	struct CameraData cameras[CAMERA_MAX];
 	uint32_t camera_count;
-};
-
-struct EntityData
-{
-	mat4 model_matrix;
-	vec4 color;
+	struct EntityData entities[ENTITY_MAX];
+	uint32_t entity_count;
 };
 
 #endif

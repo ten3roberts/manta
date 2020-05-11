@@ -6,7 +6,7 @@
 #include "math/quaternion.h"
 #include "graphics/pipeline.h"
 #include "scene.h"
-#include "graphics/renderprune.h"
+#include "graphics/commandbuffer.h"
 
 static uint32_t image_index;
 
@@ -74,10 +74,11 @@ int renderer_init()
 	{
 		commandbuffers[i] = commandbuffer_create_primary(0);
 	}
+
 	return 0;
 }
 
-void renderer_submit()
+void renderer_submit(Scene* scene)
 {
 	// Don't render while user is resizing window
 	if (resize_event)

@@ -4,7 +4,7 @@
 
 static VkCommandPool commandpools[RENDERER_MAX_THREADS] = {0};
 
-static int commandpool_create(uint32_t thread_idx)
+static int commandpool_create(uint8_t thread_idx)
 {
 	QueueFamilies queueFamilyIndices = get_queue_families(physical_device);
 
@@ -22,7 +22,7 @@ static int commandpool_create(uint32_t thread_idx)
 	return 0;
 }
 
-CommandBuffer commandbuffer_create_secondary(uint32_t thread_idx)
+CommandBuffer commandbuffer_create_secondary(uint8_t thread_idx)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{
@@ -56,7 +56,7 @@ CommandBuffer commandbuffer_create_secondary(uint32_t thread_idx)
 	return commandbuffer;
 }
 
-CommandBuffer commandbuffer_create_primary(uint32_t thread_idx)
+CommandBuffer commandbuffer_create_primary(uint8_t thread_idx)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{

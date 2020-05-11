@@ -48,7 +48,7 @@ int application_start(int argc, char** argv)
 		scene_update(scene);
 
 		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
-		entity_get_transform(entity2)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
+		entity_get_transform(entity2)->rotation = quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed(), 0}));
 
 		vec3 cam_move = vec3_zero;
 		if (input_key(KEY_W))
@@ -87,7 +87,7 @@ int application_start(int argc, char** argv)
 			LOG("Not Colliding");
 		}
 
-		renderer_submit();
+		renderer_submit(scene);
 
 		if (timer_duration(&timer) > 2.0f)
 		{

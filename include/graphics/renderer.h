@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "entity.h"
 #include "graphics/shadertypes.h"
+#include "scene.h"
 
 // Initializes the renderer
 int renderer_init();
@@ -14,10 +15,9 @@ int renderer_init();
 // Uniform buffers and other shader resources should now be updated
 void renderer_begin();
 
-// Handles synchronization
-// Submits the render command buffer to the GPU
-// Presents the correct framebuffer
-void renderer_submit();
+// Submits a scene for rendering
+// Note: scene needs to be explicitely updated
+void renderer_submit(Scene* scene);
 
 // This function shall be called after a resize event
 // Does not explicitely resize the window, but recreates the swapchain and pipelines

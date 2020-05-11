@@ -10,19 +10,19 @@ typedef struct
 	VkCommandBufferLevel level;
 	// The frame in the swapchain the commandbuffer corresponds to
 	// Set by the user
-	uint32_t frame;
+	uint8_t frame;
 	// Signifies which pool it was allocated from
 	// Should not be changed
-	uint32_t thread_idx;
+	uint8_t thread_idx;
 } CommandBuffer;
 
 // Creates a secondary command buffer
 // Takes in a thread index since recording of command buffers from the same queues can not be done in pararell
 // thread index need to be less than RENDERER_MAX_THREADS
 // Passed by copy but should be passes by reference to other functions for performance
-CommandBuffer commandbuffer_create_secondary(uint32_t thread_idx);
+CommandBuffer commandbuffer_create_secondary(uint8_t thread_idx);
 
-CommandBuffer commandbuffer_create_primary(uint32_t thread_idx);
+CommandBuffer commandbuffer_create_primary(uint8_t thread_idx);
 
 void commandbuffer_destroy(CommandBuffer* commandbuffer);
 
