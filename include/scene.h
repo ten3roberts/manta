@@ -2,6 +2,7 @@
 #define SCENE_H
 #include "entity.h"
 #include "graphics/camera.h"
+#include "graphics/rendertree.h"
 // A scene contains all entities
 // The scene makes sure to render and update all entities
 typedef struct Scene Scene;
@@ -40,6 +41,8 @@ void scene_add_camera(Scene* scene, Camera* camera);
 // Get the entity at index
 // Returns NULL if out of bounds
 Camera* scene_get_camera(Scene* scene, uint32_t index);
+
+RenderTreeNode* scene_get_rendertree(Scene* scene);
 
 // Updates all entities and cameras in the scene
 void scene_update(Scene* scene);

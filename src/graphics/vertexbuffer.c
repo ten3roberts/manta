@@ -45,9 +45,8 @@ void vb_copy_data(VertexBuffer* vb)
 	// Temporary staging buffer
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
-	buffer_create(vb->size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer,
-				  &staging_buffer_memory, NULL, NULL);
+	buffer_create(vb->size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				  &staging_buffer, &staging_buffer_memory, NULL, NULL);
 	// Copy the vertex data to the buffer
 	void* data = NULL;
 	vkMapMemory(device, staging_buffer_memory, 0, vb->size, 0, &data);
@@ -65,17 +64,17 @@ void vb_copy_data(VertexBuffer* vb)
 	vkFreeMemory(device, staging_buffer_memory, NULL);
 }
 
-void vb_bind(VertexBuffer* vb, VkCommandBuffer command_buffer)
+void vb_bind(VertexBuffer* vb, CommandBuffer* commandbuffer)
 {
 	VkBuffer vertex_buffers[] = {vb->buffer};
 	VkDeviceSize offsets[] = {vb->offset};
-	vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+	vkCmdBindVertexBuffers(commandbuffer->buffer, 0, 1, vertex_buffers, offsets);
 }
 
 void vb_destroy(VertexBuffer* vb)
 {
 	LOG_S("Destroying vertex buffer");
- 	buffer_pool_free(&vb_pool, vb->size, vb->buffer, vb->memory, vb->offset);
+	buffer_pool_free(&vb_pool, vb->size, vb->buffer, vb->memory, vb->offset);
 	vb->vertex_count = 0;
 	free(vb->vertices);
 	free(vb);

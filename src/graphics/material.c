@@ -181,8 +181,8 @@ Material* material_load_internal(JSON* object)
 	descriptorlayout_create(material_bindings, material_binding_count, &mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
 
 	// Create the material descriptors
-	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count, NULL, mat->textures, &mat->material_descriptors);
-
+	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count, NULL, mat->textures,
+						  &mat->material_descriptors);
 
 	free(material_bindings);
 	// Load the shaders
@@ -302,26 +302,25 @@ Material* material_get_default()
 	return material_default;
 }
 
-void material_bind(Material* mat, VkCommandBuffer command_buffer, uint32_t frame)
+void material_bind(Material* mat, CommandBuffer* commandbuffer)
 {
-	if (frame == -1)
-		frame = renderer_get_frameindex();
-
-	pipeline_bind(mat->pipeline, command_buffer);
+	pipeline_bind(mat->pipeline, commandbuffer->buffer);
 
 	// Get the layout from the pipeline
 	VkPipelineLayout pipeline_layout = pipeline_get_layout(mat->pipeline);
 
 	// Bind global set 0
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &global_descriptors.sets[frame], 0, NULL);
+	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+							&global_descriptors.sets[commandbuffer->frame], 0, NULL);
 	// Bind material set 1
-	vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 1, 1, &mat->material_descriptors.sets[frame], 0, NULL);
+	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 1, 1,
+							&mat->material_descriptors.sets[commandbuffer->frame], 0, NULL);
 }
 
-void material_push_constants(Material* mat, VkCommandBuffer command_buffer, uint32_t index, void* data)
+void material_push_constants(Material* mat, CommandBuffer* commandbuffer, uint32_t index, void* data)
 {
-	vkCmdPushConstants(command_buffer, pipeline_get_layout(mat->pipeline), mat->push_constants[index].stageFlags, mat->push_constants[index].offset,
-					   mat->push_constants[index].size, data);
+	vkCmdPushConstants(commandbuffer->buffer, pipeline_get_layout(mat->pipeline), mat->push_constants[index].stageFlags,
+					   mat->push_constants[index].offset, mat->push_constants[index].size, data);
 }
 
 void material_destroy(Material* mat)

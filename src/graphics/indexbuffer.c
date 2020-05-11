@@ -16,17 +16,16 @@ IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count)
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
-	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &stagingBuffer,
-				  &stagingBufferMemory, NULL, NULL);
+	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				  &stagingBuffer, &stagingBufferMemory, NULL, NULL);
 
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, buffer_size, 0, &data);
 	memcpy(data, ib->indices, buffer_size);
 	vkUnmapMemory(device, stagingBufferMemory);
 
-	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-				  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &ib->buffer, &ib->memory, NULL, NULL);
+	buffer_create(buffer_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &ib->buffer,
+				  &ib->memory, NULL, NULL);
 
 	buffer_copy(stagingBuffer, ib->buffer, buffer_size, 0, 0);
 
@@ -35,9 +34,9 @@ IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count)
 	return ib;
 }
 
-void ib_bind(IndexBuffer* ib, VkCommandBuffer command_buffer)
+void ib_bind(IndexBuffer* ib, CommandBuffer* commandbuffer)
 {
-	vkCmdBindIndexBuffer(command_buffer, ib->buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandbuffer->buffer, ib->buffer, 0, VK_INDEX_TYPE_UINT32);
 }
 
 void ib_destroy(IndexBuffer* ib)

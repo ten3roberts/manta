@@ -6,6 +6,7 @@
 #include "graphics/commandbuffer.h"
 #include "entity.h"
 #include "defines.h"
+#include "graphics/camera.h"
 
 // A node of the render pruning octree
 // Handled by scene on update
@@ -22,6 +23,7 @@ typedef struct RenderTreeNode
 	// Entity data
 	uint32_t entity_count;
 	Entity* entities[RENDER_TREE_LIM];
+
 	// Contains all RENDER_TREE_LIM entities data
 	CommandBuffer commandbuffers[3];
 	// A bit field of which frames should be rebuilt
@@ -40,6 +42,11 @@ void rendertree_destroy(RenderTreeNode* node);
 // Re-places entities
 // Queues swapchain recreation
 void rendertree_update(RenderTreeNode* node);
+
+// Records secondary command buffers if necessary for the node and all children recursively if they're in view
+// Records secondary into primary command buffers
+void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, VkRenderPass renderpass, VkFramebuffer framebuffer, Camera* camera,
+					   uint32_t frame);
 
 // Splits the node into 8 children
 // If the node is root, the children are assigned separate threads

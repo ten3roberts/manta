@@ -32,7 +32,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_
 
 	node->entity_count = 0;
 
-	// Create command buffers
+	// Create command buffers for eac swapchain image
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx);
@@ -122,6 +122,52 @@ void rendertree_update(RenderTreeNode* node)
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
 	{
 		rendertree_update(node->children[i]);
+	}
+}
+
+void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, VkRenderPass renderpass, VkFramebuffer framebuffer, Camera* camera,
+					   uint32_t frame)
+{
+	// Begin recording
+
+	vkResetCommandBuffer(node->commandbuffers[frame].buffer, 0);
+
+	VkCommandBufferInheritanceInfo inheritance_info = (VkCommandBufferInheritanceInfo){.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+																					   .pNext = NULL,
+																					   .renderPass = renderpass,
+																					   .subpass = 0,
+																					   .framebuffer = framebuffer,
+																					   .queryFlags = 0,
+																					   .pipelineStatistics = 0};
+
+	VkCommandBufferBeginInfo begin_info = {0};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	begin_info.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+	begin_info.pInheritanceInfo = &inheritance_info;
+
+	// Start recording
+	VkResult result = vkBeginCommandBuffer(node->commandbuffers[frame].buffer, &begin_info);
+
+	for (uint32_t i = 0; i < node->entity_count; i++)
+	{
+		Entity* entity = node->entities[i];
+		entity_render(entity, &node->commandbuffers[frame]);
+	}
+
+	result = vkEndCommandBuffer(node->commandbuffers[frame].buffer);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to record command buffer");
+		return;
+	}
+
+	// Record into primary
+	vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
+
+	// Recurse children
+	for (uint32_t i = 0; node->children[0] && i < 8; i++)
+	{
+		rendertree_render(node->children[i], primary, renderpass, framebuffer, camera, frame);
 	}
 }
 

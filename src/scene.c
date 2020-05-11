@@ -131,6 +131,11 @@ Camera* scene_get_camera(Scene* scene, uint32_t index)
 	return scene->cameras[index];
 }
 
+RenderTreeNode* scene_get_rendertree(Scene* scene)
+{
+	return scene->rendertree_root;
+}
+
 void scene_update(Scene* scene)
 {
 	// Update entities

@@ -21,9 +21,7 @@ const SphereCollider* entity_get_boundingsphere(Entity* entity);
 void entity_update(Entity* entity);
 
 // Is only called irreguraly when command buffers are rebuilt
-void entity_render(Entity* entity, VkCommandBuffer command_buffer, uint32_t frame);
-
-
+void entity_render(Entity* entity, CommandBuffer* commandbuffer);
 
 // Destroys and entity and removes it from the scene
 void entity_destroy(Entity* entity);

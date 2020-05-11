@@ -7,6 +7,7 @@
 #include "graphics/pipeline.h"
 #include "scene.h"
 #include "graphics/commandbuffer.h"
+#include "graphics/rendertree.h"
 
 static uint32_t image_index;
 
@@ -18,10 +19,9 @@ static uint8_t flag_rebuild = 0;
 
 CommandBuffer commandbuffers[3];
 
-
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
-static void renderer_rebuild()
+static void renderer_rebuild(Scene* scene)
 {
 	VkCommandBuffer command_buffer = commandbuffers[image_index].buffer;
 	vkResetCommandBuffer(command_buffer, 0);
@@ -47,17 +47,13 @@ static void renderer_rebuild()
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
 	render_pass_info.clearValueCount = 2;
 	render_pass_info.pClearValues = clear_values;
-	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// Iterate all entities
-	uint32_t index = 0;
-	Entity* entity = NULL;
-	Scene* scene = scene_get_current();
-	while ((entity = scene_get_entity(scene, index)))
-	{
-		entity_render(entity, command_buffer, image_index);
-		++index;
-	}
+	RenderTreeNode* rendertree = scene_get_rendertree(scene);
+	Camera* camera = scene_get_camera(scene, 0);
+	rendertree_render(rendertree, &commandbuffers[image_index], renderPass, framebuffers[image_index], camera, image_index);
+
 	vkCmdEndRenderPass(command_buffer);
 	result = vkEndCommandBuffer(command_buffer);
 	if (result != VK_SUCCESS)
@@ -85,13 +81,11 @@ void renderer_submit(Scene* scene)
 	{
 		return;
 	}
-
 	// Rebuild command buffers if required
 	if (flag_rebuild == 1)
 	{
-		renderer_rebuild();
+		renderer_rebuild(scene);
 	}
-
 	// Update uniform buffer
 	//TransformType transform_buffer;
 	//quaternion rotation = quat_axis_angle((vec3){0, 0.5, 1}, time_elapsed());

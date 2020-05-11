@@ -2,13 +2,14 @@
 #define MODEL_H
 
 #include "vulkan/vulkan.h"
+#include "graphics/commandbuffer.h"
 typedef struct Model Model;
 
 // Loads a model from a collada file
 // Can be accessed later by name
 Model* model_load_collada(const char* filepath);
 
-void model_bind(Model* model, VkCommandBuffer command_buffer);
+void model_bind(Model* model, CommandBuffer* commandbuffer);
 
 // Returns the furthest dimenstion of the model
 // Useful for bound generation
