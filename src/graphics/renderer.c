@@ -17,26 +17,16 @@ static int resize_event;
 
 static uint8_t flag_rebuild = 0;
 
-CommandBuffer commandbuffers[3];
+CommandBuffer primarybuffers[3];
+CommandBuffer oneframe_buffers[3];
 
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
 static void renderer_rebuild(Scene* scene)
 {
-	VkCommandBuffer command_buffer = commandbuffers[image_index].buffer;
-	vkResetCommandBuffer(command_buffer, 0);
-	VkCommandBufferBeginInfo begin_info = {0};
-	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	begin_info.flags = 0;
-	begin_info.pInheritanceInfo = NULL;
+	CommandBuffer* commandbuffer = &primarybuffers[image_index];
+	commandbuffer_begin(commandbuffer);
 
-	// Start recording
-	VkResult result = vkBeginCommandBuffer(command_buffer, &begin_info);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to record command buffer %d", image_index);
-		return;
-	}
 	// Begin render pass
 	VkRenderPassBeginInfo render_pass_info = {0};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -47,20 +37,14 @@ static void renderer_rebuild(Scene* scene)
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
 	render_pass_info.clearValueCount = 2;
 	render_pass_info.pClearValues = clear_values;
-	vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	vkCmdBeginRenderPass(commandbuffer->buffer, &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// Iterate all entities
 	RenderTreeNode* rendertree = scene_get_rendertree(scene);
 	Camera* camera = scene_get_camera(scene, 0);
-	rendertree_render(rendertree, &commandbuffers[image_index], renderPass, framebuffers[image_index], camera, image_index);
-
-	vkCmdEndRenderPass(command_buffer);
-	result = vkEndCommandBuffer(command_buffer);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to record command buffer");
-		return;
-	}
+	rendertree_render(rendertree, commandbuffer, camera, image_index);
+	vkCmdEndRenderPass(commandbuffer->buffer);
+	commandbuffer_end(commandbuffer);
 }
 
 int renderer_init()
@@ -68,7 +52,8 @@ int renderer_init()
 	// Create primary command buffers
 	for (int i = 0; i < 3; i++)
 	{
-		commandbuffers[i] = commandbuffer_create_primary(0);
+		primarybuffers[i] = commandbuffer_create_primary(0, i);
+		oneframe_buffers[i] = commandbuffer_create_secondary(0, i, renderPass, framebuffers[i]);
 	}
 
 	return 0;
@@ -122,7 +107,7 @@ void renderer_submit(Scene* scene)
 
 	// Specify which command buffers to submit for execution
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &commandbuffers[image_index].buffer;
+	submit_info.pCommandBuffers = &primarybuffers[image_index].buffer;
 
 	// Specify which semaphores to signal on completion
 	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};
@@ -195,6 +180,8 @@ void renderer_begin()
 	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE, &image_index);
+
+	//commandbuffer_begin(&oneframe_buffers[image_index]);
 }
 
 void renderer_resize()
@@ -210,6 +197,10 @@ void renderer_flag_rebuild()
 int renderer_get_frameindex()
 {
 	return image_index;
+}
+
+void renderer_draw_cube(vec3 position, vec3 size)
+{
 }
 
 void renderer_terminate()

@@ -78,14 +78,14 @@ int application_start(int argc, char** argv)
 		const SphereCollider* bound1 = entity_get_boundingsphere(entity1);
 		const SphereCollider* bound2 = entity_get_boundingsphere(entity2);
 
-		if (spherecollider_intersect(bound1, bound2))
+		/*if (spherecollider_intersect(bound1, bound2))
 		{
 			LOG("Colliding");
 		}
 		else
 		{
 			LOG("Not Colliding");
-		}
+		}*/
 
 		renderer_submit(scene);
 

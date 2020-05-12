@@ -22,7 +22,7 @@ static int commandpool_create(uint8_t thread_idx)
 	return 0;
 }
 
-CommandBuffer commandbuffer_create_secondary(uint8_t thread_idx)
+CommandBuffer commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame, VkRenderPass renderPass, VkFramebuffer frameBuffer)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{
@@ -45,8 +45,17 @@ CommandBuffer commandbuffer_create_secondary(uint8_t thread_idx)
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 	allocInfo.commandBufferCount = 1;
 
-	CommandBuffer commandbuffer = {.thread_idx = thread_idx, .frame = 0, .level = VK_COMMAND_BUFFER_LEVEL_SECONDARY};
+	CommandBuffer commandbuffer = {.thread_idx = thread_idx, .frame = frame, .level = VK_COMMAND_BUFFER_LEVEL_SECONDARY};
 	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &commandbuffer.buffer);
+
+	// Fill in inheritance info struct
+	commandbuffer.inheritanceInfo = (VkCommandBufferInheritanceInfo){.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+																	 .pNext = NULL,
+																	 .renderPass = renderPass,
+																	 .subpass = 0,
+																	 .framebuffer = frameBuffer,
+																	 .queryFlags = 0,
+																	 .pipelineStatistics = 0};
 
 	if (result != VK_SUCCESS)
 	{
@@ -56,7 +65,7 @@ CommandBuffer commandbuffer_create_secondary(uint8_t thread_idx)
 	return commandbuffer;
 }
 
-CommandBuffer commandbuffer_create_primary(uint8_t thread_idx)
+CommandBuffer commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{
@@ -79,8 +88,10 @@ CommandBuffer commandbuffer_create_primary(uint8_t thread_idx)
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	CommandBuffer commandbuffer = {.thread_idx = thread_idx, .frame = 0, .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY};
+	CommandBuffer commandbuffer = {.thread_idx = thread_idx, .frame = frame, .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY, .recording = false};
 	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &commandbuffer.buffer);
+
+	commandbuffer.inheritanceInfo = (VkCommandBufferInheritanceInfo){0};
 
 	if (result != VK_SUCCESS)
 	{
@@ -90,9 +101,43 @@ CommandBuffer commandbuffer_create_primary(uint8_t thread_idx)
 	return commandbuffer;
 }
 
-void commandbuffer_destroy(CommandBuffer* commandbuffer)
+void commandbuffer_begin(CommandBuffer* commandbuffer)
+{
+	vkResetCommandBuffer(commandbuffer->buffer, 0);
+	VkCommandBufferBeginInfo begin_info = {0};
+	if (commandbuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+	{
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		begin_info.pInheritanceInfo = &commandbuffer->inheritanceInfo;
+
+		// Start recording
+	}
+	else if (commandbuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+	{
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = NULL;
+	}
+
+	VkResult result = vkBeginCommandBuffer(commandbuffer->buffer, &begin_info);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to start recording of command buffer");
+	}
+	commandbuffer->recording = true;
+}
+// This will end recording of a primary or secondary command buffer
+void commandbuffer_end(CommandBuffer* commandbuffer)
 {
 	vkEndCommandBuffer(commandbuffer->buffer);
+	commandbuffer->recording = false;
+}
+
+void commandbuffer_destroy(CommandBuffer* commandbuffer)
+{
+	if (commandbuffer->recording)
+		vkEndCommandBuffer(commandbuffer->buffer);
 
 	VkSubmitInfo submitInfo = {0};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -103,6 +148,7 @@ void commandbuffer_destroy(CommandBuffer* commandbuffer)
 	vkQueueWaitIdle(graphics_queue);
 
 	vkFreeCommandBuffers(device, commandpools[commandbuffer->thread_idx], 1, &commandbuffer->buffer);
+	*commandbuffer = (CommandBuffer){0};
 }
 
 void commandbuffer_destroy_pools()

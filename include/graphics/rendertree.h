@@ -45,8 +45,7 @@ void rendertree_update(RenderTreeNode* node);
 
 // Records secondary command buffers if necessary for the node and all children recursively if they're in view
 // Records secondary into primary command buffers
-void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, VkRenderPass renderpass, VkFramebuffer framebuffer, Camera* camera,
-					   uint32_t frame);
+void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* camera, uint32_t frame);
 
 // Splits the node into 8 children
 // If the node is root, the children are assigned separate threads

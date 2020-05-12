@@ -277,19 +277,16 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 // Command Buffers
 CommandBuffer single_use_commands_begin()
 {
-	CommandBuffer commandbuffer = commandbuffer_create_primary(0);
+	CommandBuffer commandbuffer = commandbuffer_create_primary(0, 0);
 
-	VkCommandBufferBeginInfo beginInfo = {0};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(commandbuffer.buffer, &beginInfo);
+	commandbuffer_begin(&commandbuffer);
 
 	return commandbuffer;
 }
 
 void single_use_commands_end(CommandBuffer* commandbuffer)
 {
+	commandbuffer_end(commandbuffer);
 	commandbuffer_destroy(commandbuffer);
 }
 

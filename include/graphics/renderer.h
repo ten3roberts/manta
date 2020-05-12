@@ -33,6 +33,9 @@ void renderer_flag_rebuild();
 // Retrieves the index of the current image to render to
 uint32_t renderer_get_frameindex();
 
+// @Functions to draw shape for one frame@
+void renderer_draw_cube(vec3 position, vec3 size);
+
 // Deinitializes the renderer and frees all resources
 void renderer_terminate();
 #endif

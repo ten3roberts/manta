@@ -2,6 +2,7 @@
 #include "defines.h"
 #include "mempool.h"
 #include "log.h"
+#include "graphics/vulkan_members.h"
 #include <string.h>
 
 static mempool_t* node_pool = NULL;
@@ -35,7 +36,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_
 	// Create command buffers for eac swapchain image
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx);
+		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx, i, renderPass, framebuffers[i]);
 		node->commandbuffers[i].frame = i;
 	}
 
@@ -125,28 +126,10 @@ void rendertree_update(RenderTreeNode* node)
 	}
 }
 
-void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, VkRenderPass renderpass, VkFramebuffer framebuffer, Camera* camera,
-					   uint32_t frame)
+void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* camera, uint32_t frame)
 {
 	// Begin recording
-
-	vkResetCommandBuffer(node->commandbuffers[frame].buffer, 0);
-
-	VkCommandBufferInheritanceInfo inheritance_info = (VkCommandBufferInheritanceInfo){.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-																					   .pNext = NULL,
-																					   .renderPass = renderpass,
-																					   .subpass = 0,
-																					   .framebuffer = framebuffer,
-																					   .queryFlags = 0,
-																					   .pipelineStatistics = 0};
-
-	VkCommandBufferBeginInfo begin_info = {0};
-	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	begin_info.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	begin_info.pInheritanceInfo = &inheritance_info;
-
-	// Start recording
-	VkResult result = vkBeginCommandBuffer(node->commandbuffers[frame].buffer, &begin_info);
+	commandbuffer_begin(&node->commandbuffers[frame]);
 
 	for (uint32_t i = 0; i < node->entity_count; i++)
 	{
@@ -154,12 +137,8 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, VkRenderPas
 		entity_render(entity, &node->commandbuffers[frame]);
 	}
 
-	result = vkEndCommandBuffer(node->commandbuffers[frame].buffer);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to record command buffer");
-		return;
-	}
+	// End recording
+	commandbuffer_end(&node->commandbuffers[frame]);
 
 	// Record into primary
 	vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
@@ -167,7 +146,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, VkRenderPas
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
 	{
-		rendertree_render(node->children[i], primary, renderpass, framebuffer, camera, frame);
+		rendertree_render(node->children[i], primary, camera, frame);
 	}
 }
 
