@@ -41,7 +41,8 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 		entity->material = material_get_default();
 	}
 
-	entity->model = model_get(model_name);
+	//entity->model = model_get(model_name);
+	entity->model = model_get_quad();
 	if (entity->model == NULL)
 	{
 		LOG_E("Unknown model %s", model_name);

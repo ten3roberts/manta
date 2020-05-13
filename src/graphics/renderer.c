@@ -72,18 +72,6 @@ void renderer_submit(Scene* scene)
 		--flag_rebuild;
 		renderer_rebuild(scene);
 	}
-	// Update uniform buffer
-	//TransformType transform_buffer;
-	//quaternion rotation = quat_axis_angle((vec3){0, 0.5, 1}, time_elapsed());
-
-	//mat4 rot = quat_to_mat4(rotation);
-	//mat4 pos = mat4_translate((vec3){0, sinf(time_elapsed()) * 0.5, -time_elapsed() * 0.2 + -2});
-	//transform_buffer.model = mat4_mul(&rot, &pos);
-
-	//transform_buffer.view = mat4_identity;
-	// transform_buffer.proj = mat4_perspective(window_get_width(window) / window_get_height(window), 1, 0, 10);
-	//transform_buffer.proj = mat4_ortho(window_get_aspect(window), 1, 0, 10);
-	//ub_update(ub, &transform_buffer, 0, CS_WHOLE_SIZE, -1);
 
 	// Submit render queue
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)

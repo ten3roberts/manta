@@ -253,12 +253,9 @@ void rendertree_destroy(RenderTreeNode* node)
 	mempool_free(node_pool, node);
 	if (mempool_get_count(node_pool) == 0)
 	{
+		vkDestroyDescriptorSetLayout(device, entity_data_layout, NULL);
+		entity_data_layout = VK_NULL_HANDLE;
 		mempool_destroy(node_pool);
 		node_pool = 0;
 	}
-}
-
-void rendertree_destroy_layout()
-{
-	vkDestroyDescriptorSetLayout(device, entity_data_layout, NULL);
 }

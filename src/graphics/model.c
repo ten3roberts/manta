@@ -26,9 +26,6 @@ struct Face
 
 Model* model_load_collada(const char* filepath)
 {
-	Model* model = malloc(sizeof(Model));
-	model->max_distance = 0;
-
 	LOG("Loading model %s", filepath);
 	XMLNode* root = xml_loadfile(filepath);
 	if (root == NULL)
@@ -38,42 +35,26 @@ Model* model_load_collada(const char* filepath)
 	}
 	XMLNode* mesh = xml_get_child(root, "library_geometries");
 	mesh = xml_get_children(mesh);
-	snprintf(model->name, sizeof model->name, "%s", xml_get_attribute(mesh, "name"));
+	const char* name = xml_get_attribute(mesh, "name");
 
-	// Insert into table
-	// Create table if it doesn't exist
-	if (model_table == NULL)
-	{
-		model_table = hashtable_create_string();
-	}
-	// Insert material into tracking table after name is acquired
-	if (hashtable_find(model_table, model->name) != NULL)
-	{
-		LOG_W("Duplicate material %s", model->name);
-		model_destroy(model);
-		return NULL;
-	}
-	// Insert into table
-	hashtable_insert(model_table, model->name, model);
-
-	model->id = stringdup(xml_get_attribute(mesh, "id"));
+	char* id = stringdup(xml_get_attribute(mesh, "id"));
 	mesh = xml_get_children(mesh);
 	XMLNode* sources = xml_get_children(mesh);
 	XMLNode* triangles_node = xml_get_child(mesh, "triangles");
 
 	char* source_names[3];
-	source_names[0] = malloc(strlen(model->id) + strlen("-positions") + 1);
-	memcpy(source_names[0], model->id, strlen(model->id) + 1);
+	source_names[0] = malloc(strlen(id) + strlen("-positions") + 1);
+	memcpy(source_names[0], id, strlen(id) + 1);
 	strcat(source_names[0], "-positions");
 
-	source_names[1] = malloc(strlen(model->id) + strlen("-map-0") + 1);
-	memcpy(source_names[1], model->id, strlen(model->id) + 1);
+	source_names[1] = malloc(strlen(id) + strlen("-map-0") + 1);
+	memcpy(source_names[1], id, strlen(id) + 1);
 	strcat(source_names[1], "-map-0");
 
-	source_names[2] = malloc(strlen(model->id) + strlen("-normals") + 1);
-	memcpy(source_names[2], model->id, strlen(model->id) + 1);
+	source_names[2] = malloc(strlen(id) + strlen("-normals") + 1);
+	memcpy(source_names[2], id, strlen(id) + 1);
 	strcat(source_names[2], "-normals");
-
+	free(id);
 	float* positions = NULL;
 	float* uvs = NULL;
 	float* normals = NULL;
@@ -205,17 +186,11 @@ Model* model_load_collada(const char* filepath)
 	for (uint32_t i = 0; i < set_count; i++)
 	{
 		vertices[i].position = *(vec3*)&positions[3 * sets[i].pos_index];
-		if (vec3_sqrmag(vertices[i].position) > model->max_distance * model->max_distance)
-		{
-			model->max_distance = vec3_mag(vertices[i].position);
-		}
 		vertices[i].uv = *(vec2*)&uvs[2 * sets[i].uv_index];
 	}
 
-	model->vb = vb_create(vertices, set_count);
-	model->ib = ib_create(indices, index_count);
-	model->index_count = index_count;
-	model->vertex_count = set_count;
+	Model* model = model_create(name, vertices, set_count, indices, index_count);
+
 	xml_destroy(root);
 
 	free(positions);
@@ -224,6 +199,46 @@ Model* model_load_collada(const char* filepath)
 	free(sets);
 	free(indices);
 	free(vertices);
+	return model;
+}
+
+Model* model_create(const char* name, Vertex* vertices, uint32_t vertex_count, uint32_t* indices, uint32_t index_count)
+{
+	Model* model = malloc(sizeof(Model));
+
+	snprintf(model->name, sizeof model->name, "%s", name);
+
+	// Insert into table
+	// Create table if it doesn't exist
+	if (model_table == NULL)
+	{
+		model_table = hashtable_create_string();
+	}
+	// Insert material into tracking table after name is acquired
+	if (hashtable_find(model_table, model->name) != NULL)
+	{
+		LOG_W("Duplicate model %s", model->name);
+		model_destroy(model);
+		return NULL;
+	}
+	// Insert into table
+	hashtable_insert(model_table, model->name, model);
+
+	model->max_distance = 0;
+	// Find max distance
+	for (uint32_t i = 0; i < vertex_count; i++)
+	{
+		if (vec3_sqrmag(vertices[i].position) > model->max_distance * model->max_distance)
+		{
+			model->max_distance = vec3_mag(vertices[i].position);
+		}
+	}
+
+	model->vb = vb_create(vertices, vertex_count);
+	model->ib = ib_create(indices, index_count);
+	model->index_count = index_count;
+	model->vertex_count = vertex_count;
+
 	return model;
 }
 
@@ -247,6 +262,28 @@ uint32_t model_get_vertex_count(Model* model)
 	return model->vertex_count;
 }
 
+static Model* quad_primitive = NULL;
+
+// Returns a reference to a square primitive
+Model* model_get_quad()
+{
+	if (quad_primitive == NULL)
+	{
+		Vertex vertices[4];
+		vertices[0] = (Vertex){(vec3){-0.5f, -0.5f}, (vec2){0, 0}};
+		vertices[1] = (Vertex){(vec3){0.5f, -0.5f}, (vec2){1, 0}};
+		vertices[2] = (Vertex){(vec3){0.5f, 0.5f}, (vec2){1, 1}};
+		vertices[3] = (Vertex){(vec3){-0.5f, 0.5f}, (vec2){0, 1}};
+		//uint32_t indices[6] = {0, 1, 2, 3, 4, 0};
+		uint32_t indices[6] = {0, 1, 2, 2, 3, 0};
+
+		quad_primitive = model_create("primitive:square", vertices, 4, indices, 6);
+	}
+	return quad_primitive;
+}
+// Returns a reference to a cube primitive
+Model* model_get_cube();
+
 Model* model_get(const char* name)
 {
 	// No materials loaded
@@ -269,7 +306,6 @@ void model_destroy(Model* model)
 
 	vb_destroy(model->vb);
 	ib_destroy(model->ib);
-	free(model->id);
 	free(model);
 }
 

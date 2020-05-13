@@ -1,6 +1,5 @@
 #include "vulkan_members.h"
-#include "vertexbuffer.h"
-
+#include "graphics/vertexbuffer.h"
 
 // Holds internal function prototypes and definitions that should be shared across several compilation units using
 // vulkan Defined in vulkan_internal.c
@@ -12,8 +11,7 @@ QueueFamilies get_queue_families(VkPhysicalDevice device);
 
 int has_stencil_component(VkFormat format);
 
-VkFormat find_supported_format(VkFormat* formats, uint32_t format_count, VkImageTiling tiling,
-							   VkFormatFeatureFlags features);
+VkFormat find_supported_format(VkFormat* formats, uint32_t format_count, VkImageTiling tiling, VkFormatFeatureFlags features);
 VkFormat find_depth_format();
 
 int create_color_buffer();

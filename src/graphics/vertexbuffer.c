@@ -1,5 +1,5 @@
 #include "magpie.h"
-#include "vertexbuffer.h"
+#include "graphics/vertexbuffer.h"
 #include "vulkan_members.h"
 #include "buffer.h"
 #include "log.h"

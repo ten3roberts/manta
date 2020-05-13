@@ -1,5 +1,5 @@
 #include "vulkan_internal.h"
-#include "vertexbuffer.h"
+#include "graphics/vertexbuffer.h"
 #include "indexbuffer.h"
 #include "application.h"
 #include "log.h"
@@ -852,8 +852,6 @@ void graphics_terminate()
 
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
-
-	rendertree_destroy_layout();
 
 	ub_pools_destroy();
 

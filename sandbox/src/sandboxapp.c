@@ -31,7 +31,7 @@ int application_start(int argc, char** argv)
 
 	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, 0, 0}}, window_get_aspect(window), 1, 0.1, 100);
 
-	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one});
+	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0, 0, -2}, quat_identity, vec3_one});
 	Entity* entity2 = entity_create("entity2", "concrete", "Cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one});
 
 	/*for (int i = 0; i < 1000; i++)

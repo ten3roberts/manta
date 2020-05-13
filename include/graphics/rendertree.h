@@ -67,9 +67,6 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity);
 // Destroys a node and all children
 void rendertree_destroy(RenderTreeNode* node);
 
-// Destroys the descriptor layout
-// Should be called at the end of the scene
-void rendertree_destroy_layout();
 // Places an entity into the tree
 // Check if it fits in the start node
 // If not it goes up until it fits
