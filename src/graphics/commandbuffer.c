@@ -134,17 +134,21 @@ void commandbuffer_end(CommandBuffer* commandbuffer)
 	commandbuffer->recording = false;
 }
 
-void commandbuffer_destroy(CommandBuffer* commandbuffer)
+void commandbuffer_submit(CommandBuffer* commandbuffer)
 {
-	if (commandbuffer->recording)
-		vkEndCommandBuffer(commandbuffer->buffer);
-
 	VkSubmitInfo submitInfo = {0};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandbuffer->buffer;
 
 	vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
+}
+
+void commandbuffer_destroy(CommandBuffer* commandbuffer)
+{
+	if (commandbuffer->recording)
+		vkEndCommandBuffer(commandbuffer->buffer);
+
 	vkQueueWaitIdle(graphics_queue);
 
 	vkFreeCommandBuffers(device, commandpools[commandbuffer->thread_idx], 1, &commandbuffer->buffer);

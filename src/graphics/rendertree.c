@@ -237,3 +237,28 @@ void rendertree_place(RenderTreeNode* node, Entity* entity)
 		rendertree_place(node->parent, entity);
 	}
 }
+void rendertree_destroy(RenderTreeNode* node)
+{
+	for (uint32_t i = 0; node->children[0] && i < 8; i++)
+	{
+		rendertree_destroy(node->children[i]);
+	}
+
+	ub_destroy(node->entity_data);
+	descriptorpack_destroy(&node->entity_data_descriptors);
+	for (uint32_t i = 0; i < 3; i++)
+	{
+		commandbuffer_destroy(&node->commandbuffers[i]);
+	}
+	mempool_free(node_pool, node);
+	if (mempool_get_count(node_pool) == 0)
+	{
+		mempool_destroy(node_pool);
+		node_pool = 0;
+	}
+}
+
+void rendertree_destroy_layout()
+{
+	vkDestroyDescriptorSetLayout(device, entity_data_layout, NULL);
+}

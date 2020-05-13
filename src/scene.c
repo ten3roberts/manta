@@ -162,5 +162,6 @@ void scene_destroy_entities(Scene* scene)
 // Destroys a scene and all entities within not marked with keep
 void scene_destroy(Scene* scene)
 {
+	rendertree_destroy(scene->rendertree_root);
 	free(scene);
 }

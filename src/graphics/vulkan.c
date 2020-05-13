@@ -853,6 +853,8 @@ void graphics_terminate()
 	if (global_descriptors.count)
 		descriptorpack_destroy(&global_descriptors);
 
+	rendertree_destroy_layout();
+
 	ub_pools_destroy();
 
 	vb_pools_destroy();

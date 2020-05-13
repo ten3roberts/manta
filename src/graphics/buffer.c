@@ -287,6 +287,7 @@ CommandBuffer single_use_commands_begin()
 void single_use_commands_end(CommandBuffer* commandbuffer)
 {
 	commandbuffer_end(commandbuffer);
+	commandbuffer_submit(commandbuffer);
 	commandbuffer_destroy(commandbuffer);
 }
 

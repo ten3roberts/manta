@@ -29,8 +29,12 @@ CommandBuffer commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame);
 // This will reset and begin recording of a primary or secondary command buffer
 // If command buffer is secondary, it will use the inheritance info stored in the command buffer
 void commandbuffer_begin(CommandBuffer* commandbuffer);
+
 // This will end recording of a primary or secondary command buffer
+// Will not submit command buffers
 void commandbuffer_end(CommandBuffer* commandbuffer);
+
+void commandbuffer_submit(CommandBuffer* commandbuffer);
 
 void commandbuffer_destroy(CommandBuffer* commandbuffer);
 

@@ -38,6 +38,10 @@ int application_start(int argc, char** argv)
 	{
 		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
 	}*/
+	for (int i = 0; i < 30; i++)
+	{
+		entity_create("multiple", "grid", "Cube", (Transform){vec3_random_sphere_even(5, 50), quat_identity, vec3_one});
+	}
 
 	while (!window_get_close(window))
 	{
@@ -49,7 +53,6 @@ int application_start(int argc, char** argv)
 
 		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
 		entity_get_transform(entity2)->rotation = quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed(), 0}));
-
 		vec3 cam_move = vec3_zero;
 		if (input_key(KEY_W))
 		{
