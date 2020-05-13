@@ -4,10 +4,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "magpie.h"
-#include "strmap.h"
+
 #include "mempool.h"
 
 static mempool_t* node_pool = NULL;
+
+struct attribute_t
+{
+	// key\0value
+	char *key, *value;
+};
 
 struct XMLNode
 {
@@ -16,7 +22,8 @@ struct XMLNode
 	char* tag;
 	char* content;
 	// The attributes for the tag
-	strmap* attributes;
+	uint16_t attribute_count;
+	struct attribute_t* attributes;
 	// Linked list to children
 	XMLNode* children;
 };
@@ -54,7 +61,7 @@ XMLNode* xml_loadfile(const char* filepath)
 	root->parent = NULL;
 	char* body = buf;
 	body = xml_load(root, buf);
-	if(body == NULL)
+	if (body == NULL)
 	{
 		LOG_E("Failed to read xml file %s", filepath);
 	}
@@ -94,13 +101,14 @@ char* xml_load(XMLNode* node, char* str)
 	char* tmp_attr[2];
 	tmp_attr[0] = malloc(tag_end);
 	tmp_attr[1] = malloc(tag_end);
-	// Only get first space separated part outside comma
 
+	// Only get first space separated part outside comma
 	int in_quotes = 0;
 	int in_attributes = 0;
 	int after_equal = 0;
-	node->attributes = strmap_create(node->attributes);
-	
+	node->attributes = NULL;
+	node->attribute_count = 0;
+
 	// i : iterator for string
 	// j : iterator for dst
 	for (uint32_t i = 1, j = 0; i < tag_end; i++)
@@ -114,7 +122,8 @@ char* xml_load(XMLNode* node, char* str)
 				// Copy val into map
 				// Null terminate val
 				tmp_attr[1][j] = '\0';
-				strmap_insert(node->attributes, tmp_attr[0], tmp_attr[1], strlen(tmp_attr[1]) + 1);
+				xml_set_attribute(node, tmp_attr[0], tmp_attr[1]);
+
 				after_equal = 0;
 			}
 			else
@@ -262,15 +271,14 @@ void xml_save_internal(XMLNode* node, FILE* file)
 	// Tag and attributes
 	fputc('<', file);
 	fputs(node->tag, file);
-	uint32_t attr_count = strmap_count(node->attributes);
-	for (uint32_t i = 0; i < attr_count; i++)
+	for (uint32_t i = 0; i < node->attribute_count; i++)
 	{
-		fputs(strmap_index(node->attributes, i)->key, file);
+		fputs(node->attributes[i].key, file);
 		fputc('=', file);
 		fputc('"', file);
-		fputs(strmap_index(node->attributes, i)->data, file);
+		fputs(node->attributes[i].value, file);
 		fputc('"', file);
-		if (i < attr_count - 1)
+		if (i < node->attribute_count - 1)
 			fputc(' ', file);
 	}
 	fputc('>', file);
@@ -332,7 +340,8 @@ XMLNode* xml_create(char* tag, char* content)
 	}
 	// NO children
 	node->children = NULL;
-	node->attributes = strmap_create();
+	node->attributes = NULL;
+	node->attribute_count = 0;
 	node->parent = NULL;
 	return node;
 }
@@ -391,12 +400,49 @@ void xml_set_tag(XMLNode* node, char* new_tag)
 
 char* xml_get_attribute(XMLNode* node, char* key)
 {
-	return (char*)strmap_find(node->attributes, key);
+	for (uint32_t i = 0; i < node->attribute_count; i++)
+	{
+		if (strcmp(node->attributes[i].key, key) == 0)
+		{
+			return node->attributes[i].value;
+		}
+	}
+	return NULL;
 }
 
 void xml_set_attribute(XMLNode* node, char* key, char* val)
 {
-	strmap_insert(node->attributes, key, val, strlen(val) + 1);
+	// Look if it already exists
+	for (uint32_t i = 0; i < node->attribute_count; i++)
+	{
+		if (strcmp(node->attributes[i].key, key) == 0)
+		{
+			free(node->attributes[i].key);
+			struct attribute_t* attribute = &node->attributes[i];
+			size_t l1 = strlen(key);
+			size_t l2 = strlen(val);
+			char* pair = malloc(l1 + l2 + 2);
+			attribute->key = pair;
+			attribute->value = pair + l1 + 1;
+			pair[l1] = '\0';
+			pair[l2 + 1] = '\0';
+			memcpy(pair, key, l1);
+			memcpy(pair + l1 + 1, val, l2);
+			return;
+		}
+	}
+
+	node->attributes = realloc(node->attributes, (++node->attribute_count) * sizeof(struct attribute_t));
+	struct attribute_t* attribute = &node->attributes[node->attribute_count - 1];
+	size_t l1 = strlen(key);
+	size_t l2 = strlen(val);
+	char* pair = malloc(l1 + l2 + 2);
+	attribute->key = pair;
+	attribute->value = pair + l1 + 1;
+	pair[l1] = '\0';
+	pair[l1 + l2 + 1] = '\0';
+	memcpy(pair, key, l1);
+	memcpy(pair + l1 + 1, val, l2);
 }
 
 char* xml_get_content(XMLNode* node)
@@ -421,16 +467,19 @@ void xml_destroy(XMLNode* node)
 		it = next;
 	}
 
-	strmap_destroy(node->attributes);
+	for (uint32_t i = 0; i < node->attribute_count; i++)
+	{
+		free(node->attributes[i].key);
+	}
+	free(node->attributes);
 	free(node->tag);
 	if (node->content)
 		free(node->content);
 
-
 	mempool_free(node_pool, node);
 
 	// Destroy pool if it is empty
-	if(mempool_get_count(node_pool) == 0)
+	if (mempool_get_count(node_pool) == 0)
 	{
 		mempool_destroy(node_pool);
 		node_pool = NULL;
