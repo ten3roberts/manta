@@ -56,6 +56,7 @@ int application_start(int argc, char** argv)
 		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
 		entity_get_transform(entity2)->rotation =
 			quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed() * 0.75, 0}));
+		entity_get_transform(entity3)->rotation = quat_euler((vec3){0, time_elapsed() * 0.5, 0});
 		vec3 cam_move = vec3_zero;
 		if (input_key(KEY_W))
 		{

@@ -70,6 +70,16 @@ void model_load_collada(const char* filepath)
 	XMLNode* lib_geometries = xml_get_child(root, "library_geometries");
 	XMLNode* geometries = xml_get_children(lib_geometries);
 
+	XMLNode* xml_up_axis = xml_get_child(xml_get_child(root, "asset"), "up_axis");
+	vec3 (*axis_swap)(vec3) = vec3_swap_identity;
+	if (xml_up_axis)
+	{
+		const char* up_axis = xml_get_content(xml_up_axis);
+		if (strcmp(up_axis, "Z_UP") == 0)
+			axis_swap = vec3_swap_yz;
+		if (strcmp(up_axis, "X_UP") == 0)
+			axis_swap = vec3_swap_xy;
+	}
 	// Load all meshes/geometries
 	while (geometries)
 	{
@@ -227,7 +237,8 @@ void model_load_collada(const char* filepath)
 		// Loop through all unique faces
 		for (uint32_t i = 0; i < set_count; i++)
 		{
-			vertices[i].position = *(vec3*)&positions[3 * sets[i].pos_index];
+			// Construct the vertex and swap axes to get the correct up axis
+			vertices[i].position = axis_swap(*(vec3*)&positions[3 * sets[i].pos_index]);
 			vertices[i].uv = *(vec2*)&uvs[2 * sets[i].uv_index];
 		}
 
@@ -255,7 +266,6 @@ Mesh* mesh_create(const char* name, Vertex* vertices, uint32_t vertex_count, uin
 	// Find max distance
 	for (uint32_t i = 0; i < vertex_count; i++)
 	{
-		LOG("%f", vec3_mag(vertices[i].position));
 		if (vec3_sqrmag(vertices[i].position) > mesh->max_distance * mesh->max_distance)
 		{
 			mesh->max_distance = vec3_mag(vertices[i].position);

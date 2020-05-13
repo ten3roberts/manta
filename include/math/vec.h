@@ -14,7 +14,7 @@ typedef struct
 	int x, y;
 } ivec2;
 
-const static vec2 vec2_one	= {1, 1};
+const static vec2 vec2_one = {1, 1};
 const static vec2 vec2_zero = {0, 0};
 
 typedef struct
@@ -26,16 +26,16 @@ typedef struct
 	int x, y, z;
 } ivec3;
 
-const static vec3 vec3_one	= {1, 1, 1};
+const static vec3 vec3_one = {1, 1, 1};
 const static vec3 vec3_zero = {0, 0, 0};
 
 const static vec3 vec3_forward = {0, 0, 1};
-const static vec3 vec3_right   = {1, 0, 0};
-const static vec3 vec3_up	   = {0, 1, 0};
+const static vec3 vec3_right = {1, 0, 0};
+const static vec3 vec3_up = {0, 1, 0};
 
-const static vec3 vec3_red	 = {1, 0, 0};
+const static vec3 vec3_red = {1, 0, 0};
 const static vec3 vec3_green = {0, 1, 0};
-const static vec3 vec3_blue	 = {0, 0, 1};
+const static vec3 vec3_blue = {0, 0, 1};
 
 typedef struct
 {
@@ -46,12 +46,12 @@ typedef struct
 	int x, y, z, w;
 } ivec4;
 
-const static vec4 vec4_one	= {1, 1, 1};
+const static vec4 vec4_one = {1, 1, 1};
 const static vec4 vec4_zero = {0, 0, 0};
 
-const static vec4 vec4_red	 = {1, 0, 0, 1};
+const static vec4 vec4_red = {1, 0, 0, 1};
 const static vec4 vec4_green = {0, 1, 0, 1};
-const static vec4 vec4_blue	 = {0, 0, 1, 1};
+const static vec4 vec4_blue = {0, 0, 1, 1};
 
 /*vec2*/
 
@@ -251,6 +251,28 @@ static inline float vec4_mag(vec4 a)
 static inline float vec4_sqrmag(vec4 a)
 {
 	return a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w;
+}
+
+// Does nothing but return the input
+// Is used as a non-null function pointer for vector axis swapping
+static inline vec3 vec3_swap_identity(vec3 v)
+{
+	return (vec3){v.x, v.y, v.z};
+}
+
+static inline vec3 vec3_swap_yz(vec3 v)
+{
+	return (vec3){v.x, -v.z, v.y};
+}
+
+static inline vec3 vec3_swap_xz(vec3 v)
+{
+	return (vec3){v.z, v.y, v.x};
+}
+
+static inline vec3 vec3_swap_xy(vec3 v)
+{
+	return (vec3){v.y, v.x, v.z};
 }
 
 // Returns the normalized vector of a
