@@ -48,7 +48,7 @@ void rendertree_destroy(RenderTreeNode* node);
 // Updates the tree recursively from node(root)
 // Re-places entities
 // Queues swapchain recreation
-void rendertree_update(RenderTreeNode* node);
+void rendertree_update(RenderTreeNode* node, uint32_t frame);
 
 // Records secondary command buffers if necessary for the node and all children recursively if they're in view
 // Records secondary into primary command buffers

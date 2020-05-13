@@ -103,8 +103,11 @@ void rendertree_split(RenderTreeNode* node)
 	}
 }
 
-void rendertree_update(RenderTreeNode* node)
+void rendertree_update(RenderTreeNode* node, uint32_t frame)
 {
+	// Map entity info
+	void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
+
 	for (uint32_t i = 0; i < node->entity_count; i++)
 	{
 		Entity* entity = node->entities[i];
@@ -139,12 +142,15 @@ void rendertree_update(RenderTreeNode* node)
 
 		// Update entity normally
 		entity_update(entity);
+		entity_update_shaderdata(entity, p_entity_data, i);
 	}
+
+	ub_unmap(node->entity_data, frame);
 
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
 	{
-		rendertree_update(node->children[i]);
+		rendertree_update(node->children[i], frame);
 	}
 }
 
@@ -154,14 +160,11 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 	commandbuffer_begin(&node->commandbuffers[frame]);
 
 	// Map entity info
-	void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
 	for (uint32_t i = 0; i < node->entity_count; i++)
 	{
 		Entity* entity = node->entities[i];
-		entity_render(entity, &node->commandbuffers[frame], p_entity_data, i, node->entity_data_descriptors.sets[frame]);
+		entity_render(entity, &node->commandbuffers[frame], i, node->entity_data_descriptors.sets[frame]);
 	}
-
-	ub_unmap(node->entity_data, frame);
 
 	// End recording
 	commandbuffer_end(&node->commandbuffers[frame]);
@@ -223,7 +226,7 @@ void rendertree_place(RenderTreeNode* node, Entity* entity)
 		if (node->children[0] == NULL && node->entity_count == RENDER_TREE_LIM)
 		{
 			rendertree_split(node);
-			rendertree_update(node);
+			// rendertree_update(node, frame);
 		}
 	}
 

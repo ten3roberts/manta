@@ -20,9 +20,12 @@ const SphereCollider* entity_get_boundingsphere(Entity* entity);
 // Is called once a frame
 void entity_update(Entity* entity);
 
+// Updates shader uniform for the entity from a mapped uniform buffer
+void entity_update_shaderdata(Entity* entity, void* data_write, uint32_t index);
+
 // Is only called irreguraly when command buffers are rebuilt
-// data_write refers to a mapped pointer to which the entity writes its specific data to
-void entity_render(Entity* entity, CommandBuffer* commandbuffer, void* data_write, uint32_t index, VkDescriptorSet data_descriptors);
+// Index refers to the index of the entity in the uniform  buffer
+void entity_render(Entity* entity, CommandBuffer* commandbuffer, uint32_t index, VkDescriptorSet data_descriptors);
 
 // Destroys and entity and removes it from the scene
 void entity_destroy(Entity* entity);

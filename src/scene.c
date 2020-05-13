@@ -139,7 +139,7 @@ RenderTreeNode* scene_get_rendertree(Scene* scene)
 void scene_update(Scene* scene)
 {
 	// Update entities
-	rendertree_update(scene->rendertree_root);
+	rendertree_update(scene->rendertree_root, renderer_get_frameindex());
 
 	// Update cameras
 	for (uint32_t i = 0; i < scene->camera_count; i++)
