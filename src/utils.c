@@ -259,16 +259,25 @@ void create_dirs(const char* path)
 
 void get_filename(const char* path, char* result, size_t size)
 {
-	for (size_t i = strlen(path); i != 0; i--)
+	const char* path_end = strrchr(path, '/');
+	if (path_end == NULL)
+		path_end = strchr(path, '\\');
+
+	// No path delimiter before
+	path_end = path_end ? path_end : path;
+
+	// Extension is either . or \0
+	const char* extension = strrchr(path, '.');
+	if (extension == NULL)
+		extension = path + strlen(path);
+
+	size_t len = extension - path_end;
+	if (len > size)
 	{
-		// If it is at a path delimeter
-		if (path[i] == '\\' || path[i] == '/')
-		{
-			memmove(result, path + min(i + 1, size), min(i + 1, strlen(path) - size));
-			result[min(i + 1, size)] = '\0';
-			break;
-		}
+		len = size;
 	}
+	memcpy(result, path_end + 1, len - 1);
+	result[len - 1] = '\0';
 }
 
 void get_dir(const char* path, char* result, size_t size)
@@ -463,7 +472,7 @@ int strcmp_s(const char* str1, const char* str2)
 		return 1;
 	if (str1 != NULL && str2 == NULL)
 		return 1;
-		
+
 	// C stdlib strcmp
 	return strcmp(str1, str2);
 }

@@ -22,6 +22,7 @@ int find_file(const char* dir, char* result, size_t size, const char* filename);
 void create_dirs(const char* path);
 
 // Gets the file name from a path and copies it to result
+// Without path and extension
 void get_filename(const char* path, char* result, size_t size);
 
 // Gets the dir path from a file path and copies it to result

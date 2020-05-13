@@ -8,13 +8,13 @@
 typedef struct Entity Entity;
 
 // Creates an entity and adds it to the scene
-Entity* entity_create(const char* name, const char* material_name, const char* model_name, Transform transform);
+Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform);
 
 const char* entity_get_name(Entity* entity);
 
 Transform* entity_get_transform(Entity* entity);
 Material* entity_get_material(Entity* entity);
-Model* entity_get_model(Entity* entity);
+Mesh* entity_get_mesh(Entity* entity);
 const SphereCollider* entity_get_boundingsphere(Entity* entity);
 
 // Is called once a frame

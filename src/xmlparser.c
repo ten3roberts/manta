@@ -398,7 +398,7 @@ void xml_set_tag(XMLNode* node, char* new_tag)
 	strcpy(node->tag, new_tag);
 }
 
-char* xml_get_attribute(XMLNode* node, char* key)
+char* xml_get_attribute(XMLNode* node, const char* key)
 {
 	for (uint32_t i = 0; i < node->attribute_count; i++)
 	{

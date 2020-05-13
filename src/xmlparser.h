@@ -38,7 +38,7 @@ char* xml_get_tag(XMLNode* node);
 // Copies a new string into content and deletes the old one
 void xml_set_tag(XMLNode* node, char* new_tag);
 
-char* xml_get_attribute(XMLNode* node, char* key);
+char* xml_get_attribute(XMLNode* node, const char* key);
 // Sets or updates a nodes attribute
 void xml_set_attribute(XMLNode* node, char* key, char* val);
 

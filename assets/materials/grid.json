@@ -1,5 +1,5 @@
 {
-	"albedo": "./assets/textures/grid.png",
+	"albedo": "./assets/textures/statue.jpg",
 	"vertexshader": "./assets/shaders/default.vert.spv",
 	"fragmentshader": "./assets/shaders/default.frag.spv",
 	"bindings": [

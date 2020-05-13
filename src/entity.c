@@ -16,12 +16,12 @@ struct Entity
 	char name[256];
 	Transform transform;
 	Material* material;
-	Model* model;
+	Mesh* mesh;
 	SphereCollider boundingsphere;
 	RenderTreeNode* render_node;
 };
 
-Entity* entity_create(const char* name, const char* material_name, const char* model_name, Transform transform)
+Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform)
 {
 	// Create the memory pool
 	if (entity_pool == NULL)
@@ -41,15 +41,14 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 		entity->material = material_get_default();
 	}
 
-	//entity->model = model_get(model_name);
-	entity->model = model_get_quad();
-	if (entity->model == NULL)
+	entity->mesh = mesh_find(mesh_name);
+	if (entity->mesh == NULL)
 	{
-		LOG_E("Unknown model %s", model_name);
+		LOG_E("Unknown mesh %s", mesh_name);
 	}
 
 	// Create bounding sphere from model and bind the transform to it
-	entity->boundingsphere = spherecollider_create(model_max_distance(entity->model), vec3_zero, &entity->transform);
+	entity->boundingsphere = spherecollider_create(mesh_max_distance(entity->mesh), vec3_zero, &entity->transform);
 
 	// Add to scene
 	scene_add_entity(scene_get_current(), entity);
@@ -68,9 +67,9 @@ Material* entity_get_material(Entity* entity)
 {
 	return entity->material;
 }
-Model* entity_get_model(Entity* entity)
+Mesh* entity_get_mesh(Entity* entity)
 {
-	return entity->model;
+	return entity->mesh;
 }
 
 const SphereCollider* entity_get_boundingsphere(Entity* entity)
@@ -93,11 +92,11 @@ void entity_render(Entity* entity, CommandBuffer* commandbuffer, uint32_t index,
 {
 	// Binding is done by renderer
 	material_bind(entity->material, commandbuffer, data_descriptors);
-	model_bind(entity->model, commandbuffer);
+	mesh_bind(entity->mesh, commandbuffer);
 
 	// Set push constant for model matrix
 	material_push_constants(entity->material, commandbuffer, 0, &index);
-	vkCmdDrawIndexed(commandbuffer->buffer, model_get_index_count(entity->model), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandbuffer->buffer, mesh_get_index_count(entity->mesh), 1, 0, 0, 0);
 }
 
 void entity_destroy(Entity* entity)

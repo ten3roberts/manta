@@ -25,14 +25,16 @@ int application_start(int argc, char** argv)
 	time_init();
 
 	Scene* scene = scene_create("main");
-	(void)model_load_collada("./assets/models/cube.dae");
-	(void)material_load("./assets/materials/concrete.json");
-	(void)material_load("./assets/materials/grid.json");
+	model_load_collada("./assets/models/cube.dae");
+	model_load_collada("./assets/models/multiple.dae");
+	material_load("./assets/materials/concrete.json");
+	material_load("./assets/materials/grid.json");
 
 	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, 0, 0}}, window_get_aspect(window), 1, 0.1, 100);
 
-	Entity* entity1 = entity_create("entity1", "grid", "Cube", (Transform){(vec3){0, 0, -2}, quat_identity, vec3_one});
-	Entity* entity2 = entity_create("entity2", "concrete", "Cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one});
+	Entity* entity1 = entity_create("entity1", "grid", "cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one});
+	Entity* entity2 = entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one});
+	Entity* entity3 = entity_create("entity2", "concrete", "multiple:Suzanne", (Transform){(vec3){-2, 2, -10}, quat_identity, vec3_one});
 
 	/*for (int i = 0; i < 1000; i++)
 	{
@@ -40,7 +42,7 @@ int application_start(int argc, char** argv)
 	}*/
 	for (int i = 0; i < 30; i++)
 	{
-		entity_create("multiple", "grid", "Cube", (Transform){vec3_random_sphere_even(5, 50), quat_identity, vec3_one});
+		//entity_create("multiple", "grid", "cube", (Transform){vec3_random_sphere_even(5, 50), quat_identity, vec3_one});
 	}
 
 	while (!window_get_close(window))
@@ -52,27 +54,28 @@ int application_start(int argc, char** argv)
 		scene_update(scene);
 
 		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
-		entity_get_transform(entity2)->rotation = quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed(), 0}));
+		entity_get_transform(entity2)->rotation =
+			quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed() * 0.75, 0}));
 		vec3 cam_move = vec3_zero;
 		if (input_key(KEY_W))
 		{
-			cam_move.z = -5;
+			cam_move.z = -10;
 		}
 		if (input_key(KEY_S))
 		{
-			cam_move.z = 5;
+			cam_move.z = 10;
 		}
 		if (input_key(KEY_A))
 		{
-			cam_move.x = -5;
+			cam_move.x = -10;
 		}
 		if (input_key(KEY_D))
 		{
-			cam_move.x = 5;
+			cam_move.x = 10;
 		}
 		// Spin camera
-		/*camera_get_transform(camera)->position =	vec3_add(camera_get_transform(camera)->position, vec3_scale(cam_move, time_delta()));*/
-		entity_get_transform(entity2)->position = vec3_add(entity_get_transform(entity2)->position, vec3_scale(cam_move, time_delta()));
+		camera_get_transform(camera)->position = vec3_add(camera_get_transform(camera)->position, vec3_scale(cam_move, time_delta()));
+		//entity_get_transform(entity2)->position = vec3_add(entity_get_transform(entity2)->position, vec3_scale(cam_move, time_delta()));
 		graphics_update_scene_data();
 		input_update();
 
