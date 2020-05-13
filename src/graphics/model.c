@@ -258,7 +258,7 @@ void model_load_collada(const char* filepath)
 
 Mesh* mesh_create(const char* name, Vertex* vertices, uint32_t vertex_count, uint32_t* indices, uint32_t index_count)
 {
-	Mesh* mesh = malloc(sizeof(Model));
+	Mesh* mesh = malloc(sizeof(Mesh));
 
 	snprintf(mesh->name, sizeof mesh->name, "%s", name);
 
