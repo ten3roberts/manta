@@ -2,15 +2,12 @@
 #define MATERIAL_H
 #include <stdint.h>
 #include "graphics/commandbuffer.h"
+#include "graphics/uniforms.h"
 #include <vulkan/vulkan.h>
 #include "math/mat4.h"
 
-struct ModelPushConstant
-{
-	mat4 model_matrix;
-};
-
-#define PUSH_CONSTANT_SIZE sizeof(struct ModelPushConstant)
+// Push the entity index of the tree
+#define PUSH_CONSTANT_SIZE sizeof(uint32_t)
 
 // Materials hold textures, shaders, and descriptors
 
@@ -29,7 +26,7 @@ Material* material_get_default();
 // Bind the material's pipeline
 // Binds a material's descriptors for the specified frame
 // If frame is -1, the current frame to render will be used (result of renderer_get_frame)
-void material_bind(Material* mat, CommandBuffer* commandbuffer);
+void material_bind(Material* mat, CommandBuffer* commandbuffer, VkDescriptorSet data_descriptors);
 
 // Pushed data for the index push constant
 // The size and offset of the push constants were defined at material creation

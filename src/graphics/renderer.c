@@ -67,8 +67,9 @@ void renderer_submit(Scene* scene)
 		return;
 	}
 	// Rebuild command buffers if required
-	if (flag_rebuild == 1)
+	if (flag_rebuild > 0)
 	{
+		--flag_rebuild;
 		renderer_rebuild(scene);
 	}
 	// Update uniform buffer
@@ -191,7 +192,7 @@ void renderer_resize()
 
 void renderer_flag_rebuild()
 {
-	flag_rebuild = 1;
+	flag_rebuild = swapchain_image_count;
 }
 
 int renderer_get_frameindex()

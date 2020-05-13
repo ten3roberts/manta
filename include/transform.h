@@ -13,7 +13,7 @@ typedef struct Transform
 
 	// Shader data
 	// One model matrix containing the transform rotation for each swapchain image
-	mat4 model_matrix[3];
+	mat4 model_matrix;
 } Transform;
 
 void transform_update(Transform* transform);

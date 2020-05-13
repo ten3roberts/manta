@@ -83,15 +83,15 @@ void entity_update(Entity* entity)
 }
 
 // Is only called irreguraly when command buffers are rebuilt
-void entity_render(Entity* entity, CommandBuffer* commandbuffer)
+void entity_render(Entity* entity, CommandBuffer* commandbuffer, void* data_write, uint32_t index, VkDescriptorSet data_descriptors)
 {
 	// Binding is done by renderer
-	material_bind(entity->material, commandbuffer);
+	material_bind(entity->material, commandbuffer, data_descriptors);
 	model_bind(entity->model, commandbuffer);
 
 	// Set push constant for model matrix
-	material_push_constants(entity->material, commandbuffer, 0, &entity->transform.model_matrix[commandbuffer->frame]);
-
+	material_push_constants(entity->material, commandbuffer, 0, &index);
+	memcpy((struct EntityData*)data_write + index, &entity->transform.model_matrix, sizeof(mat4));
 	vkCmdDrawIndexed(commandbuffer->buffer, model_get_index_count(entity->model), 1, 0, 0, 0);
 }
 

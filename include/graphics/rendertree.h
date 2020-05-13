@@ -26,10 +26,17 @@ typedef struct RenderTreeNode
 
 	// Contains all RENDER_TREE_LIM entities data
 	CommandBuffer commandbuffers[3];
+	UniformBuffer* entity_data;
+	// Set 2
+	DescriptorPack entity_data_descriptors;
+
 	// A bit field of which frames should be rebuilt
 	uint8_t changed;
 	uint8_t thread_idx;
 } RenderTreeNode;
+
+// Returns a descriptor layout
+VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 
 // Creates a rendertree root node for a thread
 // Note, only the render thread with the correct index should use this

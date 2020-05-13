@@ -6,6 +6,23 @@
 #include <string.h>
 
 static mempool_t* node_pool = NULL;
+static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
+static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){.binding = 0,
+																						 .descriptorCount = 1,
+																						 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+																						 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+																						 .pImmutableSamplers = 0};
+
+VkDescriptorSetLayout rendertree_get_descriptor_layout(void)
+{
+	// Create entity data layout if it doesn't exist
+	if (entity_data_layout == VK_NULL_HANDLE)
+	{
+		descriptorlayout_create(&entity_data_binding, 1, &entity_data_layout);
+	}
+
+	return entity_data_layout;
+}
 
 RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_idx)
 {
@@ -39,6 +56,11 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_
 		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx, i, renderPass, framebuffers[i]);
 		node->commandbuffers[i].frame = i;
 	}
+
+	// Create shader data
+	node->entity_data = ub_create(RENDER_TREE_LIM * sizeof(struct EntityData), 0);
+
+	descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1, &node->entity_data, NULL, &node->entity_data_descriptors);
 
 	return node;
 }
@@ -131,11 +153,15 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 	// Begin recording
 	commandbuffer_begin(&node->commandbuffers[frame]);
 
+	// Map entity info
+	void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
 	for (uint32_t i = 0; i < node->entity_count; i++)
 	{
 		Entity* entity = node->entities[i];
-		entity_render(entity, &node->commandbuffers[frame]);
+		entity_render(entity, &node->commandbuffers[frame], p_entity_data, i, node->entity_data_descriptors.sets[frame]);
 	}
+
+	ub_unmap(node->entity_data, frame);
 
 	// End recording
 	commandbuffer_end(&node->commandbuffers[frame]);

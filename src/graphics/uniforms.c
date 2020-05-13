@@ -117,8 +117,7 @@ void descriptorpool_destroy(struct DescriptorPool* pool)
 		{
 			// Shift pools after this one back to accomodate the empty space if not the last pool
 			if (i != descriptor_pool_count - 1)
-				memmove(descriptor_pools + i, descriptor_pools + i + 1,
-						(descriptor_pool_count - i - 1) * sizeof(*descriptor_pools));
+				memmove(descriptor_pools + i, descriptor_pools + i + 1, (descriptor_pool_count - i - 1) * sizeof(*descriptor_pools));
 			// Decrease pool count by one
 			--descriptor_pool_count;
 			descriptor_pools = realloc(descriptor_pools, descriptor_pool_count * sizeof(struct DescriptorPool));
@@ -127,8 +126,7 @@ void descriptorpool_destroy(struct DescriptorPool* pool)
 	}
 }
 
-int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
-							VkDescriptorSetLayout* dst_layout)
+int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, VkDescriptorSetLayout* dst_layout)
 {
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {0};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -288,12 +286,44 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding)
 	return ub;
 }
 
-void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, uint32_t frame)
+// Maps the uniform buffer data for specified frame and returns a pointer to it
+void* ub_map(UniformBuffer* ub, uint32_t offset, uint32_t size, uint32_t frame)
 {
-	if (frame == CS_WHOLE_SIZE)
+	if (frame == -1)
 		frame = renderer_get_frameindex();
 
-	if (size == -1)
+	if (size == CS_WHOLE_SIZE)
+		size = ub->size - offset;
+
+#ifdef DEBUG
+	if (offset + size > ub->size)
+		LOG_W("Size and offset of uniform update exceeds capacity. Uniform buffer of %d bytes is being updated with %d "
+			  "bytes at an offset of %d",
+			  ub->size, size, offset);
+#endif
+
+	void* ptr = NULL;
+	vkMapMemory(device, ub->memories[frame], ub->offsets[frame] + offset, size, 0, &ptr);
+	if (ptr == NULL)
+	{
+		LOG_E("Failed to map memory for uniform buffer");
+		return NULL;
+	}
+	return ptr;
+}
+
+// Unmaps a uniform buffer
+void ub_unmap(UniformBuffer* ub, uint32_t frame)
+{
+	vkUnmapMemory(device, ub->memories[frame]);
+}
+
+void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, uint32_t frame)
+{
+	if (frame == -1)
+		frame = renderer_get_frameindex();
+
+	if (size == CS_WHOLE_SIZE)
 		size = ub->size - offset;
 
 #ifdef DEBUG

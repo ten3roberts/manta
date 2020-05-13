@@ -46,8 +46,8 @@ int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t bin
 // The number of uniformbuffers should match the bindings
 // The number of textures should match the bindings
 // dst_descriptors should be an array of swapchain_image_count length. Arrays data will be overwritten
-int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture** textures,
-						  DescriptorPack* dst_pack);
+int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
+						  UniformBuffer** uniformbuffers, Texture** textures, DescriptorPack* dst_pack);
 
 // Destroys a descriptor pack, and if necessary, destroy the pool
 void descriptorpack_destroy(DescriptorPack* pack);
@@ -57,6 +57,12 @@ void descriptorpack_destroy(DescriptorPack* pack);
 // Uniform buffer is completely agnostic to the shader layout and binding
 // To bind a uniform buffer you need to create a descriptor layout and set
 UniformBuffer* ub_create(uint32_t size, uint32_t binding);
+
+// Maps the uniform buffer data for specified frame and returns a pointer to it
+// Note: you can not map the same frame simulataneously
+void* ub_map(UniformBuffer* ub, uint32_t offset, uint32_t size, uint32_t frame);
+// Unmaps a uniform buffer
+void ub_unmap(UniformBuffer* ub, uint32_t frame);
 
 // Updates a uniform buffer
 // Maps memory from the GPU to the CPU

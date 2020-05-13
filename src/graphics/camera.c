@@ -52,7 +52,7 @@ mat4 camera_get_projection_matrix(Camera* camera)
 void camera_update(Camera* camera)
 {
 	transform_update(&camera->transform);
-	camera->view = mat4_inverse(&camera->transform.model_matrix[renderer_get_frameindex()]);
+	camera->view = mat4_inverse(&camera->transform.model_matrix);
 }
 
 // Destroys and camera and removes it from the scene

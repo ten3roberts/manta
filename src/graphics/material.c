@@ -16,6 +16,7 @@ static Material* material_default = NULL;
 
 #define GLOBAL_DESCRIPTOR_INDEX	  0
 #define MATERIAL_DESCRIPTOR_INDEX 1
+#define ENTITY_DESCRIPTOR_INDEX	  2
 
 struct Material
 {
@@ -25,7 +26,8 @@ struct Material
 	// An array to all descriptor layouts of the pipeline
 	// 0 : global descriptor layout
 	// 1 : per material descriptor layout
-	VkDescriptorSetLayout descriptor_layouts[2];
+	// 2 : per rendertree node layout
+	VkDescriptorSetLayout descriptor_layouts[3];
 	DescriptorPack material_descriptors;
 	Pipeline* pipeline;
 
@@ -94,6 +96,7 @@ Material* material_load_internal(JSON* object)
 
 	// Fill in global layout, assumes global descriptors exist and does not create them
 	mat->descriptor_layouts[GLOBAL_DESCRIPTOR_INDEX] = global_descriptor_layout;
+	mat->descriptor_layouts[ENTITY_DESCRIPTOR_INDEX] = rendertree_get_descriptor_layout();
 	// Fill in per material layout
 	JSON* jbindings = json_get_member(object, "bindings");
 	if (json_type(jbindings) != JSON_TARRAY)
@@ -199,7 +202,7 @@ Material* material_load_internal(JSON* object)
 	// Create the graphics pipeline
 	// Create the pipeline
 	struct PipelineInfo pipeline_info = {0};
-	pipeline_info.descriptor_layout_count = 2;
+	pipeline_info.descriptor_layout_count = 3;
 	pipeline_info.descriptor_layouts = mat->descriptor_layouts;
 
 	snprintf(pipeline_info.vertexshader, sizeof pipeline_info.vertexshader, "%s", vertexshader);
@@ -302,7 +305,7 @@ Material* material_get_default()
 	return material_default;
 }
 
-void material_bind(Material* mat, CommandBuffer* commandbuffer)
+void material_bind(Material* mat, CommandBuffer* commandbuffer, VkDescriptorSet data_descriptors)
 {
 	pipeline_bind(mat->pipeline, commandbuffer->buffer);
 
@@ -310,11 +313,15 @@ void material_bind(Material* mat, CommandBuffer* commandbuffer)
 	VkPipelineLayout pipeline_layout = pipeline_get_layout(mat->pipeline);
 
 	// Bind global set 0
-	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, GLOBAL_DESCRIPTOR_INDEX, 1,
 							&global_descriptors.sets[commandbuffer->frame], 0, NULL);
 	// Bind material set 1
-	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 1, 1,
+	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, MATERIAL_DESCRIPTOR_INDEX, 1,
 							&mat->material_descriptors.sets[commandbuffer->frame], 0, NULL);
+
+	// Per entity data set 2
+	vkCmdBindDescriptorSets(commandbuffer->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, ENTITY_DESCRIPTOR_INDEX, 1, &data_descriptors, 0,
+							NULL);
 }
 
 void material_push_constants(Material* mat, CommandBuffer* commandbuffer, uint32_t index, void* data)
