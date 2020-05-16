@@ -13,6 +13,16 @@ static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayout
 																						 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 																						 .pImmutableSamplers = 0};
 
+VkDescriptorSetLayoutBinding* rendertree_get_descriptor_bindings(void)
+{
+	return &entity_data_binding;
+}
+
+uint32_t rendertree_get_descriptor_binding_count(void)
+{
+	return 1;
+}
+
 VkDescriptorSetLayout rendertree_get_descriptor_layout(void)
 {
 	// Create entity data layout if it doesn't exist

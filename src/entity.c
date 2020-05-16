@@ -96,7 +96,7 @@ void entity_render(Entity* entity, CommandBuffer* commandbuffer, uint32_t index,
 
 	// Set push constant for model matrix
 	material_push_constants(entity->material, commandbuffer, 0, &index);
-	vkCmdDrawIndexed(commandbuffer->buffer, mesh_get_index_count(entity->mesh), 1, 0, 0, 0);
+	mesh_draw(entity->mesh, commandbuffer);
 }
 
 void entity_destroy(Entity* entity)

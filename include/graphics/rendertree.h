@@ -35,6 +35,11 @@ typedef struct RenderTreeNode
 	uint8_t thread_idx;
 } RenderTreeNode;
 
+// Returns the single binding for the descriptor set
+VkDescriptorSetLayoutBinding* rendertree_get_descriptor_bindings(void);
+
+uint32_t rendertree_get_descriptor_binding_count(void);
+
 // Returns a descriptor layout
 VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 

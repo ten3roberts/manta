@@ -82,8 +82,8 @@ int application_start(int argc, char** argv)
 
 		time_update();
 
-		const SphereCollider* bound1 = entity_get_boundingsphere(entity1);
-		const SphereCollider* bound2 = entity_get_boundingsphere(entity2);
+		//const SphereCollider* bound1 = entity_get_boundingsphere(entity1);
+		//const SphereCollider* bound2 = entity_get_boundingsphere(entity2);
 
 		/*if (spherecollider_intersect(bound1, bound2))
 		{
@@ -93,6 +93,8 @@ int application_start(int argc, char** argv)
 		{
 			LOG("Not Colliding");
 		}*/
+
+		renderer_draw_cube((vec3){10, 0, -40}, quat_identity, vec3_one);
 
 		renderer_submit(scene);
 
@@ -106,6 +108,7 @@ int application_start(int argc, char** argv)
 
 	camera_destroy(camera);
 	scene_destroy(scene);
+	renderer_terminate();
 	graphics_terminate();
 	LOG_S("Terminating");
 	window_destroy(window);

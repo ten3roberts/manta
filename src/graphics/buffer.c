@@ -90,6 +90,7 @@ void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDev
 		};
 
 		// Occupy space
+		LOG_S("Retrieved memory with address %p and offset %u", pool->blocks[i].memory, pool->blocks[i].end);
 		*buffer = pool->blocks[i].buffer;
 		*memory = pool->blocks[i].memory;
 		*offset = pool->blocks[i].end;

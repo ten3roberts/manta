@@ -17,8 +17,13 @@ static int resize_event;
 
 static uint8_t flag_rebuild = 0;
 
-CommandBuffer primarybuffers[3];
-CommandBuffer oneframe_buffers[3];
+static CommandBuffer primarybuffers[3];
+
+static CommandBuffer oneframe_commands[3];
+static Mesh* primitive_cube = NULL;
+static UniformBuffer* oneframe_buffer = NULL;
+static DescriptorPack oneframe_descriptors = {0};
+static int oneframe_draw_index = 0;
 
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
@@ -43,6 +48,11 @@ static void renderer_rebuild(Scene* scene)
 	RenderTreeNode* rendertree = scene_get_rendertree(scene);
 	Camera* camera = scene_get_camera(scene, 0);
 	rendertree_render(rendertree, commandbuffer, camera, image_index);
+
+	// One frame draws
+	commandbuffer_end(&oneframe_commands[image_index]);
+	//oneframe_buffer_mapped = NULL;
+	vkCmdExecuteCommands(commandbuffer->buffer, 1, &oneframe_commands[image_index].buffer);
 	vkCmdEndRenderPass(commandbuffer->buffer);
 	commandbuffer_end(commandbuffer);
 }
@@ -53,8 +63,15 @@ int renderer_init()
 	for (int i = 0; i < 3; i++)
 	{
 		primarybuffers[i] = commandbuffer_create_primary(0, i);
-		oneframe_buffers[i] = commandbuffer_create_secondary(0, i, renderPass, framebuffers[i]);
+		oneframe_commands[i] = commandbuffer_create_secondary(0, i, renderPass, framebuffers[i]);
 	}
+
+	// Load primitive models
+	model_load_collada("./assets/models/primitive.dae");
+
+	oneframe_buffer = ub_create(sizeof(struct EntityData) * 5, 0, 0);
+	(void)descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(),
+								&oneframe_buffer, NULL, &oneframe_descriptors);
 
 	return 0;
 }
@@ -67,11 +84,8 @@ void renderer_submit(Scene* scene)
 		return;
 	}
 	// Rebuild command buffers if required
-	if (flag_rebuild > 0)
-	{
-		--flag_rebuild;
-		renderer_rebuild(scene);
-	}
+	//--flag_rebuild;
+	renderer_rebuild(scene);
 
 	// Submit render queue
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
@@ -170,7 +184,10 @@ void renderer_begin()
 
 	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE, &image_index);
 
-	//commandbuffer_begin(&oneframe_buffers[image_index]);
+	// Begin one frame draws
+	commandbuffer_begin(&oneframe_commands[image_index]);
+	material_bind(material_get_default(), &oneframe_commands[image_index], oneframe_descriptors.sets[image_index]);
+	oneframe_draw_index = 0;
 }
 
 void renderer_resize()
@@ -187,12 +204,33 @@ int renderer_get_frameindex()
 {
 	return image_index;
 }
-
-void renderer_draw_cube(vec3 position, vec3 size)
+void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale)
 {
+	if (primitive_cube == NULL)
+	{
+		primitive_cube = mesh_find("primitive:cube");
+	}
+	Transform transform = (Transform){.position = position, .rotation = rotation, .scale = scale};
+	transform_update(&transform);
+	struct EntityData data = {0};
+	data.model_matrix = transform.model_matrix;
+	data.color = vec4_one;
+
+	// Binding is done by renderer
+	mesh_bind(primitive_cube, &oneframe_commands[image_index]);
+	ub_update(oneframe_buffer, &data, sizeof(struct EntityData) * oneframe_draw_index, sizeof(struct EntityData), image_index);
+	// Set push constant for model matrix
+	material_push_constants(material_get_default(), &oneframe_commands[image_index], 0, &oneframe_draw_index);
+	mesh_draw(primitive_cube, &oneframe_commands[image_index]);
+	oneframe_draw_index++;
 }
 
 void renderer_terminate()
 {
+	ub_destroy(oneframe_buffer);
+	for (int i = 0; i < 3; i++)
+		commandbuffer_destroy(&oneframe_commands[i]);
+	descriptorpack_destroy(&oneframe_descriptors);
+
 	vkDeviceWaitIdle(device);
 }

@@ -37,6 +37,7 @@ void model_destroy_all();
 // @Meshes@
 // Binds a mesh
 void mesh_bind(Mesh* mesh, CommandBuffer* commandbuffer);
+void mesh_draw(Mesh* mesh, CommandBuffer* commandbuffer);
 // Returns the furthest dimenstion of the mesh
 // Useful for bound generation
 float mesh_max_distance(Mesh* mesh);

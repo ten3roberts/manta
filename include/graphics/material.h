@@ -21,6 +21,7 @@ Material* material_load(const char* file);
 Material* material_get(const char* name);
 
 // Gets a default white material that can be used for whiteboxing
+// If default already exists, it is only returned (variable lookup)
 Material* material_get_default();
 
 // Bind the material's pipeline
