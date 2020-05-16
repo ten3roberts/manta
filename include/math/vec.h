@@ -206,6 +206,28 @@ vec3 to_vec3(vec4 a);
 // Creates a vec4 from a vec3 and a w component
 vec4 to_vec4(vec3 a, float w);
 
+// Does nothing but return the input
+// Is used as a non-null function pointer for vector axis swapping
+static inline vec3 vec3_swap_identity(vec3 v)
+{
+	return (vec3){v.x, v.y, v.z};
+}
+
+static inline vec3 vec3_swap_yz(vec3 v)
+{
+	return (vec3){v.x, -v.z, v.y};
+}
+
+static inline vec3 vec3_swap_xz(vec3 v)
+{
+	return (vec3){v.z, v.y, v.x};
+}
+
+static inline vec3 vec3_swap_xy(vec3 v)
+{
+	return (vec3){v.y, v.x, v.z};
+}
+
 // Converts a vector to a comma separated string with the components
 void vec3_string(vec3 a, char* buf, int precision);
 
@@ -257,27 +279,9 @@ static inline float vec4_sqrmag(vec4 a)
 	return a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w;
 }
 
-// Does nothing but return the input
-// Is used as a non-null function pointer for vector axis swapping
-static inline vec3 vec3_swap_identity(vec3 v)
-{
-	return (vec3){v.x, v.y, v.z};
-}
-
-static inline vec3 vec3_swap_yz(vec3 v)
-{
-	return (vec3){v.x, -v.z, v.y};
-}
-
-static inline vec3 vec3_swap_xz(vec3 v)
-{
-	return (vec3){v.z, v.y, v.x};
-}
-
-static inline vec3 vec3_swap_xy(vec3 v)
-{
-	return (vec3){v.y, v.x, v.z};
-}
+// Converts an HSV value to RGB
+// Like vec3 but with an alpha(z) of 1
+static inline vec4 vec4_hsv(vec3 hsv);
 
 // Returns the normalized vector of a
 vec4 vec4_norm(vec4 a);
