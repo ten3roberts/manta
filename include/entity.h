@@ -3,16 +3,19 @@
 #include "transform.h"
 #include "graphics/model.h"
 #include "graphics/material.h"
+#include "rigidbody.h"
+
 #include "colliders.h"
 
 typedef struct Entity Entity;
 
 // Creates an entity and adds it to the scene
-Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform);
+Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform, Rigidbody rigidbody);
 
 const char* entity_get_name(Entity* entity);
 
 Transform* entity_get_transform(Entity* entity);
+Rigidbody* entity_get_rigidbody(Entity* entity);
 Material* entity_get_material(Entity* entity);
 Mesh* entity_get_mesh(Entity* entity);
 const SphereCollider* entity_get_boundingsphere(Entity* entity);

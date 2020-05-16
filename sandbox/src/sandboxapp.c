@@ -32,9 +32,11 @@ int application_start(int argc, char** argv)
 
 	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, -5, 0}}, window_get_aspect(window), 1, 0.1, 100);
 
-	Entity* entity1 = entity_create("entity1", "grid", "cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one});
-	Entity* entity2 = entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one});
-	Entity* entity3 = entity_create("entity2", "concrete", "multiple:Suzanne", (Transform){(vec3){-2, 2, -10}, quat_identity, vec3_one});
+	Entity* entity1 = entity_create("entity1", "grid", "cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one}, rigidbody_stationary);
+	Entity* entity2 = entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one},
+									(Rigidbody){.velocity = (vec3){-5, 0, 0}});
+	Entity* entity3 =
+		entity_create("entity2", "concrete", "multiple:Suzanne", (Transform){(vec3){-2, 2, -10}, quat_identity, vec3_one}, rigidbody_stationary);
 
 	/*for (int i = 0; i < 1000; i++)
 	{
@@ -43,7 +45,8 @@ int application_start(int argc, char** argv)
 	for (int i = 0; i < 64; i++)
 	{
 		entity_create("multiple", "grid", "cube",
-					  (Transform){vec3_add(vec3_random_sphere_even(5, 10), (vec3){0, -10, 20}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}});
+					  (Transform){vec3_add(vec3_random_sphere_even(5, 10), (vec3){0, -10, 20}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
+					  (Rigidbody){.velocity = vec3_random_sphere(1, 2)});
 	}
 
 	while (!window_get_close(window))
@@ -58,7 +61,6 @@ int application_start(int argc, char** argv)
 		//entity_get_transform(entity2)->rotation =
 		//	quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed() * 0.75, 0}));
 		entity_get_transform(entity3)->rotation = quat_euler((vec3){0, time_elapsed() * 0.5, 0});
-		entity_get_transform(entity2)->position.x -= 5 * time_delta();
 		vec3 cam_move = vec3_zero;
 		if (input_key(KEY_W))
 		{

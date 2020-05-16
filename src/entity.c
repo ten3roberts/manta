@@ -15,13 +15,14 @@ struct Entity
 {
 	char name[256];
 	Transform transform;
+	Rigidbody rigidbody;
 	Material* material;
 	vec4 color;
 	Mesh* mesh;
 	SphereCollider boundingsphere;
 };
 
-Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform)
+Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform, Rigidbody rigidbody)
 {
 	// Create the memory pool
 	if (entity_pool == NULL)
@@ -33,6 +34,7 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 	snprintf(entity->name, sizeof entity->name, "%s", name);
 
 	entity->transform = transform;
+	entity->rigidbody = rigidbody;
 	entity->material = material_get(material_name);
 
 	if (entity->material == NULL)
@@ -65,6 +67,10 @@ Transform* entity_get_transform(Entity* entity)
 {
 	return &entity->transform;
 }
+Rigidbody* entity_get_rigidbody(Entity* entity)
+{
+	return &entity->rigidbody;
+}
 Material* entity_get_material(Entity* entity)
 {
 	return entity->material;
@@ -91,6 +97,7 @@ void entity_set_color(Entity* entity, vec4 color)
 
 void entity_update(Entity* entity)
 {
+	rigidbody_update(&entity->rigidbody, &entity->transform);
 	transform_update(&entity->transform);
 }
 
