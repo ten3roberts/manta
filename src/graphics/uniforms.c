@@ -6,6 +6,7 @@
 #include "log.h"
 #include "magpie.h"
 #include <stb_image.h>
+#include "defines.h"
 
 // The different flavors of descriptor pools
 struct DescriptorPool
@@ -23,7 +24,7 @@ struct DescriptorPool
 struct DescriptorPool* descriptor_pools;
 uint32_t descriptor_pool_count;
 
-static BufferPool ub_pool = {VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT};
+static BufferPool ub_pool[RENDERER_MAX_THREADS] = {0};
 
 struct UniformBuffer
 {
@@ -32,6 +33,7 @@ struct UniformBuffer
 	uint32_t offsets[3];
 	VkBuffer buffers[3];
 	VkDeviceMemory memories[3];
+	uint8_t thread_idx;
 };
 
 // Attempts to find and return a descriptor pool with a minimum of the supplied descriptor types remaining
@@ -271,16 +273,20 @@ void descriptorpack_destroy(DescriptorPack* pack)
 	}
 }
 
-UniformBuffer* ub_create(uint32_t size, uint32_t binding)
+UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 {
 	LOG_S("Creating uniform buffer");
 	UniformBuffer* ub = malloc(sizeof(UniformBuffer));
 	ub->size = size;
+	ub->thread_idx = thread_idx;
 
 	// Find a free pool
 	for (int i = 0; i < swapchain_image_count; i++)
 	{
-		buffer_pool_malloc(&ub_pool, size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
+		// Sets buffer pool usage if not set
+		if (ub_pool[thread_idx].usage == 0)
+			ub_pool[thread_idx].usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		buffer_pool_malloc(&ub_pool[thread_idx], size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
 	}
 
 	return ub;
@@ -349,12 +355,16 @@ void ub_destroy(UniformBuffer* ub)
 	LOG_S("Destroying uniform buffer");
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
-		buffer_pool_free(&ub_pool, ub->size, ub->buffers[i], ub->memories[i], ub->offsets[i]);
+		buffer_pool_free(&ub_pool[ub->thread_idx], ub->size, ub->buffers[i], ub->memories[i], ub->offsets[i]);
 	}
 	free(ub);
 }
 
 void ub_pools_destroy()
 {
-	buffer_pool_array_destroy(&ub_pool);
+	for (uint8_t i = 0; i < RENDERER_MAX_THREADS; i++)
+	{
+		if (ub_pool[i].usage != 0)
+			buffer_pool_array_destroy(&ub_pool[0]);
+	}
 }

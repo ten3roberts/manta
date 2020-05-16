@@ -32,7 +32,6 @@ typedef struct
 	// How many descriptor set it holds
 	uint32_t count;
 	VkDescriptorSet sets[3];
-
 } DescriptorPack;
 
 typedef struct UniformBuffer UniformBuffer;
@@ -56,7 +55,8 @@ void descriptorpack_destroy(DescriptorPack* pack);
 // Internally holds one buffer per frame in flight to avoid simultaneous read and writes
 // Uniform buffer is completely agnostic to the shader layout and binding
 // To bind a uniform buffer you need to create a descriptor layout and set
-UniformBuffer* ub_create(uint32_t size, uint32_t binding);
+// As the buffer memory is pooled, you cannot map two buffers simultaneously as they might share the same memory, just at different offsets. thread_idx fixes making sure two buffers with a different thread index don't share the same memory
+UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx);
 
 // Maps the uniform buffer data for specified frame and returns a pointer to it
 // Note: you can not map the same frame simulataneously

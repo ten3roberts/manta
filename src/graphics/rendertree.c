@@ -58,7 +58,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_
 	}
 
 	// Create shader data
-	node->entity_data = ub_create(RENDER_TREE_LIM * sizeof(struct EntityData), 0);
+	node->entity_data = ub_create(RENDER_TREE_LIM * sizeof(struct EntityData), 0, node->thread_idx);
 
 	descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1, &node->entity_data, NULL, &node->entity_data_descriptors);
 

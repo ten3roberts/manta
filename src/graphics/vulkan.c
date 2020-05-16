@@ -665,7 +665,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 		// Add to map
 		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding);
+			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding, 0);
 			global_resource_map[layout_info->bindings[i].binding] = global_uniform_buffers[buffer_it];
 			++buffer_it;
 		}
