@@ -62,7 +62,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 
 // Splits the node into 8 children
 // If the node is root, the children are assigned separate threads
-void rendertree_split(RenderTreeNode* node);
+void rendertree_subdivide(RenderTreeNode* node);
 // Joins all children
 void rendertree_join(RenderTreeNode* node);
 
@@ -79,6 +79,14 @@ void rendertree_destroy(RenderTreeNode* node);
 // It then goes down to the child it fits in recursively
 // Inserts into the smallest node that fully contains the entity
 // May split the tree
-void rendertree_place(RenderTreeNode* node, Entity* entity);
+
+// Places an entity into the tree in the smallest node that fits from the given start node
+// Tree can be split
+// Note: the entity cannot exist in the tree when running this function
+bool rendertree_place_down(RenderTreeNode* node, Entity* entity);
+
+// Places an entity into the parent of node
+// Loops up until it fits, and then down with rendertree_place_down
+bool rendertree_place_up(RenderTreeNode* node, Entity* entity);
 
 #endif

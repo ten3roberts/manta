@@ -40,8 +40,6 @@ struct SceneData
 	vec4 background_color;
 	struct CameraData cameras[CAMERA_MAX];
 	uint32_t camera_count;
-	struct EntityData entities[ENTITY_MAX];
-	uint32_t entity_count;
 };
 
 #endif

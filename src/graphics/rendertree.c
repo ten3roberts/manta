@@ -5,6 +5,7 @@
 #include "graphics/vulkan_members.h"
 #include "graphics/renderer.h"
 #include <string.h>
+#include <assert.h>
 
 static mempool_t* node_pool = NULL;
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
@@ -53,6 +54,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	node->halfwidth = halfwidth;
 	node->changed = 0;
 	node->depth = 0;
+	node->thread_idx = 0;
 
 	for (uint8_t i = 0; i < 8; i++)
 		node->children[i] = NULL;
@@ -74,7 +76,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	return node;
 }
 
-void rendertree_split(RenderTreeNode* node)
+void rendertree_subdivide(RenderTreeNode* node)
 {
 	float new_width = (node->halfwidth) / 2;
 
@@ -112,43 +114,65 @@ void rendertree_split(RenderTreeNode* node)
 	}
 }
 
-void rendertree_update(RenderTreeNode* node, uint32_t frame)
+// Checks and replaces necessary entities if they don't fit
+static void rendertree_check(RenderTreeNode* node)
 {
-	// Map entity info
-	void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
-
 	for (uint32_t i = 0; i < node->entity_count; i++)
 	{
 		Entity* entity = node->entities[i];
 
-		// Check if entity still fits
+		// If entity no longer fits
+		// Try to place in parent
 		if (rendertree_fits(node, entity) == false)
 		{
 			// Remove entity
 			memmove(node->entities + i, node->entities + i + 1, (node->entity_count - i - 1) * sizeof *node->entities);
 			node->entity_count--;
 
-			// Replace
-			rendertree_place(node, entity);
+			// Re-place up
+			rendertree_place_up(node->parent, entity);
 		}
-		// Check if entity can fit in any child node
+		// Entity still fits, check if it fits in any child j (if subdivided)
 		else
 		{
-			for (uint32_t i = 0; node->children[0] && i < 8; i++)
+			for (uint32_t j = 0; node->children[0] && j < 8; j++)
 			{
-				if (rendertree_fits(node->children[i], entity))
+				if (rendertree_fits(node->children[j], entity))
 				{
 					// Remove entity
 					memmove(node->entities + i, node->entities + i + 1, (node->entity_count - i - 1) * sizeof *node->entities);
 					node->entity_count--;
 
-					// Replace
-					rendertree_place(node, entity);
+					// Re-place down into child
+					rendertree_place_down(node->children[j], entity);
 					break;
 				}
 			}
 		}
+	}
+}
 
+void rendertree_update(RenderTreeNode* node, uint32_t frame)
+{
+	// Empty child
+	if (node->entity_count == 0)
+	{
+		return;
+	}
+	// Map entity info
+	if (node->entity_count > RENDER_TREE_LIM)
+	{
+		LOG_E("Entities in tree node exceeds capcity of %d", RENDER_TREE_LIM);
+	}
+	void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
+
+	// Check and replace necessary entities
+	rendertree_check(node);
+
+	// Update all entities
+	for (uint32_t i = 0; i < node->entity_count; i++)
+	{
+		Entity* entity = node->entities[i];
 		// Update entity normally
 		entity_update(entity);
 		entity_update_shaderdata(entity, p_entity_data, i);
@@ -156,7 +180,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 	ub_unmap(node->entity_data, frame);
 
-	// Recurse children
+	// Recursively update children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
 	{
 		rendertree_update(node->children[i], frame);
@@ -231,38 +255,61 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 
 	return true;
 }
-void rendertree_place(RenderTreeNode* node, Entity* entity)
+bool rendertree_place_down(RenderTreeNode* node, Entity* entity)
 {
-	if (rendertree_fits(node, entity))
+	// Check if it fits in current node
+	if (rendertree_fits(node, entity) == false)
 	{
-		// Check if it could fit in  children
-
-		for (uint32_t i = 0; node->children[0] && i < 8; i++)
-		{
-			// Fits in a child node as well, go down
-			if (rendertree_fits(node->children[i], entity))
-			{
-				rendertree_place(node, entity);
-				return;
-			}
-		}
-		node->entities[node->entity_count++] = entity;
-
-		// Split leaf node if full
-		if (node->children[0] == NULL && node->entity_count == RENDER_TREE_LIM)
-		{
-			rendertree_split(node);
-			// rendertree_update(node, frame);
-		}
+		return false;
 	}
 
-	else
+	// Check if node is still full when subdivided
+	if (node->children[0] && node->entity_count >= RENDER_TREE_LIM)
 	{
-		LOG_E("Entity outside octree bounds");
-		// Doesn't fit in current node, go up
-		rendertree_place(node->parent, entity);
+		LOG_E("Subdivided node it still full");
 	}
+	// Check if the tree needs to be subdivided
+	if (node->children[0] == NULL && node->entity_count >= RENDER_TREE_LIM)
+	{
+		rendertree_subdivide(node);
+		rendertree_check(node);
+		LOG_S("Subdivided tree");
+	}
+
+	// Check if it fits in any children
+	for (uint32_t i = 0; node->children[0] && i < 8; i++)
+	{
+		if (rendertree_place_down(node->children[i], entity))
+			return true;
+	}
+
+	// Fits only in this node
+	// Insert
+	node->entities[node->entity_count++] = entity;
+	return true;
 }
+
+bool rendertree_place_up(RenderTreeNode* node, Entity* entity)
+{
+	RenderTreeNode* parent = node->parent;
+	// Check if it fits in current node, if not, move to parent node
+	while (rendertree_fits(node, entity) == false)
+	{
+		// At root element without fit
+		if (parent == NULL)
+		{
+			LOG_E("Entity %s does not fit in the bounds of the tree", entity_get_name(entity));
+			return false;
+		}
+		parent = node->parent;
+	}
+
+	// Fits in this node
+	// Place down as far as possible
+	rendertree_place_down(parent, entity);
+	return true;
+}
+
 void rendertree_destroy(RenderTreeNode* node)
 {
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)

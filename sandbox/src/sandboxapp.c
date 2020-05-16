@@ -40,9 +40,9 @@ int application_start(int argc, char** argv)
 	{
 		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
 	}*/
-	for (int i = 0; i < 30; i++)
+	for (int i = 0; i < 64; i++)
 	{
-		//entity_create("multiple", "grid", "cube", (Transform){vec3_random_sphere_even(5, 50), quat_identity, vec3_one});
+		entity_create("multiple", "grid", "cube", (Transform){vec3_add(vec3_random_sphere_even(5, 10), (vec3){0, -10, 0}), quat_identity, vec3_one});
 	}
 
 	while (!window_get_close(window))

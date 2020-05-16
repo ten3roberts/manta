@@ -31,7 +31,7 @@ Scene* scene_create(const char* name)
 		(void)scene_set_current(scene);
 
 	// Create the render tree root node
-	scene->rendertree_root = rendertree_create(10, vec3_zero, 0);
+	scene->rendertree_root = rendertree_create(20, vec3_zero, 0);
 
 	return scene;
 }
@@ -65,7 +65,7 @@ void scene_add_entity(Scene* scene, Entity* entity)
 	// Add at end of array
 	scene->entities[scene->entity_count] = entity;
 	++scene->entity_count;
-	rendertree_place(scene->rendertree_root, entity);
+	rendertree_place_down(scene->rendertree_root, entity);
 	renderer_flag_rebuild();
 }
 
