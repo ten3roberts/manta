@@ -365,6 +365,6 @@ void ub_pools_destroy()
 	for (uint8_t i = 0; i < RENDERER_MAX_THREADS; i++)
 	{
 		if (ub_pool[i].usage != 0)
-			buffer_pool_array_destroy(&ub_pool[0]);
+			buffer_pool_array_destroy(&ub_pool[i]);
 	}
 }

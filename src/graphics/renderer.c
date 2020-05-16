@@ -20,7 +20,6 @@ static uint8_t flag_rebuild = 0;
 static CommandBuffer primarybuffers[3];
 
 static CommandBuffer oneframe_commands[3];
-static Mesh* primitive_cube = NULL;
 static UniformBuffer* oneframe_buffer = NULL;
 static DescriptorPack oneframe_descriptors = {0};
 static int oneframe_draw_index = 0;
@@ -69,7 +68,7 @@ int renderer_init()
 	// Load primitive models
 	model_load_collada("./assets/models/primitive.dae");
 
-	oneframe_buffer = ub_create(sizeof(struct EntityData) * 5, 0, 0);
+	oneframe_buffer = ub_create(sizeof(struct EntityData) * RENDER_TREE_LIM, 0, 0);
 	(void)descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(),
 								&oneframe_buffer, NULL, &oneframe_descriptors);
 
@@ -204,12 +203,9 @@ int renderer_get_frameindex()
 {
 	return image_index;
 }
-void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale, vec4 color)
+
+void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 scale, vec4 color)
 {
-	if (primitive_cube == NULL)
-	{
-		primitive_cube = mesh_find("primitive:cube");
-	}
 	Transform transform = (Transform){.position = position, .rotation = rotation, .scale = scale};
 	transform_update(&transform);
 	struct EntityData data = {0};
@@ -217,12 +213,27 @@ void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale, vec4 col
 	data.color = color;
 
 	// Binding is done by renderer
-	mesh_bind(primitive_cube, &oneframe_commands[image_index]);
+	mesh_bind(mesh, &oneframe_commands[image_index]);
 	ub_update(oneframe_buffer, &data, sizeof(struct EntityData) * oneframe_draw_index, sizeof(struct EntityData), image_index);
 	// Set push constant for model matrix
 	material_push_constants(material_get_default(), &oneframe_commands[image_index], 0, &oneframe_draw_index);
-	mesh_draw(primitive_cube, &oneframe_commands[image_index]);
+	mesh_draw(mesh, &oneframe_commands[image_index]);
 	oneframe_draw_index++;
+}
+
+void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale, vec4 color)
+{
+	static Mesh* mesh = NULL;
+	if (mesh == NULL)
+		mesh = mesh_find("primitive:cube");
+	renderer_draw_custom(mesh, position, rotation, scale, color);
+}
+void renderer_draw_cube_wire(vec3 position, quaternion rotation, vec3 scale, vec4 color)
+{
+	static Mesh* mesh = NULL;
+	if (mesh == NULL)
+		mesh = mesh_find("primitive:cube_wire");
+	renderer_draw_custom(mesh, position, rotation, scale, color);
 }
 
 void renderer_terminate()
