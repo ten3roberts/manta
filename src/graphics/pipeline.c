@@ -73,7 +73,8 @@ Pipeline* pipeline_get(struct PipelineInfo* info)
 	int result = pipeline_create(info, &pipeline->pipeline, &pipeline->layout);
 	if (result != 0)
 	{
-		LOG_E("Pipeline creation using shaders %s, %s, and %s failed with code - %d", info->vertexshader, info->geometryshader, info->fragmentshader, result);
+		LOG_E("Pipeline creation using shaders %s, %s, and %s failed with code - %d", info->vertexshader, info->geometryshader, info->fragmentshader,
+			  result);
 		return NULL;
 	}
 
@@ -130,8 +131,8 @@ void pipeline_recreate(Pipeline* pipeline)
 	int result = pipeline_create(&pipeline->info, &pipeline->pipeline, &pipeline->layout);
 	if (result != 0)
 	{
-		LOG_E("Pipeline recreation using shaders %s, %s, and %s failed with code - %d", pipeline->info.vertexshader, pipeline->info.geometryshader, pipeline->info.fragmentshader,
-			  result);
+		LOG_E("Pipeline recreation using shaders %s, %s, and %s failed with code - %d", pipeline->info.vertexshader, pipeline->info.geometryshader,
+			  pipeline->info.fragmentshader, result);
 		return;
 	}
 }
@@ -333,8 +334,8 @@ static int pipeline_create(struct PipelineInfo* info, VkPipeline* pipeline, VkPi
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = info->descriptor_layout_count;
 	pipelineLayoutInfo.pSetLayouts = info->descriptor_layouts;
-	pipelineLayoutInfo.pushConstantRangeCount = info->push_constant_count; // TODO
-	pipelineLayoutInfo.pPushConstantRanges = info->push_constants;		   // TODO
+	pipelineLayoutInfo.pushConstantRangeCount = info->push_constant_count;
+	pipelineLayoutInfo.pPushConstantRanges = info->push_constants;
 
 	VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, layout);
 	if (result != VK_SUCCESS)

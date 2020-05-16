@@ -211,7 +211,7 @@ Material* material_load_internal(JSON* object)
 
 	// Define one push constant for model matrix
 	mat->push_constant_count = 1;
-	mat->push_constants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	mat->push_constants[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	mat->push_constants[0].offset = 0;
 	mat->push_constants[0].size = PUSH_CONSTANT_SIZE;
 

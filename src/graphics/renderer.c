@@ -204,7 +204,7 @@ int renderer_get_frameindex()
 {
 	return image_index;
 }
-void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale)
+void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale, vec4 color)
 {
 	if (primitive_cube == NULL)
 	{
@@ -214,7 +214,7 @@ void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale)
 	transform_update(&transform);
 	struct EntityData data = {0};
 	data.model_matrix = transform.model_matrix;
-	data.color = vec4_one;
+	data.color = color;
 
 	// Binding is done by renderer
 	mesh_bind(primitive_cube, &oneframe_commands[image_index]);

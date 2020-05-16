@@ -33,6 +33,8 @@ const static vec3 vec3_forward = {0, 0, 1};
 const static vec3 vec3_right = {1, 0, 0};
 const static vec3 vec3_up = {0, 1, 0};
 
+const static vec3 vec3_white = {1, 1, 1};
+const static vec3 vec3_black = {0, 0, 0};
 const static vec3 vec3_red = {1, 0, 0};
 const static vec3 vec3_green = {0, 1, 0};
 const static vec3 vec3_blue = {0, 0, 1};
@@ -49,6 +51,8 @@ typedef struct
 const static vec4 vec4_one = {1, 1, 1};
 const static vec4 vec4_zero = {0, 0, 0};
 
+const static vec4 vec4_white = {1, 1, 1};
+const static vec4 vec4_black = {0, 0, 0};
 const static vec4 vec4_red = {1, 0, 0, 1};
 const static vec4 vec4_green = {0, 1, 0, 1};
 const static vec4 vec4_blue = {0, 0, 1, 1};

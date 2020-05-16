@@ -7,11 +7,12 @@
 
 static mempool_t* node_pool = NULL;
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
-static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){.binding = 0,
-																						 .descriptorCount = 1,
-																						 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-																						 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-																						 .pImmutableSamplers = 0};
+static VkDescriptorSetLayoutBinding entity_data_binding =
+	(VkDescriptorSetLayoutBinding){.binding = 0,
+								   .descriptorCount = 1,
+								   .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+								   .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+								   .pImmutableSamplers = 0};
 
 VkDescriptorSetLayoutBinding* rendertree_get_descriptor_bindings(void)
 {

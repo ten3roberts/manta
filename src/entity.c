@@ -16,9 +16,9 @@ struct Entity
 	char name[256];
 	Transform transform;
 	Material* material;
+	vec4 color;
 	Mesh* mesh;
 	SphereCollider boundingsphere;
-	RenderTreeNode* render_node;
 };
 
 Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform)
@@ -49,6 +49,8 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 
 	// Create bounding sphere from model and bind the transform to it
 	entity->boundingsphere = spherecollider_create(mesh_max_distance(entity->mesh), vec3_zero, &entity->transform);
+
+	entity->color = vec4_white;
 
 	// Add to scene
 	scene_add_entity(scene_get_current(), entity);
@@ -84,7 +86,11 @@ void entity_update(Entity* entity)
 
 void entity_update_shaderdata(Entity* entity, void* data_write, uint32_t index)
 {
-	memcpy((struct EntityData*)data_write + index, &entity->transform.model_matrix, sizeof(mat4));
+	struct EntityData data = {0};
+	data.model_matrix = entity->transform.model_matrix;
+	data.color = vec4_white;
+
+	memcpy((struct EntityData*)data_write + index, &data, sizeof(struct EntityData));
 }
 
 // Is only called irreguraly when command buffers are rebuilt

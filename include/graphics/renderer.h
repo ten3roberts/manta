@@ -34,7 +34,7 @@ void renderer_flag_rebuild();
 uint32_t renderer_get_frameindex();
 
 // @Functions to draw shape for one frame@
-void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale);
+void renderer_draw_cube(vec3 position, quaternion rotation, vec3 scale, vec4 color);
 
 // Deinitializes the renderer and frees all resources
 void renderer_terminate();

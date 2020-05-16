@@ -94,7 +94,7 @@ int application_start(int argc, char** argv)
 			LOG("Not Colliding");
 		}*/
 
-		renderer_draw_cube((vec3){10, 0, -40}, quat_identity, vec3_one);
+		renderer_draw_cube((vec3){10, 0, -40}, quat_identity, vec3_one, (vec4){0.5f, 0, 0, 1});
 
 		renderer_submit(scene);
 
