@@ -51,6 +51,7 @@ mat4 camera_get_projection_matrix(Camera* camera)
 // Is called once a frame
 void camera_update(Camera* camera)
 {
+	camera->transform.scale = vec3_one;
 	transform_update(&camera->transform);
 	camera->view = mat4_inverse(&camera->transform.model_matrix);
 }

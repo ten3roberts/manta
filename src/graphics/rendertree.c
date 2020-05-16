@@ -3,6 +3,7 @@
 #include "mempool.h"
 #include "log.h"
 #include "graphics/vulkan_members.h"
+#include "graphics/renderer.h"
 #include <string.h>
 
 static mempool_t* node_pool = NULL;
@@ -180,6 +181,10 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 	// Record into primary
 
 	vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
+
+	// For debug mode, show tree
+
+	renderer_draw_cube(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, (vec4){0.5f, 0, 0, 1});
 
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
