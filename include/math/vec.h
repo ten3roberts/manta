@@ -189,7 +189,8 @@ static inline float vec3_sqrdistance(vec3 a, vec3 b)
 vec3 vec3_lerp(vec3 a, vec3 b, float t);
 
 // Converts an HSV value to RGB
-vec3 vec3_hsv(vec3 hsv);
+// H is in radians
+vec3 vec3_hsv(float h, float s, float v);
 
 // Returns a random point inside a cube
 vec3 vec3_random_cube(float width);
@@ -281,7 +282,7 @@ static inline float vec4_sqrmag(vec4 a)
 
 // Converts an HSV value to RGB
 // Like vec3 but with an alpha(z) of 1
-static inline vec4 vec4_hsv(vec3 hsv);
+vec4 vec4_hsv(float h, float s, float v);
 
 // Returns the normalized vector of a
 vec4 vec4_norm(vec4 a);
