@@ -6,7 +6,7 @@
 #include "graphics/renderer.h"
 #include <string.h>
 #include <assert.h>
-
+#include "stdio.h"
 static mempool_t* node_pool = NULL;
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
 static VkDescriptorSetLayoutBinding entity_data_binding =
@@ -82,32 +82,47 @@ void rendertree_subdivide(RenderTreeNode* node)
 
 	for (uint32_t i = 0; i < 8; i++)
 	{
+		// 000 ---
+		// 001 +--
+		// 010 -+-
+		// 011 ++-
+		// 100 --+
+		// 101 +-+
+		// 110 -++
+		// 111 +++
 		vec3 center = vec3_zero;
-		if (i & 2)
+		if ((i & 1) == 1)
 		{
+			printf("+");
 			center.x = new_width;
 		}
 		else
 		{
+			printf("-");
 			center.x = -new_width;
 		}
-		if (i & 4)
+		if ((i & 2) == 2)
 		{
+			printf("+");
 			center.y = new_width;
 		}
 		else
 		{
+			printf("-");
 			center.y = -new_width;
 		}
-		if (i & 8)
+		if ((i & 4) == 4)
 		{
+			printf("+");
 			center.z = new_width;
 		}
 		else
 		{
-			center.z -= -new_width;
-		}
+			printf("-");
 
+			center.z = -new_width;
+		}
+		printf("\n");
 		node->children[i] = rendertree_create(new_width, center, node->thread_idx);
 		node->children[i]->parent = node;
 		node->children[i]->depth = node->depth + 1;
@@ -147,6 +162,8 @@ static void rendertree_check(RenderTreeNode* node)
 					rendertree_place_down(node->children[j], entity);
 					break;
 				}
+				if (j == 7)
+					LOG("Did not fit in any child");
 			}
 		}
 	}
@@ -208,7 +225,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 
 	// For debug mode, show tree
 
-	renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, (vec4){0.5f, 0, 0, 1});
+	renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
@@ -219,37 +236,47 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 
 bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 {
-	const SphereCollider* e_bound = entity_get_boundingsphere(entity);
-
+	SphereCollider* e_bound = (SphereCollider*)entity_get_boundingsphere(entity);
+	e_bound->radius = 0.0f;
 	// Left bound (-x)
 	if (e_bound->base.transform->position.x + e_bound->radius < node->center.x - node->halfwidth)
 	{
+		LOG("Not fit left");
 		return false;
 	}
 	// Right bound (+x)
 	if (e_bound->base.transform->position.x + e_bound->radius > node->center.x + node->halfwidth)
 	{
+		LOG("Not fit right");
 		return false;
 	}
 	// Bottom bound (-y)
 	if (e_bound->base.transform->position.y + e_bound->radius < node->center.y - node->halfwidth)
 	{
+		LOG("Not fit bottom");
+
 		return false;
 	}
 	// Top bound (+y)
 	if (e_bound->base.transform->position.y + e_bound->radius > node->center.y + node->halfwidth)
 	{
+		LOG("Not fit top");
+
 		return false;
 	}
 
 	// Front bound (z)
-	if (e_bound->base.transform->position.y + e_bound->radius < node->center.z - node->halfwidth)
+	if (e_bound->base.transform->position.z + e_bound->radius < node->center.z - node->halfwidth)
 	{
+		LOG("Not fit front");
+
 		return false;
 	}
 	// back bound (-z)
-	if (e_bound->base.transform->position.y + e_bound->radius > node->center.z + node->halfwidth)
+	if (e_bound->base.transform->position.z + e_bound->radius > node->center.z + node->halfwidth)
 	{
+		LOG("Not fit back");
+
 		return false;
 	}
 

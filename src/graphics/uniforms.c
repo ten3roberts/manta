@@ -275,7 +275,7 @@ void descriptorpack_destroy(DescriptorPack* pack)
 
 UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 {
-	LOG_S("Creating uniform buffer");
+	//LOG_S("Creating uniform buffer");
 	UniformBuffer* ub = malloc(sizeof(UniformBuffer));
 	ub->size = size;
 	ub->thread_idx = thread_idx;

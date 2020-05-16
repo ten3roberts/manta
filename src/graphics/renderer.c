@@ -206,6 +206,10 @@ int renderer_get_frameindex()
 
 void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 scale, vec4 color)
 {
+	if (oneframe_draw_index >= RENDER_TREE_LIM)
+	{
+		return;
+	}
 	Transform transform = (Transform){.position = position, .rotation = rotation, .scale = scale};
 	transform_update(&transform);
 	struct EntityData data = {0};
