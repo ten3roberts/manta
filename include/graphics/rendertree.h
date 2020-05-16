@@ -17,6 +17,7 @@ typedef struct RenderTreeNode
 	float halfwidth;
 	vec3 center;
 	uint8_t depth;
+	uint32_t id;
 
 	struct RenderTreeNode* children[8];
 	struct RenderTreeNode* parent;

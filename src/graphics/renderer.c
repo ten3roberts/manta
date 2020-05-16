@@ -9,6 +9,8 @@
 #include "graphics/commandbuffer.h"
 #include "graphics/rendertree.h"
 
+#define ONE_FRAME_LIMIT 512
+
 static uint32_t image_index;
 
 // 0: No resize
@@ -68,7 +70,7 @@ int renderer_init()
 	// Load primitive models
 	model_load_collada("./assets/models/primitive.dae");
 
-	oneframe_buffer = ub_create(sizeof(struct EntityData) * RENDER_TREE_LIM, 0, 0);
+	oneframe_buffer = ub_create(sizeof(struct EntityData) * ONE_FRAME_LIMIT, 0, 0);
 	(void)descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(),
 								&oneframe_buffer, NULL, &oneframe_descriptors);
 
@@ -206,7 +208,7 @@ int renderer_get_frameindex()
 
 void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 scale, vec4 color)
 {
-	if (oneframe_draw_index >= RENDER_TREE_LIM)
+	if (oneframe_draw_index >= ONE_FRAME_LIMIT)
 	{
 		return;
 	}

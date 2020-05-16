@@ -79,6 +79,16 @@ const SphereCollider* entity_get_boundingsphere(Entity* entity)
 	return &entity->boundingsphere;
 }
 
+vec4 entity_get_color(Entity* entity)
+{
+	return entity->color;
+}
+
+void entity_set_color(Entity* entity, vec4 color)
+{
+	entity->color = color;
+}
+
 void entity_update(Entity* entity)
 {
 	transform_update(&entity->transform);
@@ -88,7 +98,7 @@ void entity_update_shaderdata(Entity* entity, void* data_write, uint32_t index)
 {
 	struct EntityData data = {0};
 	data.model_matrix = entity->transform.model_matrix;
-	data.color = vec4_white;
+	data.color = entity->color;
 
 	memcpy((struct EntityData*)data_write + index, &data, sizeof(struct EntityData));
 }

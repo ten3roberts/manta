@@ -16,6 +16,9 @@ Transform* entity_get_transform(Entity* entity);
 Material* entity_get_material(Entity* entity);
 Mesh* entity_get_mesh(Entity* entity);
 const SphereCollider* entity_get_boundingsphere(Entity* entity);
+vec4 entity_get_color(Entity* entity);
+
+void entity_set_color(Entity* entity, vec4 color);
 
 // Is called once a frame
 void entity_update(Entity* entity);
