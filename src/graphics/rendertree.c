@@ -35,7 +35,7 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void)
 	return entity_data_layout;
 }
 
-RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_idx)
+RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx)
 {
 	// Pool allocations for faster deletion and creation without fragmenting
 	// memory
@@ -48,11 +48,8 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_
 
 	node->parent = NULL;
 	node->depth = 0;
-	node->left = -halfwidth + origin.x;
-	node->right = halfwidth + origin.x;
-	node->top = halfwidth + origin.y;
-	node->bottom = -halfwidth + origin.y;
-
+	node->center = center;
+	node->halfwidth = halfwidth;
 	node->changed = 0;
 	node->depth = 0;
 
@@ -78,37 +75,37 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_
 
 void rendertree_split(RenderTreeNode* node)
 {
-	float new_width = (node->right - node->left) / 2;
+	float new_width = (node->halfwidth) / 2;
 
 	for (uint32_t i = 0; i < 8; i++)
 	{
-		vec3 origin = vec3_zero;
+		vec3 center = vec3_zero;
 		if (i & 2)
 		{
-			origin.x = new_width;
+			center.x = new_width;
 		}
 		else
 		{
-			origin.x = -new_width;
+			center.x = -new_width;
 		}
 		if (i & 4)
 		{
-			origin.y = new_width;
+			center.y = new_width;
 		}
 		else
 		{
-			origin.y = -new_width;
+			center.y = -new_width;
 		}
 		if (i & 8)
 		{
-			origin.z = new_width;
+			center.z = new_width;
 		}
 		else
 		{
-			origin.z -= -new_width;
+			center.z -= -new_width;
 		}
 
-		node->children[i] = rendertree_create(new_width, origin, node->thread_idx);
+		node->children[i] = rendertree_create(new_width, center, node->thread_idx);
 		node->children[i]->parent = node;
 		node->children[i]->depth = node->depth + 1;
 	}
@@ -181,6 +178,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 	commandbuffer_end(&node->commandbuffers[frame]);
 
 	// Record into primary
+
 	vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
 
 	// Recurse children
@@ -193,23 +191,35 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 {
 	const SphereCollider* e_bound = entity_get_boundingsphere(entity);
+
 	// Left bound (-x)
-	if (e_bound->base.transform->position.x + e_bound->radius < node->left)
+	if (e_bound->base.transform->position.x + e_bound->radius < node->center.x - node->halfwidth)
 	{
 		return false;
 	}
 	// Right bound (+x)
-	if (e_bound->base.transform->position.x + e_bound->radius > node->right)
+	if (e_bound->base.transform->position.x + e_bound->radius > node->center.x + node->halfwidth)
 	{
 		return false;
 	}
 	// Bottom bound (-y)
-	if (e_bound->base.transform->position.y + e_bound->radius < node->bottom)
+	if (e_bound->base.transform->position.y + e_bound->radius < node->center.y - node->halfwidth)
 	{
 		return false;
 	}
 	// Top bound (+y)
-	if (e_bound->base.transform->position.y + e_bound->radius > node->top)
+	if (e_bound->base.transform->position.y + e_bound->radius > node->center.y + node->halfwidth)
+	{
+		return false;
+	}
+
+	// Front bound (z)
+	if (e_bound->base.transform->position.y + e_bound->radius < node->center.z - node->halfwidth)
+	{
+		return false;
+	}
+	// back bound (-z)
+	if (e_bound->base.transform->position.y + e_bound->radius > node->center.z + node->halfwidth)
 	{
 		return false;
 	}

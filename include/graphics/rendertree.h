@@ -14,7 +14,8 @@ typedef struct RenderTreeNode
 {
 	// Tree data
 	// The bounds for the tree
-	float left, right, bottom, top;
+	float halfwidth;
+	vec3 center;
 	uint8_t depth;
 
 	struct RenderTreeNode* children[8];
@@ -46,7 +47,7 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 // Creates a rendertree root node for a thread
 // Note, only the render thread with the correct index should use this
 // All children inherit the thread index
-RenderTreeNode* rendertree_create(float halfwidth, vec3 origin, uint32_t thread_idx);
+RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx);
 
 void rendertree_destroy(RenderTreeNode* node);
 
