@@ -333,6 +333,7 @@ void model_destroy(Model* model)
 	{
 		mesh_destroy(model->meshes[i]);
 	}
+	free(model->meshes);
 	model->mesh_count = 0;
 	free(model);
 }
