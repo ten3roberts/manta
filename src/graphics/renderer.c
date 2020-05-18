@@ -152,6 +152,9 @@ void renderer_submit(Scene* scene)
 		return;
 	}
 
+	// Destroy command buffers not in used queued for destruction
+	commandbuffer_handle_destructions();
+
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 

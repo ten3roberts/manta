@@ -48,6 +48,7 @@ CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame
 
 	CommandBuffer* commandbuffer = malloc(sizeof(CommandBuffer));
 	commandbuffer->thread_idx = thread_idx;
+	commandbuffer->recording = false;
 	commandbuffer->frame = frame;
 	commandbuffer->fence = fence;
 	commandbuffer->level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
@@ -96,6 +97,7 @@ CommandBuffer* commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)
 
 	CommandBuffer* commandbuffer = malloc(sizeof(CommandBuffer));
 	commandbuffer->thread_idx = thread_idx;
+	commandbuffer->recording = false;
 	commandbuffer->frame = frame;
 	commandbuffer->level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	commandbuffer->inheritanceInfo = (VkCommandBufferInheritanceInfo){0};
