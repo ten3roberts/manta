@@ -8,6 +8,8 @@
 #include <assert.h>
 #include "stdio.h"
 
+#define ALL_CHANGED (1 | 2 | 4)
+
 static uint32_t node_count = 0;
 static mempool_t* node_pool = NULL;
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
@@ -54,7 +56,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	node->depth = 0;
 	node->center = center;
 	node->halfwidth = halfwidth;
-	node->changed = 0;
+	node->changed = ALL_CHANGED;
 	node->depth = 0;
 	node->thread_idx = 0;
 	node->id = node_count++;
@@ -121,6 +123,7 @@ void rendertree_subdivide(RenderTreeNode* node)
 		node->children[i] = rendertree_create(new_width, center, node->thread_idx);
 		node->children[i]->parent = node;
 		node->children[i]->depth = node->depth + 1;
+		node->changed = ALL_CHANGED;
 	}
 }
 
@@ -148,6 +151,7 @@ void rendertree_merge(RenderTreeNode* node)
 		}
 		rendertree_destroy(child);
 	}
+	node->changed = ALL_CHANGED;
 }
 
 // Checks and replaces necessary entities if they don't fit
@@ -263,9 +267,13 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		// Record into primary
 
 		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
-		/*renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
-						   vec4_hsv(node->depth, 1, 1));*/
+		if (node->changed & (1 << frame))
+			renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
+							   vec4_hsv(node->depth, 1, 1));
 		renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
+
+		// Remove changed bit for this frame
+		node->changed = node->changed & ~(1 << frame);
 	}
 	// For debug mode, show tree
 	// Recurse children
@@ -375,6 +383,7 @@ bool rendertree_place_down(RenderTreeNode* node, Entity* entity)
 	// Fits only in this node
 	// Insert
 	node->entities[node->entity_count++] = entity;
+	node->changed = ALL_CHANGED;
 	return true;
 }
 

@@ -46,7 +46,7 @@ int application_start(int argc, char** argv)
 	{
 		entity_create("multiple", "grid", "cube",
 					  (Transform){vec3_add(vec3_random_sphere_even(5, 10), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
-					  (Rigidbody){.velocity = vec3_random_sphere(1, 2)});
+					  (Rigidbody){.velocity = vec3_random_sphere(0, 5.0f)});
 	}
 
 	while (!window_get_close(window))

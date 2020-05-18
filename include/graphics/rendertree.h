@@ -33,7 +33,7 @@ typedef struct RenderTreeNode
 	DescriptorPack entity_data_descriptors;
 
 	// A bit field of which frames should be rebuilt
-	uint8_t changed;
+	int changed : 3;
 	uint8_t thread_idx;
 } RenderTreeNode;
 
