@@ -36,7 +36,7 @@ IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count)
 
 void ib_bind(IndexBuffer* ib, CommandBuffer* commandbuffer)
 {
-	vkCmdBindIndexBuffer(commandbuffer->buffer, ib->buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandbuffer->cmd, ib->buffer, 0, VK_INDEX_TYPE_UINT32);
 }
 
 void ib_destroy(IndexBuffer* ib)

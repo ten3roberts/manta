@@ -19,9 +19,9 @@ static int resize_event;
 
 static uint8_t flag_rebuild = 0;
 
-static CommandBuffer primarybuffers[3];
+static CommandBuffer* primarybuffers[3];
 
-static CommandBuffer oneframe_commands[3];
+static CommandBuffer* oneframe_commands[3];
 static UniformBuffer* oneframe_buffer = NULL;
 static DescriptorPack oneframe_descriptors = {0};
 static int oneframe_draw_index = 0;
@@ -30,7 +30,7 @@ static int oneframe_draw_index = 0;
 // Needs to be called after renderer_begin
 static void renderer_rebuild(Scene* scene)
 {
-	CommandBuffer* commandbuffer = &primarybuffers[image_index];
+	CommandBuffer* commandbuffer = primarybuffers[image_index];
 	commandbuffer_begin(commandbuffer);
 
 	// Begin render pass
@@ -43,7 +43,7 @@ static void renderer_rebuild(Scene* scene)
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
 	render_pass_info.clearValueCount = 2;
 	render_pass_info.pClearValues = clear_values;
-	vkCmdBeginRenderPass(commandbuffer->buffer, &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	vkCmdBeginRenderPass(commandbuffer->cmd, &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// Iterate all entities
 	RenderTreeNode* rendertree = scene_get_rendertree(scene);
@@ -51,10 +51,10 @@ static void renderer_rebuild(Scene* scene)
 	rendertree_render(rendertree, commandbuffer, camera, image_index);
 
 	// One frame draws
-	commandbuffer_end(&oneframe_commands[image_index]);
+	commandbuffer_end(oneframe_commands[image_index]);
 	//oneframe_buffer_mapped = NULL;
-	vkCmdExecuteCommands(commandbuffer->buffer, 1, &oneframe_commands[image_index].buffer);
-	vkCmdEndRenderPass(commandbuffer->buffer);
+	vkCmdExecuteCommands(commandbuffer->cmd, 1, &oneframe_commands[image_index]->cmd);
+	vkCmdEndRenderPass(commandbuffer->cmd);
 	commandbuffer_end(commandbuffer);
 }
 
@@ -64,7 +64,7 @@ int renderer_init()
 	for (int i = 0; i < 3; i++)
 	{
 		primarybuffers[i] = commandbuffer_create_primary(0, i);
-		oneframe_commands[i] = commandbuffer_create_secondary(0, i, renderPass, framebuffers[i]);
+		oneframe_commands[i] = commandbuffer_create_secondary(0, i, primarybuffers[i]->fence, renderPass, framebuffers[i]);
 	}
 
 	// Load primitive models
@@ -90,13 +90,10 @@ void renderer_submit(Scene* scene)
 
 	// Submit render queue
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
-	if (images_in_flight[image_index] != VK_NULL_HANDLE)
+	if (primarybuffers[image_index]->fence != VK_NULL_HANDLE)
 	{
-		vkWaitForFences(device, 1, &images_in_flight[image_index], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(device, 1, &primarybuffers[image_index]->fence, VK_TRUE, UINT64_MAX);
 	}
-
-	// Mark the image as now being in use by this frame
-	images_in_flight[image_index] = in_flight_fences[current_frame];
 
 	// Submit render queue
 	// Specifies which semaphores to wait for before execution
@@ -111,7 +108,7 @@ void renderer_submit(Scene* scene)
 
 	// Specify which command buffers to submit for execution
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &primarybuffers[image_index].buffer;
+	submit_info.pCommandBuffers = &primarybuffers[image_index]->cmd;
 
 	// Specify which semaphores to signal on completion
 	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};
@@ -119,9 +116,9 @@ void renderer_submit(Scene* scene)
 	submit_info.pSignalSemaphores = signal_semaphores;
 
 	// Synchronise CPU-GPU
-	vkResetFences(device, 1, &in_flight_fences[current_frame]);
+	vkResetFences(device, 1, &primarybuffers[current_frame]->fence);
 
-	VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]);
+	VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, primarybuffers[current_frame]->fence);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to submit draw command buffer - code %d", result);
@@ -181,13 +178,13 @@ void renderer_begin()
 		resize_event = 0;
 	}
 
-	vkWaitForFences(device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
+	vkWaitForFences(device, 1, &primarybuffers[current_frame]->fence, VK_TRUE, UINT64_MAX);
 
 	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE, &image_index);
 
 	// Begin one frame draws
-	commandbuffer_begin(&oneframe_commands[image_index]);
-	material_bind(material_get_default(), &oneframe_commands[image_index], oneframe_descriptors.sets[image_index]);
+	commandbuffer_begin(oneframe_commands[image_index]);
+	material_bind(material_get_default(), oneframe_commands[image_index], oneframe_descriptors.sets[image_index]);
 	oneframe_draw_index = 0;
 }
 
@@ -219,11 +216,11 @@ void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 s
 	data.color = color;
 
 	// Binding is done by renderer
-	mesh_bind(mesh, &oneframe_commands[image_index]);
+	mesh_bind(mesh, oneframe_commands[image_index]);
 	ub_update(oneframe_buffer, &data, sizeof(struct EntityData) * oneframe_draw_index, sizeof(struct EntityData), image_index);
 	// Set push constant for model matrix
-	material_push_constants(material_get_default(), &oneframe_commands[image_index], 0, &oneframe_draw_index);
-	mesh_draw(mesh, &oneframe_commands[image_index]);
+	material_push_constants(material_get_default(), oneframe_commands[image_index], 0, &oneframe_draw_index);
+	mesh_draw(mesh, oneframe_commands[image_index]);
 	oneframe_draw_index++;
 }
 
@@ -246,7 +243,10 @@ void renderer_terminate()
 {
 	ub_destroy(oneframe_buffer);
 	for (int i = 0; i < 3; i++)
-		commandbuffer_destroy(&oneframe_commands[i]);
+	{
+		commandbuffer_destroy(oneframe_commands[i]);
+		commandbuffer_destroy(primarybuffers[i]);
+	}
 	descriptorpack_destroy(&oneframe_descriptors);
 
 	vkDeviceWaitIdle(device);

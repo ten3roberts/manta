@@ -44,8 +44,6 @@ VkSampleCountFlagBits msaa_samples = VK_SAMPLE_COUNT_1_BIT;
 // Semaphores
 VkSemaphore semaphores_image_available[MAX_FRAMES_IN_FLIGHT] = {0};
 VkSemaphore semaphores_render_finished[MAX_FRAMES_IN_FLIGHT] = {0};
-VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT] = {0};
-VkFence* images_in_flight = NULL;
 uint32_t current_frame = 0;
 
 // Rendering

@@ -355,7 +355,7 @@ void mesh_bind(Mesh* mesh, CommandBuffer* commandbuffer)
 
 void mesh_draw(Mesh* mesh, CommandBuffer* commandbuffer)
 {
-	vkCmdDrawIndexed(commandbuffer->buffer, mesh->vertex_count, 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandbuffer->cmd, mesh->vertex_count, 1, 0, 0, 0);
 }
 
 float mesh_max_distance(Mesh* mesh)

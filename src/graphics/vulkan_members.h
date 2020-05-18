@@ -83,8 +83,6 @@ extern VkCommandPool command_pool;
 // Semaphores
 extern VkSemaphore semaphores_image_available[MAX_FRAMES_IN_FLIGHT];
 extern VkSemaphore semaphores_render_finished[MAX_FRAMES_IN_FLIGHT];
-extern VkFence in_flight_fences[MAX_FRAMES_IN_FLIGHT];
-extern VkFence* images_in_flight;
 
 // Keep track of frames in advance, I.e; frames in flight
 extern uint32_t current_frame;

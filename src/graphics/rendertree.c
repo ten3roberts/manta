@@ -67,8 +67,8 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	// Create command buffers for eac swapchain image
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx, i, renderPass, framebuffers[i]);
-		node->commandbuffers[i].frame = i;
+		// The fence is assigned on render
+		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx, i, VK_NULL_HANDLE, renderPass, framebuffers[i]);
 	}
 
 	// Create shader data
@@ -185,11 +185,6 @@ static void rendertree_check(RenderTreeNode* node)
 					rendertree_place_down(node->children[j], entity);
 					break;
 				}
-				if (j == 7)
-				{
-					LOG_W("Entity fits in no child");
-				}
-				printf("\n---\n");
 			}
 		}
 	}
@@ -208,9 +203,9 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 		if (entity_count < RENDER_TREE_LIM)
 		{
-			LOG("Merging node with %d entities in children", entity_count);
-			rendertree_merge(node);
-			return;
+			//LOG("Merging node with %d entities in children", entity_count);
+			//rendertree_merge(node);
+			//return;
 		}
 	}
 
@@ -248,25 +243,26 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* camera, uint32_t frame)
 {
-	// Update entities if not empty
+	node->commandbuffers[frame]->fence = primary->fence;
+	// Render entities if not empty
 	if (node->entity_count != 0)
 	{
 		// Begin recording
-		commandbuffer_begin(&node->commandbuffers[frame]);
+		commandbuffer_begin(node->commandbuffers[frame]);
 		//LOG("Rendering tree with depth %d", node->depth);
 		// Map entity info
 		for (uint32_t i = 0; i < node->entity_count; i++)
 		{
 			Entity* entity = node->entities[i];
-			entity_render(entity, &node->commandbuffers[frame], i, node->entity_data_descriptors.sets[frame]);
+			entity_render(entity, node->commandbuffers[frame], i, node->entity_data_descriptors.sets[frame]);
 		}
 
 		// End recording
-		commandbuffer_end(&node->commandbuffers[frame]);
+		commandbuffer_end(node->commandbuffers[frame]);
 
 		// Record into primary
 
-		vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
+		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
 		/*renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
 						   vec4_hsv(node->depth, 1, 1));*/
 		renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
@@ -413,7 +409,7 @@ void rendertree_destroy(RenderTreeNode* node)
 	descriptorpack_destroy(&node->entity_data_descriptors);
 	for (uint32_t i = 0; i < 3; i++)
 	{
-		commandbuffer_destroy(&node->commandbuffers[i]);
+		commandbuffer_destroy(node->commandbuffers[i]);
 	}
 	mempool_free(node_pool, node);
 	if (mempool_get_count(node_pool) == 0)

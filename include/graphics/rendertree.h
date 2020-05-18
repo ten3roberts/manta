@@ -27,7 +27,7 @@ typedef struct RenderTreeNode
 	Entity* entities[RENDER_TREE_LIM];
 
 	// Contains all RENDER_TREE_LIM entities data
-	CommandBuffer commandbuffers[3];
+	CommandBuffer* commandbuffers[3];
 	UniformBuffer* entity_data;
 	// Set 2
 	DescriptorPack entity_data_descriptors;

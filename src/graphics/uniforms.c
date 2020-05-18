@@ -266,7 +266,7 @@ void descriptorpack_destroy(DescriptorPack* pack)
 	// Descrease size of pool
 	--pool->alloc_count;
 	// Free descriptor set in pool
-	vkFreeDescriptorSets(device, pool->pool, pack->count, pack->sets);
+	//vkFreeDescriptorSets(device, pool->pool, pack->count, pack->sets);
 	// Pool is empty
 	if (pool->alloc_count == 0)
 	{

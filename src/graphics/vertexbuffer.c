@@ -68,7 +68,7 @@ void vb_bind(VertexBuffer* vb, CommandBuffer* commandbuffer)
 {
 	VkBuffer vertex_buffers[] = {vb->buffer};
 	VkDeviceSize offsets[] = {vb->offset};
-	vkCmdBindVertexBuffers(commandbuffer->buffer, 0, 1, vertex_buffers, offsets);
+	vkCmdBindVertexBuffers(commandbuffer->cmd, 0, 1, vertex_buffers, offsets);
 }
 
 void vb_destroy(VertexBuffer* vb)

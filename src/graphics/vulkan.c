@@ -691,14 +691,8 @@ int create_global_resources(struct LayoutInfo* layout_info)
 
 int create_sync_objects()
 {
-	images_in_flight = calloc(swapchain_image_count, sizeof *images_in_flight);
-
 	VkSemaphoreCreateInfo semaphore_info = {0};
 	semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fence_info = {0};
-	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 	VkResult result;
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -714,12 +708,6 @@ int create_sync_objects()
 		{
 			LOG_E("Failed to create render finished semaphore for frame %d - code %d", i, result);
 			return -2;
-		}
-		result = vkCreateFence(device, &fence_info, NULL, &in_flight_fences[i]);
-		if (result != VK_SUCCESS)
-		{
-			LOG_E("Failed to create in flight fence %d - code %d", i, result);
-			return -3;
 		}
 	}
 	return 0;
@@ -862,7 +850,6 @@ void graphics_terminate()
 	{
 		vkDestroySemaphore(device, semaphores_render_finished[i], NULL);
 		vkDestroySemaphore(device, semaphores_image_available[i], NULL);
-		vkDestroyFence(device, in_flight_fences[i], NULL);
 	}
 
 	commandbuffer_destroy_pools();
@@ -873,6 +860,4 @@ void graphics_terminate()
 	}
 	vkDestroySurfaceKHR(instance, surface, NULL);
 	vkDestroyInstance(instance, NULL);
-	free(images_in_flight);
-	images_in_flight = NULL;
 }
