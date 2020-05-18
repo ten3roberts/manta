@@ -135,7 +135,7 @@ void rendertree_merge(RenderTreeNode* node)
 		// Merge children recursively if not leaf
 		if (child->children[i])
 		{
-			rendertree_merge(child);
+			//rendertree_merge(child);
 		}
 		// 'remove' child
 		node->children[i] = NULL;
@@ -209,8 +209,8 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 		if (entity_count < RENDER_TREE_LIM)
 		{
 			LOG("Merging node with %d entities in children", entity_count);
-			//rendertree_merge(node);
-			//return;
+			rendertree_merge(node);
+			return;
 		}
 	}
 
@@ -253,7 +253,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 	{
 		// Begin recording
 		commandbuffer_begin(&node->commandbuffers[frame]);
-		LOG("Rendering tree with depth %d", node->depth);
+		//LOG("Rendering tree with depth %d", node->depth);
 		// Map entity info
 		for (uint32_t i = 0; i < node->entity_count; i++)
 		{
@@ -267,9 +267,9 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		// Record into primary
 
 		vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
+		/*renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
+						   vec4_hsv(node->depth, 1, 1));*/
 		renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
-		renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
-						   vec4_hsv(node->depth, 1, 1));
 	}
 	// For debug mode, show tree
 	// Recurse children
@@ -285,42 +285,32 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 	// Left bound (-x)
 	if (e_bound->base.transform->position.x < node->center.x - node->halfwidth)
 	{
-		printf("Didnt fit left");
 		return false;
 	}
 	// Right bound (+x)
 	if (e_bound->base.transform->position.x > node->center.x + node->halfwidth)
 	{
-		printf("Didnt fit right");
-
 		return false;
 	}
 	// Bottom bound (-y)
 	if (e_bound->base.transform->position.y < node->center.y - node->halfwidth)
 	{
-		printf("Didnt fit bottom");
-
 		return false;
 	}
 	// Top bound (+y)
 	if (e_bound->base.transform->position.y > node->center.y + node->halfwidth)
 	{
-		printf("Didnt fit top %f > %f\n", e_bound->base.transform->position.y, node->center.y + node->halfwidth);
-
 		return false;
 	}
 
 	// Front bound (z)
 	if (e_bound->base.transform->position.z < node->center.z - node->halfwidth)
 	{
-		printf("Didnt fit front");
-
 		return false;
 	}
 	// back bound (-z)
 	if (e_bound->base.transform->position.z > node->center.z + node->halfwidth)
 	{
-		printf("Didnt fit back");
 		return false;
 	}
 
