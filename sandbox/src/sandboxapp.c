@@ -30,7 +30,7 @@ int application_start(int argc, char** argv)
 	material_load("./assets/materials/concrete.json");
 	material_load("./assets/materials/grid.json");
 
-	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, -5, 0}}, window_get_aspect(window), 1, 0.1, 100);
+	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, -20, 0}}, window_get_aspect(window), 1, 0.1, 100);
 
 	Entity* entity1 = entity_create("entity1", "grid", "cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one}, rigidbody_stationary);
 	Entity* entity2 = entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one},
@@ -42,10 +42,10 @@ int application_start(int argc, char** argv)
 	{
 		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
 	}*/
-	for (int i = 0; i < 64; i++)
+	for (int i = 0; i < 16; i++)
 	{
 		entity_create("multiple", "grid", "cube",
-					  (Transform){vec3_add(vec3_random_sphere_even(5, 10), (vec3){0, -10, 20}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
+					  (Transform){vec3_add(vec3_random_sphere_even(5, 10), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
 					  (Rigidbody){.velocity = vec3_random_sphere(1, 2)});
 	}
 

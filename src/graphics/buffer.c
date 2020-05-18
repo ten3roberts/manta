@@ -73,7 +73,16 @@ void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDev
 			// Remove the freed block completely
 			if (best_fit->size == 0)
 			{
-				best_fit_prev->next = best_fit->next;
+				// Handle beginning
+				if (best_fit_prev == NULL)
+				{
+					pool->blocks[i].free_blocks = NULL;
+				}
+				else
+				{
+					// Remove from list, middle or end
+					best_fit_prev->next = best_fit->next;
+				}
 				free(best_fit);
 			}
 		}
@@ -109,7 +118,7 @@ int buffer_pool_merge_free(struct BufferPoolBlock* block)
 		// Check if contiguous
 		if (cur->offset + cur->size == cur->next->offset)
 		{
-			LOG_S("Merging adjacent buffer blocks");
+			//LOG_S("Merging adjacent buffer blocks");
 			cur->size += cur->next->size;
 
 			// Remove the next block since it was merged

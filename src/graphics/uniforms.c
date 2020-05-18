@@ -86,6 +86,7 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 	poolInfo.pPoolSizes = uniform_count ? poolSizes : sampler_count ? &poolSizes[1] : NULL;
 
 	poolInfo.maxSets = new_pool->uniform_count + new_pool->sampler_count;
+	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &new_pool->pool);
 	if (result != VK_SUCCESS)
@@ -265,7 +266,7 @@ void descriptorpack_destroy(DescriptorPack* pack)
 	// Descrease size of pool
 	--pool->alloc_count;
 	// Free descriptor set in pool
-	// vkFreeDescriptorSets(device, pack->pool->pool, pack->count, pack->sets);
+	vkFreeDescriptorSets(device, pool->pool, pack->count, pack->sets);
 	// Pool is empty
 	if (pool->alloc_count == 0)
 	{

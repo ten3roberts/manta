@@ -65,7 +65,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 // If the node is root, the children are assigned separate threads
 void rendertree_subdivide(RenderTreeNode* node);
 // Joins all children
-void rendertree_join(RenderTreeNode* node);
+void rendertree_merge(RenderTreeNode* node);
 
 // Returns true if an enitty is fully contained given node
 // Entity cannot exist in any node when performing calling this function

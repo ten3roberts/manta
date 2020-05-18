@@ -72,7 +72,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	}
 
 	// Create shader data
-	node->entity_data = ub_create(RENDER_TREE_LIM * sizeof(struct EntityData), 0, node->thread_idx);
+	node->entity_data = ub_create((sizeof node->entities / sizeof *node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
 
 	descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1, &node->entity_data, NULL, &node->entity_data_descriptors);
 
@@ -93,34 +93,60 @@ void rendertree_subdivide(RenderTreeNode* node)
 		// 101 +-+
 		// 110 -++
 		// 111 +++
-		vec3 center = vec3_zero;
+		vec3 center = node->center;
 		if ((i & 1) == 1)
 		{
-			center.x = new_width;
+			center.x += new_width;
 		}
 		else
 		{
-			center.x = -new_width;
+			center.x -= new_width;
 		}
 		if ((i & 2) == 2)
 		{
-			center.y = new_width;
+			center.y += new_width;
 		}
 		else
 		{
-			center.y = -new_width;
+			center.y -= new_width;
 		}
 		if ((i & 4) == 4)
 		{
-			center.z = new_width;
+			center.z += new_width;
 		}
 		else
 		{
-			center.z = -new_width;
+			center.z -= new_width;
 		}
 		node->children[i] = rendertree_create(new_width, center, node->thread_idx);
 		node->children[i]->parent = node;
 		node->children[i]->depth = node->depth + 1;
+	}
+}
+
+void rendertree_merge(RenderTreeNode* node)
+{
+	if (node->children[0] == NULL)
+		return;
+	for (uint32_t i = 0; i < 8; i++)
+	{
+		// As the first child gets set to NULL, it signifies that there are no children
+		RenderTreeNode* child = node->children[i];
+		// Merge children recursively if not leaf
+		if (child->children[i])
+		{
+			rendertree_merge(child);
+		}
+		// 'remove' child
+		node->children[i] = NULL;
+		// Replace all children entities in this node or higher
+		for (uint32_t j = 0; j < child->entity_count; j++)
+		{
+			Entity* entity = child->entities[j];
+			// Place all entities in the parent
+			rendertree_place_up(node, entity);
+		}
+		rendertree_destroy(child);
 	}
 }
 
@@ -159,6 +185,11 @@ static void rendertree_check(RenderTreeNode* node)
 					rendertree_place_down(node->children[j], entity);
 					break;
 				}
+				if (j == 7)
+				{
+					LOG_W("Entity fits in no child");
+				}
+				printf("\n---\n");
 			}
 		}
 	}
@@ -166,6 +197,23 @@ static void rendertree_check(RenderTreeNode* node)
 
 void rendertree_update(RenderTreeNode* node, uint32_t frame)
 {
+
+	// Check if child is leaf node
+	if (node->children[0] && node->children[0]->children[0] == NULL)
+	{
+		// Check if it needs to merge
+		uint32_t entity_count = node->entity_count;
+		for (uint32_t i = 0; node->children[0] && i < 8; i++)
+			entity_count += node->children[i]->entity_count;
+
+		if (entity_count < RENDER_TREE_LIM)
+		{
+			LOG("Merging node with %d entities in children", entity_count);
+			//rendertree_merge(node);
+			//return;
+		}
+	}
+
 	// Update entities if not empty
 	if (node->entity_count != 0)
 	{
@@ -219,10 +267,11 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		// Record into primary
 
 		vkCmdExecuteCommands(primary->buffer, 1, &node->commandbuffers[frame].buffer);
+		renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
+		renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
+						   vec4_hsv(node->depth, 1, 1));
 	}
 	// For debug mode, show tree
-	renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
-	renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth}, vec4_hsv(node->depth, 1, 1));
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
 	{
@@ -234,7 +283,48 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 {
 	SphereCollider* e_bound = (SphereCollider*)entity_get_boundingsphere(entity);
 	// Left bound (-x)
-	if (e_bound->base.transform->position.x + e_bound->radius < node->center.x - node->halfwidth)
+	if (e_bound->base.transform->position.x < node->center.x - node->halfwidth)
+	{
+		printf("Didnt fit left");
+		return false;
+	}
+	// Right bound (+x)
+	if (e_bound->base.transform->position.x > node->center.x + node->halfwidth)
+	{
+		printf("Didnt fit right");
+
+		return false;
+	}
+	// Bottom bound (-y)
+	if (e_bound->base.transform->position.y < node->center.y - node->halfwidth)
+	{
+		printf("Didnt fit bottom");
+
+		return false;
+	}
+	// Top bound (+y)
+	if (e_bound->base.transform->position.y > node->center.y + node->halfwidth)
+	{
+		printf("Didnt fit top %f > %f\n", e_bound->base.transform->position.y, node->center.y + node->halfwidth);
+
+		return false;
+	}
+
+	// Front bound (z)
+	if (e_bound->base.transform->position.z < node->center.z - node->halfwidth)
+	{
+		printf("Didnt fit front");
+
+		return false;
+	}
+	// back bound (-z)
+	if (e_bound->base.transform->position.z > node->center.z + node->halfwidth)
+	{
+		printf("Didnt fit back");
+		return false;
+	}
+
+	/*if (e_bound->base.transform->position.x + e_bound->radius < node->center.x - node->halfwidth)
 	{
 		return false;
 	}
@@ -263,7 +353,7 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 	if (e_bound->base.transform->position.z + e_bound->radius > node->center.z + node->halfwidth)
 	{
 		return false;
-	}
+	}*/
 
 	return true;
 }
@@ -286,6 +376,7 @@ bool rendertree_place_down(RenderTreeNode* node, Entity* entity)
 		rendertree_subdivide(node);
 		rendertree_check(node);
 		LOG_S("Subdivided tree");
+		return true;
 	}
 
 	// Check if it fits in any children
