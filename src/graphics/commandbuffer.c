@@ -169,7 +169,7 @@ void commandbuffer_submit(CommandBuffer* commandbuffer)
 	vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
 }
 
-static struct CommandBuffer* destroy_queue = NULL;
+static CommandBuffer* destroy_queue = NULL;
 
 void commandbuffer_destroy(CommandBuffer* commandbuffer)
 {
@@ -200,17 +200,24 @@ void commandbuffer_handle_destructions()
 {
 	CommandBuffer* prev = NULL;
 	CommandBuffer* item = destroy_queue;
+	CommandBuffer* next = NULL;
 	while (item)
 	{
+		next = item->destroy_next;
 		if (vkGetFenceStatus(device, item->fence) == VK_SUCCESS)
 		{
 			if (prev)
 			{
-				prev->destroy_next = item->destroy_next;
+				prev->destroy_next = next;
+			}
+			// At head
+			else
+			{
+				destroy_queue = next;
 			}
 			commandbuffer_destroy(item);
 		}
-		item = item->destroy_next;
+		item = next;
 	}
 }
 
