@@ -172,6 +172,7 @@ static void rendertree_check(RenderTreeNode* node)
 
 			// Re-place up
 			rendertree_place_up(node, entity);
+			node->changed = ALL_CHANGED;
 		}
 		// Entity still fits, check if it fits in any child j (if subdivided)
 		else
@@ -187,6 +188,8 @@ static void rendertree_check(RenderTreeNode* node)
 
 					// Re-place down into child
 					rendertree_place_down(node->children[j], entity);
+					node->changed = ALL_CHANGED;
+
 					break;
 				}
 			}
@@ -251,25 +254,28 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 	// Render entities if not empty
 	if (node->entity_count != 0)
 	{
-		// Begin recording
-		commandbuffer_begin(node->commandbuffers[frame]);
-		//LOG("Rendering tree with depth %d", node->depth);
-		// Map entity info
-		for (uint32_t i = 0; i < node->entity_count; i++)
+		// Needs to rerecord secondary
+		if (node->changed & (1 << frame))
 		{
-			Entity* entity = node->entities[i];
-			entity_render(entity, node->commandbuffers[frame], i, node->entity_data_descriptors.sets[frame]);
+			//LOG("Re-recording node at depth %d", node->depth);
+			// Begin recording
+			commandbuffer_begin(node->commandbuffers[frame]);
+			//LOG("Rendering tree with depth %d", node->depth);
+			// Map entity info
+			for (uint32_t i = 0; i < node->entity_count; i++)
+			{
+				Entity* entity = node->entities[i];
+				entity_render(entity, node->commandbuffers[frame], i, node->entity_data_descriptors.sets[frame]);
+			}
+
+			// End recording
+			commandbuffer_end(node->commandbuffers[frame]);
+			renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
+							   vec4_hsv(node->depth, 1, 1));
 		}
-
-		// End recording
-		commandbuffer_end(node->commandbuffers[frame]);
-
 		// Record into primary
 
 		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
-		if (node->changed & (1 << frame))
-			renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
-							   vec4_hsv(node->depth, 1, 1));
 		renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 
 		// Remove changed bit for this frame

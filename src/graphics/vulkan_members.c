@@ -5,6 +5,8 @@ VkInstance instance = VK_NULL_HANDLE;
 VkDebugUtilsMessengerEXT debug_messenger = VK_NULL_HANDLE;
 
 VkPhysicalDevice physical_device = VK_NULL_HANDLE;
+VkPhysicalDeviceLimits memory_limits = (VkPhysicalDeviceLimits){0};
+VkPhysicalDeviceMemoryProperties memory_properties = (VkPhysicalDeviceMemoryProperties){0};
 VkDevice device = VK_NULL_HANDLE;
 
 VkQueue graphics_queue = VK_NULL_HANDLE;

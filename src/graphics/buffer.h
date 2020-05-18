@@ -48,7 +48,7 @@ typedef struct
 // Populates buffer, memory, and offset
 // If no pool in array is free, the pool array is extended
 // Satisfies alignment requirements
-void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset);
+void buffer_pool_alloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset);
 
 void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDeviceMemory memory, uint32_t offset);
 

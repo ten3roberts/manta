@@ -267,7 +267,7 @@ int create_surface()
 	return 0;
 }
 
-int pick_physical_device()
+VkPhysicalDevice pick_physical_device()
 {
 	// Pick a suitable device
 
@@ -278,7 +278,7 @@ int pick_physical_device()
 	if (device_count == 0)
 	{
 		LOG_E("Unable to retrieve graphical devices");
-		return -1;
+		return VK_NULL_HANDLE;
 	}
 
 	devices = malloc(device_count * sizeof(VkPhysicalDevice));
@@ -303,7 +303,10 @@ int pick_physical_device()
 
 		// Application can't function without support for geometry shader
 		if (!deviceFeatures.geometryShader)
+		{
+			LOG_W("Device does not support geometry shaders");
 			continue;
+		}
 
 		// Checks to see if the required families are supported
 		QueueFamilies indices = get_queue_families(devices[i]);
@@ -341,48 +344,34 @@ int pick_physical_device()
 	if (best_device == NULL)
 	{
 		LOG_E("Unable to find suitable graphical device");
-		return -2;
+		return VK_NULL_HANDLE;
 	}
 
-	// Print the best one and set physical_device to it
+	// Get device properties
+	// Print the best one and assign it to physical_device
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(best_device, &deviceProperties);
 	LOG_OK("Picking graphical device '%s'", deviceProperties.deviceName);
-	physical_device = best_device;
-	VkSampleCountFlagBits wanted_samples = VK_SAMPLE_COUNT_1_BIT;
-	switch (settings_get_msaa())
-	{
-	case 1:
-		wanted_samples = VK_SAMPLE_COUNT_1_BIT;
-		break;
-	case 4:
-		wanted_samples = VK_SAMPLE_COUNT_4_BIT;
-		break;
-	case 8:
-		wanted_samples = VK_SAMPLE_COUNT_8_BIT;
-		break;
-	case 16:
-		wanted_samples = VK_SAMPLE_COUNT_16_BIT;
-		break;
-	case 32:
-		wanted_samples = VK_SAMPLE_COUNT_32_BIT;
-		break;
-	case 64:
-		wanted_samples = VK_SAMPLE_COUNT_64_BIT;
-		break;
+	VkSampleCountFlagBits wanted_samples = (VkSampleCountFlagBits)settings_get_msaa();
 
-	default:
-		break;
-	}
-	msaa_samples = min(wanted_samples, get_max_sample_count(physical_device));
-
+	msaa_samples = min(wanted_samples, get_max_sample_count(best_device));
 	free(devices);
-	return 0;
+
+	vkGetPhysicalDeviceProperties(best_device, &deviceProperties);
+	memory_limits = deviceProperties.limits;
+
+	vkGetPhysicalDeviceMemoryProperties(best_device, &memory_properties);
+	physical_device = best_device;
+	return best_device;
 }
 
 int create_logical_device()
 {
-	// Get the queues we require
+	VkPhysicalDevice physical_device = pick_physical_device();
+	if (physical_device == VK_NULL_HANDLE)
+	{
+		return -1;
+	} // Get the queues we require
 	QueueFamilies indices = get_queue_families(physical_device);
 
 	// Calculate the number of unique queues
@@ -728,10 +717,6 @@ int graphics_init(Window* window, struct LayoutInfo* global_layout)
 	if (create_surface())
 	{
 		return -3;
-	}
-	if (pick_physical_device())
-	{
-		return -4;
 	}
 	if (create_logical_device())
 	{

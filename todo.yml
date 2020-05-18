@@ -20,6 +20,7 @@ Vulkan:
   - Specify graphics device support
   - Allow for long term mapping of buffer memory
   - Uniform buffer pool to respect memory limits
+  - Wrap globals in struct
 
 General bugs:
   

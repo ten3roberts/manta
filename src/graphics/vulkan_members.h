@@ -43,6 +43,8 @@ extern VkInstance instance;
 extern VkDebugUtilsMessengerEXT debug_messenger;
 
 extern VkPhysicalDevice physical_device;
+extern VkPhysicalDeviceLimits memory_limits;
+extern VkPhysicalDeviceMemoryProperties memory_properties;
 extern VkDevice device;
 
 extern VkQueue graphics_queue;

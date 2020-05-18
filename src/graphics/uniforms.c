@@ -278,6 +278,10 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 {
 	//LOG_S("Creating uniform buffer");
 	UniformBuffer* ub = malloc(sizeof(UniformBuffer));
+	if (size > memory_limits.maxUniformBufferRange)
+	{
+		LOG_E("Uniform buffer size %d is larger than device limit %d", size, memory_limits.maxUniformBufferRange);
+	}
 	ub->size = size;
 	ub->thread_idx = thread_idx;
 
@@ -287,7 +291,7 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 		// Sets buffer pool usage if not set
 		if (ub_pool[thread_idx].usage == 0)
 			ub_pool[thread_idx].usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		buffer_pool_malloc(&ub_pool[thread_idx], size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
+		buffer_pool_alloc(&ub_pool[thread_idx], size, &ub->buffers[i], &ub->memories[i], &ub->offsets[i]);
 	}
 
 	return ub;

@@ -32,7 +32,7 @@ VertexBuffer* vb_create(Vertex* vertices, uint32_t vertex_count)
 
 	// Create the buffer and memory
 
-	buffer_pool_malloc(&vb_pool, vb->size, &vb->buffer, &vb->memory, &vb->offset);
+	buffer_pool_alloc(&vb_pool, vb->size, &vb->buffer, &vb->memory, &vb->offset);
 
 	vb_copy_data(vb);
 

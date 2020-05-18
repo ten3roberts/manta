@@ -18,6 +18,13 @@ void buffer_pool_add(BufferPool* pool, uint32_t size)
 	}
 	// Get a pointer to the new pool
 	struct BufferPoolBlock* new_block = &pool->blocks[pool->block_count - 1];
+
+	// Uniform buffers allocate for the max memory
+	if (pool->usage == VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+	{
+		size = memory_limits.maxUniformBufferRange;
+	}
+
 	// Create the buffer and memory for vulkan
 	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &new_block->buffer,
 				  &new_block->memory, &pool->alignment, NULL);
@@ -28,13 +35,13 @@ void buffer_pool_add(BufferPool* pool, uint32_t size)
 	new_block->alloc_size = size;
 }
 
-void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset)
+void buffer_pool_alloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDeviceMemory* memory, uint32_t* offset)
 {
 	// No pool has been created yet
 	if (pool->block_count == 0)
 	{
 		// Create a new pool 64 times larger than requested size to support multiple allocation if < 1MB
-		buffer_pool_add(pool, size < B_MILLION ? size * 64 : size);
+		buffer_pool_add(pool, size);
 	}
 
 	// Iterate all blocks
@@ -93,7 +100,7 @@ void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDev
 			// At last pool
 			if (i == pool->block_count - 1)
 			{
-				buffer_pool_add(pool, size < B_MILLION ? size * 64 : size);
+				buffer_pool_add(pool, size);
 			}
 			continue;
 		};
@@ -104,6 +111,8 @@ void buffer_pool_malloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDev
 		*offset = pool->blocks[i].end;
 		// Satisfy alignment requirements
 		pool->blocks[i].end += ceil(size / (float)pool->alignment) * pool->alignment;
+		/*if (pool->usage == VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+			LOG("Uniform buffer end is now at %d", pool->blocks[i].end);*/
 	}
 }
 
@@ -216,11 +225,9 @@ void buffer_pool_array_destroy(BufferPool* pool)
 // Buffer creation
 uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties)
 {
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(physical_device, &memProperties);
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+	for (uint32_t i = 0; i < memory_properties.memoryTypeCount; i++)
 	{
-		if (type_filter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+		if (type_filter & (1 << i) && (memory_properties.memoryTypes[i].propertyFlags & properties) == properties)
 		{
 			return i;
 		}
