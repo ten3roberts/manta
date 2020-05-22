@@ -11,7 +11,7 @@
 #define ALL_CHANGED (1 | 2 | 4)
 
 static uint32_t node_count = 0;
-static mempool_t node_pool = MEMPOOL_INIT(sizeof(RenderTreeNode), 128);
+static mempool_t node_pool = MEMPOOL_INIT(sizeof(RenderTreeNode), 1024);
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
 static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){.binding = 0,
 																						 .descriptorCount = 1,
@@ -83,6 +83,9 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 
 	node->entity_data = NULL;
 	node->entity_data_descriptors = NULL;
+
+	rendertree_create_shader_data(node);
+
 	return node;
 }
 
@@ -143,8 +146,10 @@ void rendertree_merge(RenderTreeNode* node)
 		// Merge children recursively if not leaf
 		if (child->children[i])
 		{
+			LOG_E("Cannot merge node with non-leaf children");
 			//rendertree_merge(child);
 		}
+
 		// 'remove' child
 		node->children[i] = NULL;
 		// Replace all children entities in this node or higher
@@ -204,15 +209,23 @@ static void rendertree_check(RenderTreeNode* node)
 
 void rendertree_update(RenderTreeNode* node, uint32_t frame)
 {
-	// Check if child is leaf node
+	// Check if need merge
 	if (node->children[0] && node->children[0]->children[0] == NULL)
 	{
 		// Check if it needs to merge
 		uint32_t entity_count = node->entity_count;
+		bool is_leaf = true;
 		for (uint32_t i = 0; node->children[0] && i < 8; i++)
+		{
+			if (node->children[i]->children[0])
+			{
+				is_leaf = false;
+				break;
+			}
 			entity_count += node->children[i]->entity_count;
+		}
 
-		if (entity_count < RENDER_TREE_LIM * 0.8)
+		if (is_leaf && entity_count < RENDER_TREE_LIM * 0.8)
 		{
 			LOG("Merging node with %d entities in children", entity_count);
 			rendertree_merge(node);
@@ -223,6 +236,8 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 	// Update entities if not empty
 	if (node->entity_count != 0)
 	{
+		//LOG("Updating %d entities", node->entity_count);
+
 		// Create shader resources if not yet created (rendertree node was previously empty)
 		if (node->entity_data == NULL)
 		{
@@ -232,7 +247,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 		// Map entity info
 		if (node->entity_count > RENDER_TREE_LIM)
 		{
-			LOG_E("Entities in tree node exceeds capcity of %d", RENDER_TREE_LIM);
+			LOG_E("Entities in tree node exceeds capacity of %d", RENDER_TREE_LIM);
 		}
 		void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
 
@@ -251,6 +266,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 		ub_unmap(node->entity_data, frame);
 	}
+
 	// Recursively update children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
 	{
@@ -267,6 +283,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		if (node->entity_data == NULL)
 		{
 			rendertree_create_shader_data(node);
+			node->changed = ALL_CHANGED;
 		}
 
 		// Assign fence from primary for proper destruction
@@ -275,6 +292,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		// Needs to rerecord secondary
 		if (node->changed & (1 << frame))
 		{
+			//LOG("Recording %d entities", node->entity_count);
 			//LOG("Re-recording node at depth %d", node->depth);
 			// Begin recording
 			commandbuffer_begin(node->commandbuffers[frame]);
@@ -293,11 +311,12 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		// Record into primary
 
 		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
-		renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 
 		// Remove changed bit for this frame
 		node->changed = node->changed & ~(1 << frame);
 	}
+
+	renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 	// For debug mode, show tree
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
@@ -379,6 +398,11 @@ bool rendertree_place_down(RenderTreeNode* node, Entity* entity)
 	// Check if it fits in current node
 	if (rendertree_fits(node, entity) == false)
 	{
+		if (node->parent == NULL)
+		{
+			LOG_E("Entity %s does not fit in the bounds of the tree %3v", entity_get_name(entity), entity_get_transform(entity)->position);
+			rendertree_fits(node, entity);
+		}
 		return false;
 	}
 

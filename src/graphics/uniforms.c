@@ -8,6 +8,7 @@
 #include <stb_image.h>
 #include "mempool.h"
 #include "defines.h"
+#include <assert.h>
 
 // The different flavors of descriptor pools
 // If pool is VK_NULL_HANDLE, it is a hole from a destroyed pool
@@ -313,7 +314,10 @@ void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bi
 void descriptorpack_destroy(DescriptorPack* pack)
 {
 	struct DescriptorPool* pool = &descriptor_pools[pack->pool_index];
-
+	if (pool == NULL)
+	{
+		LOG_E("Invalid pool");
+	}
 	//vkFreeDescriptorSets(device, pool->vkpool, pack->count, pack->sets);
 
 	// Put back the available descriptor types to the pool
@@ -416,7 +420,7 @@ void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, ui
 
 void ub_destroy(UniformBuffer* ub)
 {
-	LOG_S("Destroying uniform buffer");
+	//LOG_S("Destroying uniform buffer");
 	for (size_t i = 0; i < swapchain_image_count; i++)
 	{
 		buffer_pool_free(&ub_pool[ub->thread_idx], ub->size, ub->buffers[i], ub->memories[i], ub->offsets[i]);

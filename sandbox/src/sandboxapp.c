@@ -40,10 +40,10 @@ int application_start(int argc, char** argv)
 	{
 		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
 	}*/
-	for (int i = 0; i < 2560; i++)
+	for (int i = 0; i < 1000000; i++)
 	{
 		entity_create("multiple", "grid", "cube", (Transform){vec3_add(vec3_random_sphere_even(10, 200), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
-					  (Rigidbody){.velocity = vec3_random_sphere(0, 2.0f)});
+					  (Rigidbody){.velocity = vec3_random_sphere(0, 0.0f)});
 	}
 
 	while (!window_get_close(window))
