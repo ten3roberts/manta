@@ -9,20 +9,23 @@
 #include "defines.h"
 
 // The different flavors of descriptor pools
+// If pool is VK_NULL_HANDLE, it is a hole from a destroyed pool
 struct DescriptorPool
 {
-	uint32_t index;
 	// How many uniform type descriptors are left in the pool
 	uint32_t uniform_count;
 	// How many sampler type descriptors are left in the pool
 	uint32_t sampler_count;
 	// Describes how many descriptors currently use the pool
 	uint32_t alloc_count;
-	VkDescriptorPool pool;
+	VkDescriptorPool vkpool;
 };
 
-struct DescriptorPool* descriptor_pools;
-uint32_t descriptor_pool_count;
+struct DescriptorPool* descriptor_pools = NULL;
+// How many active pools there are
+uint32_t descriptor_pool_count = 0;
+// How large the list of pools is, including holes
+uint32_t descriptor_pool_size = 0;
 
 static BufferPool ub_pool[RENDERER_MAX_THREADS] = {0};
 
@@ -42,12 +45,15 @@ struct UniformBuffer
 // Does not return the pointer since it is liable to change with realloc when new pools are added
 uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 {
-	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+	for (uint32_t i = 0; i < descriptor_pool_size; i++)
 	{
+		// Hole from destroyed pool
+		if (descriptor_pools[i].vkpool == VK_NULL_HANDLE)
+			continue;
 		// Qualifying pool
 		if (descriptor_pools[i].uniform_count >= uniform_count && descriptor_pools[i].sampler_count >= sampler_count)
 		{
-			// Remove thee requested amount of descriptors from the pool
+			// Remove the requested amount of descriptors from the pool
 			descriptor_pools[i].uniform_count -= uniform_count;
 			descriptor_pools[i].sampler_count -= sampler_count;
 			++descriptor_pools[i].alloc_count;
@@ -59,16 +65,34 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 	// No pool was found
 	// Allocate a new one
 
-	++descriptor_pool_count;
-	descriptor_pools = realloc(descriptor_pools, descriptor_pool_count * sizeof(struct DescriptorPool));
+	DescriptorPool* new_pool = NULL;
+	uint32_t index = 0;
+	// Search for a free hole in the list
+	for (uint32_t i = 0; i < descriptor_pool_size; i++)
+	{
+		// Reuse space
+		if (descriptor_pools[i].vkpool == VK_NULL_HANDLE)
+		{
+			LOG("Reusing free slot for descriptor pool");
+			new_pool = &descriptor_pools[i];
+			index = i;
+		}
+	}
 
-	// Reference to the new pool struct
-	struct DescriptorPool* new_pool = &descriptor_pools[descriptor_pool_count - 1];
-	new_pool->index = descriptor_pool_count - 1;
+	// No free space was found
+	if (new_pool == NULL)
+	{
+		++descriptor_pool_count;
+		++descriptor_pool_size;
+		descriptor_pools = realloc(descriptor_pools, descriptor_pool_size * sizeof(struct DescriptorPool));
+		index = descriptor_pool_size - 1;
+		new_pool = &descriptor_pools[index];
+	}
+
 	// Allocate a larger block of memory than the minimum to make room for more similar allocations and reduce memory
 	// allocations
-	new_pool->uniform_count = uniform_count * 100;
-	new_pool->sampler_count = sampler_count * 100;
+	new_pool->uniform_count = uniform_count * 256;
+	new_pool->sampler_count = sampler_count * 256;
 	// Make one allocation for the pool before returning
 	new_pool->alloc_count = 0;
 
@@ -88,44 +112,40 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 	poolInfo.maxSets = new_pool->uniform_count + new_pool->sampler_count;
 	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &new_pool->pool);
+	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &new_pool->vkpool);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create descriptor pool - code %d", result);
 		return -1;
 	}
+
 	// 'allocate'
 	new_pool->uniform_count -= uniform_count;
 	new_pool->sampler_count -= sampler_count;
 	new_pool->alloc_count = 1;
-	return new_pool->index;
+	return index;
 }
 
-void descriptorpool_destroy(struct DescriptorPool* pool)
+void descriptorpool_destroy(DescriptorPool* pool)
 {
 	LOG_S("Destroying descriptor pool");
-	vkDestroyDescriptorPool(device, pool->pool, NULL);
 
-	// Last pool is being destroyed
-	if (descriptor_pool_count == 1)
+	if (pool->vkpool == VK_NULL_HANDLE)
 	{
-
-		free(descriptor_pools);
+		LOG_E("Attempting to destroy already destroyed pool");
 		return;
 	}
-	for (uint32_t i = 0; i < descriptor_pool_count; i++)
+
+	vkDestroyDescriptorPool(device, pool->vkpool, NULL);
+	--descriptor_pool_count;
+	pool->vkpool = VK_NULL_HANDLE;
+
+	// Last pool is being destroyed
+	if (descriptor_pool_count == 0)
 	{
-		// Pool is found
-		if (&descriptor_pools[i] == pool)
-		{
-			// Shift pools after this one back to accomodate the empty space if not the last pool
-			if (i != descriptor_pool_count - 1)
-				memmove(descriptor_pools + i, descriptor_pools + i + 1, (descriptor_pool_count - i - 1) * sizeof(*descriptor_pools));
-			// Decrease pool count by one
-			--descriptor_pool_count;
-			descriptor_pools = realloc(descriptor_pools, descriptor_pool_count * sizeof(struct DescriptorPool));
-			return;
-		}
+		free(descriptor_pools);
+		descriptor_pools = NULL;
+		descriptor_pool_size = 0;
 	}
 }
 
@@ -179,12 +199,17 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 	VkDescriptorSetAllocateInfo allocInfo = {0};
 
 	dst_pack->pool_index = descriptorpool_get(uniform_count, sampler_count);
+	if (dst_pack->pool_index == -1)
+	{
+		LOG_E("Failed to get descriptor pool");
+		return -1;
+	}
 	dst_pack->uniform_count = uniform_count;
 	dst_pack->sampler_count = sampler_count;
 	dst_pack->count = swapchain_image_count;
 
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptor_pools[dst_pack->pool_index].pool;
+	allocInfo.descriptorPool = descriptor_pools[dst_pack->pool_index].vkpool;
 	allocInfo.descriptorSetCount = dst_pack->count;
 	allocInfo.pSetLayouts = layouts;
 	allocInfo.pNext = 0;
@@ -258,7 +283,10 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 
 void descriptorpack_destroy(DescriptorPack* pack)
 {
-	DescriptorPool* pool = &descriptor_pools[pack->pool_index];
+	struct DescriptorPool* pool = &descriptor_pools[pack->pool_index];
+
+	vkFreeDescriptorSets(device, pool->vkpool, pack->count, pack->sets);
+
 	// Put back the available descriptor types to the pool
 	pool->uniform_count += pack->uniform_count;
 	pool->sampler_count += pack->sampler_count;
@@ -266,7 +294,6 @@ void descriptorpack_destroy(DescriptorPack* pack)
 	// Descrease size of pool
 	--pool->alloc_count;
 	// Free descriptor set in pool
-	//vkFreeDescriptorSets(device, pool->pool, pack->count, pack->sets);
 	// Pool is empty
 	if (pool->alloc_count == 0)
 	{

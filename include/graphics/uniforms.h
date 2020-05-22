@@ -8,20 +8,13 @@
 
 #define CS_WHOLE_SIZE -1
 
-typedef struct
-{
-	mat4 model;
-	mat4 view;
-	mat4 proj;
-} TransformType;
-
 typedef struct DescriptorPool DescriptorPool;
 
 // A struct containing an entire descriptor set and data of where it is from
 // Contains descriptor sets for all possible frames in flight
 typedef struct
 {
-	// The index of the pool
+	// Handle to the pool it allocated from
 	uint32_t pool_index;
 	// The sum of uniform_count and sampler_count describes the 'size' of the pool it takes
 	// Represents how many uniform types is allocated

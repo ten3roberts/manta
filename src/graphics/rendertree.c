@@ -47,7 +47,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	// memory
 	if (node_pool == 0)
 	{
-		node_pool = mempool_create(sizeof(RenderTreeNode), 64);
+		node_pool = mempool_create(sizeof(RenderTreeNode), 256);
 	}
 
 	RenderTreeNode* node = mempool_alloc(node_pool);
@@ -210,7 +210,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 		if (entity_count < RENDER_TREE_LIM)
 		{
-			LOG("Merging node with %d entities in children", entity_count);
+			//LOG("Merging node with %d entities in children", entity_count);
 			//rendertree_merge(node);
 			//return;
 		}
@@ -427,6 +427,8 @@ void rendertree_destroy(RenderTreeNode* node)
 		commandbuffer_destroy(node->commandbuffers[i]);
 	}
 	mempool_free(node_pool, node);
+
+	// Last node
 	if (mempool_get_count(node_pool) == 0)
 	{
 		vkDestroyDescriptorSetLayout(device, entity_data_layout, NULL);
