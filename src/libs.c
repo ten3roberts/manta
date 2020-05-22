@@ -22,6 +22,7 @@
 
 #define HASHTABLE_IMPLEMENTATION
 #include "hashtable.h"
+#define MEMPOOL_MAGPIE
 #define MEMPOOL_IMPLEMENTATION
 #define MEMPOOL_MESSAGE(m) LOG_E(m)
 #include "mempool.h"

@@ -201,11 +201,12 @@ void commandbuffer_destroy(CommandBuffer* commandbuffer)
 	mempool_free(&command_ptr_pool[thread_idx], commandbuffer);
 }
 
-void commandbuffer_handle_destructions()
+uint32_t commandbuffer_handle_destructions()
 {
 	CommandBuffer* prev = NULL;
 	CommandBuffer* item = destroy_queue;
 	CommandBuffer* next = NULL;
+	uint32_t destroyed = 0;
 	while (item)
 	{
 		next = item->destroy_next;
@@ -221,9 +222,11 @@ void commandbuffer_handle_destructions()
 				destroy_queue = next;
 			}
 			commandbuffer_destroy(item);
+			++destroyed;
 		}
 		item = next;
 	}
+	return destroyed;
 }
 
 void commandbuffer_destroy_pools()

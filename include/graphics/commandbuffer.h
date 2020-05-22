@@ -53,7 +53,8 @@ void commandbuffer_submit(CommandBuffer* commandbuffer);
 void commandbuffer_destroy(CommandBuffer* commandbuffer);
 
 // Destroys any queued command buffers that were in use when destroy was called
-void commandbuffer_handle_destructions();
+// Returns how many command buffers where freed, can safely be ignored
+uint32_t commandbuffer_handle_destructions();
 
 // Destroys all command pools at the end of the program
 // Called once a frame by renderer

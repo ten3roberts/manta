@@ -246,12 +246,16 @@ void renderer_draw_cube_wire(vec3 position, quaternion rotation, vec3 scale, vec
 
 void renderer_terminate()
 {
+	vkDeviceWaitIdle(device);
+	// Free all remaining command buffers in destroy queue
+	commandbuffer_handle_destructions();
 	ub_destroy(oneframe_buffer);
 	for (int i = 0; i < 3; i++)
 	{
 		commandbuffer_destroy(oneframe_commands[i]);
 		commandbuffer_destroy(primarybuffers[i]);
 	}
+
 	descriptorpack_destroy(oneframe_descriptors);
 
 	vkDeviceWaitIdle(device);
