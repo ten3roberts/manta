@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 
 // Include allocation information on debug builds
 #ifdef DEBUG
-	mp_print_locations();
+	//mp_print_locations();
 	LOG("A total of %d allocations were made", mp_get_total_count());
 	uint32_t remaining_allocations = mp_get_count();
 	mp_terminate();

@@ -111,7 +111,7 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 	poolInfo.pPoolSizes = uniform_count ? poolSizes : sampler_count ? &poolSizes[1] : NULL;
 
 	poolInfo.maxSets = new_pool->uniform_count + new_pool->sampler_count;
-	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	poolInfo.flags = 0; //VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 	VkResult result = vkCreateDescriptorPool(device, &poolInfo, NULL, &new_pool->vkpool);
 	if (result != VK_SUCCESS)
@@ -129,6 +129,7 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 
 void descriptorpool_destroy(DescriptorPool* pool)
 {
+	vkDeviceWaitIdle(device);
 	LOG_S("Destroying descriptor pool");
 
 	if (pool->vkpool == VK_NULL_HANDLE)
@@ -221,8 +222,10 @@ DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptor
 	free(layouts);
 	return pack;
 }
+
 void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture** textures)
 {
+	// vkDeviceWaitIdle(device);
 	// Find out how many of each type of descriptor type is required
 	uint32_t uniform_count = 0;
 	uint32_t sampler_count = 0;
@@ -312,11 +315,11 @@ void descriptorpack_destroy(DescriptorPack* pack)
 {
 	struct DescriptorPool* pool = &descriptor_pools[pack->pool_index];
 
-	vkFreeDescriptorSets(device, pool->vkpool, pack->count, pack->sets);
+	//vkFreeDescriptorSets(device, pool->vkpool, pack->count, pack->sets);
 
 	// Put back the available descriptor types to the pool
-	pool->uniform_count += pack->uniform_count;
-	pool->sampler_count += pack->sampler_count;
+	//pool->uniform_count += pack->uniform_count;
+	//pool->sampler_count += pack->sampler_count;
 
 	// Descrease size of pool
 	--pool->alloc_count;

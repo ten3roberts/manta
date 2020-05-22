@@ -203,9 +203,9 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 		if (entity_count < RENDER_TREE_LIM)
 		{
-			//LOG("Merging node with %d entities in children", entity_count);
-			//rendertree_merge(node);
-			//return;
+			LOG("Merging node with %d entities in children", entity_count);
+			rendertree_merge(node);
+			return;
 		}
 	}
 
