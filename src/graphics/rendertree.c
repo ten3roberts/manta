@@ -13,12 +13,11 @@
 static uint32_t node_count = 0;
 static mempool_t* node_pool = NULL;
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
-static VkDescriptorSetLayoutBinding entity_data_binding =
-	(VkDescriptorSetLayoutBinding){.binding = 0,
-								   .descriptorCount = 1,
-								   .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-								   .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-								   .pImmutableSamplers = 0};
+static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){.binding = 0,
+																						 .descriptorCount = 1,
+																						 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+																						 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+																						 .pImmutableSamplers = 0};
 
 VkDescriptorSetLayoutBinding* rendertree_get_descriptor_bindings(void)
 {
@@ -76,8 +75,9 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	// Create shader data
 	node->entity_data = ub_create((sizeof node->entities / sizeof *node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
 
-	descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1, &node->entity_data, NULL, &node->entity_data_descriptors);
-
+	// Create and write set=2 for entity data
+	node->entity_data_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1);
+	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL);
 	return node;
 }
 
@@ -265,13 +265,12 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 			for (uint32_t i = 0; i < node->entity_count; i++)
 			{
 				Entity* entity = node->entities[i];
-				entity_render(entity, node->commandbuffers[frame], i, node->entity_data_descriptors.sets[frame]);
+				entity_render(entity, node->commandbuffers[frame], i, node->entity_data_descriptors->sets[frame]);
 			}
 
 			// End recording
 			commandbuffer_end(node->commandbuffers[frame]);
-			renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth},
-							   vec4_hsv(node->depth, 1, 1));
+			renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth}, vec4_hsv(node->depth, 1, 1));
 		}
 		// Record into primary
 
@@ -421,7 +420,7 @@ void rendertree_destroy(RenderTreeNode* node)
 	}
 
 	ub_destroy(node->entity_data);
-	descriptorpack_destroy(&node->entity_data_descriptors);
+	descriptorpack_destroy(node->entity_data_descriptors);
 	for (uint32_t i = 0; i < 3; i++)
 	{
 		commandbuffer_destroy(node->commandbuffers[i]);

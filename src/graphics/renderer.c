@@ -23,7 +23,7 @@ static CommandBuffer* primarybuffers[3];
 
 static CommandBuffer* oneframe_commands[3];
 static UniformBuffer* oneframe_buffer = NULL;
-static DescriptorPack oneframe_descriptors = {0};
+static DescriptorPack* oneframe_descriptors = NULL;
 static int oneframe_draw_index = 0;
 
 // Rebuilds command buffers for the current frame
@@ -71,8 +71,10 @@ int renderer_init()
 	model_load_collada("./assets/models/primitive.dae");
 
 	oneframe_buffer = ub_create(sizeof(struct EntityData) * ONE_FRAME_LIMIT, 0, 0);
-	(void)descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(),
-								&oneframe_buffer, NULL, &oneframe_descriptors);
+
+	oneframe_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count());
+
+	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL);
 
 	return 0;
 }
@@ -187,7 +189,7 @@ void renderer_begin()
 
 	// Begin one frame draws
 	commandbuffer_begin(oneframe_commands[image_index]);
-	material_bind(material_get_default(), oneframe_commands[image_index], oneframe_descriptors.sets[image_index]);
+	material_bind(material_get_default(), oneframe_commands[image_index], oneframe_descriptors->sets[image_index]);
 	oneframe_draw_index = 0;
 }
 
@@ -250,7 +252,7 @@ void renderer_terminate()
 		commandbuffer_destroy(oneframe_commands[i]);
 		commandbuffer_destroy(primarybuffers[i]);
 	}
-	descriptorpack_destroy(&oneframe_descriptors);
+	descriptorpack_destroy(oneframe_descriptors);
 
 	vkDeviceWaitIdle(device);
 }

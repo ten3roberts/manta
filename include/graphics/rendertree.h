@@ -30,7 +30,7 @@ typedef struct RenderTreeNode
 	CommandBuffer* commandbuffers[3];
 	UniformBuffer* entity_data;
 	// Set 2
-	DescriptorPack entity_data_descriptors;
+	DescriptorPack* entity_data_descriptors;
 
 	// A bit field of which frames should be rebuilt
 	int changed : 3;

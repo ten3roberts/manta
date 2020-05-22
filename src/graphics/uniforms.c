@@ -165,8 +165,7 @@ int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t bin
 	return 0;
 }
 
-int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
-						  UniformBuffer** uniformbuffers, Texture** textures, DescriptorPack* dst_pack)
+DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count)
 {
 	// Fill the layouts for all swapchain image count
 	VkDescriptorSetLayout* layouts = malloc(swapchain_image_count * sizeof(VkDescriptorSetLayout));
@@ -176,6 +175,7 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 	// Find out how many of each type of descriptor type is required
 	uint32_t uniform_count = 0;
 	uint32_t sampler_count = 0;
+
 	for (uint32_t i = 0; i < binding_count; i++)
 	{
 		if (bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
@@ -198,23 +198,49 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 
 	VkDescriptorSetAllocateInfo allocInfo = {0};
 
-	dst_pack->pool_index = descriptorpool_get(uniform_count, sampler_count);
-	if (dst_pack->pool_index == -1)
+	DescriptorPack* pack = malloc(sizeof(DescriptorPack));
+
+	pack->pool_index = descriptorpool_get(uniform_count, sampler_count);
+	if (pack->pool_index == -1)
 	{
 		LOG_E("Failed to get descriptor pool");
-		return -1;
+		return NULL;
 	}
-	dst_pack->uniform_count = uniform_count;
-	dst_pack->sampler_count = sampler_count;
-	dst_pack->count = swapchain_image_count;
+	pack->uniform_count = uniform_count;
+	pack->sampler_count = sampler_count;
+	pack->count = swapchain_image_count;
 
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = descriptor_pools[dst_pack->pool_index].vkpool;
-	allocInfo.descriptorSetCount = dst_pack->count;
+	allocInfo.descriptorPool = descriptor_pools[pack->pool_index].vkpool;
+	allocInfo.descriptorSetCount = pack->count;
 	allocInfo.pSetLayouts = layouts;
 	allocInfo.pNext = 0;
 
-	vkAllocateDescriptorSets(device, &allocInfo, dst_pack->sets);
+	vkAllocateDescriptorSets(device, &allocInfo, pack->sets);
+	free(layouts);
+	return pack;
+}
+void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture** textures)
+{
+	// Find out how many of each type of descriptor type is required
+	uint32_t uniform_count = 0;
+	uint32_t sampler_count = 0;
+
+	for (uint32_t i = 0; i < binding_count; i++)
+	{
+		if (bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+		{
+			uniform_count += bindings[i].descriptorCount;
+		}
+		else if (bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		{
+			sampler_count += bindings[i].descriptorCount;
+		}
+		else
+		{
+			LOG_W("Descriptor set creation: Unsupported descriptor type");
+		}
+	}
 
 	VkWriteDescriptorSet* descriptor_writes = malloc(binding_count * sizeof(VkWriteDescriptorSet));
 	VkDescriptorBufferInfo* buffer_infos = malloc(uniform_count * sizeof(VkDescriptorBufferInfo));
@@ -236,7 +262,7 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 				buffer_infos[buffer_it].range = uniformbuffers[buffer_it]->size;
 
 				descriptor_writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptor_writes[j].dstSet = dst_pack->sets[i];
+				descriptor_writes[j].dstSet = pack->sets[i];
 				descriptor_writes[j].dstBinding = bindings[j].binding;
 				descriptor_writes[j].dstArrayElement = 0;
 				descriptor_writes[j].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -256,7 +282,7 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 				image_infos[sampler_it].sampler = texture_get_sampler(textures[sampler_it]);
 
 				descriptor_writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				descriptor_writes[j].dstSet = dst_pack->sets[i];
+				descriptor_writes[j].dstSet = pack->sets[i];
 				descriptor_writes[j].dstBinding = bindings[j].binding;
 				descriptor_writes[j].dstArrayElement = 0;
 				descriptor_writes[j].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -272,13 +298,13 @@ int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBin
 				LOG_W("Descriptor set writing: Unsupported descriptor type");
 			}
 		}
+
 		vkUpdateDescriptorSets(device, binding_count, descriptor_writes, 0, NULL);
 	}
 	free(descriptor_writes);
-	free(layouts);
 	free(buffer_infos);
 	free(image_infos);
-	return 0;
+	return;
 }
 
 void descriptorpack_destroy(DescriptorPack* pack)
@@ -299,6 +325,8 @@ void descriptorpack_destroy(DescriptorPack* pack)
 	{
 		descriptorpool_destroy(pool);
 	}
+
+	free(pack);
 }
 
 UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)

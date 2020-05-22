@@ -28,7 +28,7 @@ struct Material
 	// 1 : per material descriptor layout
 	// 2 : per rendertree node layout
 	VkDescriptorSetLayout descriptor_layouts[3];
-	DescriptorPack material_descriptors;
+	DescriptorPack* material_descriptors;
 	Pipeline* pipeline;
 
 	VkPushConstantRange push_constants[4];
@@ -184,8 +184,10 @@ Material* material_load_internal(JSON* object)
 	descriptorlayout_create(material_bindings, material_binding_count, &mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX]);
 
 	// Create the material descriptors
-	descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count, NULL, mat->textures,
-						  &mat->material_descriptors);
+	mat->material_descriptors = descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count);
+
+	// Write the descriptors
+	descriptorpack_write(mat->material_descriptors, material_bindings, material_binding_count, NULL, mat->textures);
 
 	free(material_bindings);
 	// Load the shaders
@@ -314,10 +316,10 @@ void material_bind(Material* mat, CommandBuffer* commandbuffer, VkDescriptorSet 
 
 	// Bind global set 0
 	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, GLOBAL_DESCRIPTOR_INDEX, 1,
-							&global_descriptors.sets[commandbuffer->frame], 0, NULL);
+							&global_descriptors->sets[commandbuffer->frame], 0, NULL);
 	// Bind material set 1
 	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, MATERIAL_DESCRIPTOR_INDEX, 1,
-							&mat->material_descriptors.sets[commandbuffer->frame], 0, NULL);
+							&mat->material_descriptors->sets[commandbuffer->frame], 0, NULL);
 
 	// Per entity data set 2
 	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, ENTITY_DESCRIPTOR_INDEX, 1, &data_descriptors, 0,
@@ -349,7 +351,7 @@ void material_destroy(Material* mat)
 		texture_destroy(mat->textures[i]);
 	}
 
-	descriptorpack_destroy(&mat->material_descriptors);
+	descriptorpack_destroy(mat->material_descriptors);
 	vkDestroyDescriptorSetLayout(device, mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], NULL);
 
 	free(mat);

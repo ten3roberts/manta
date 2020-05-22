@@ -27,7 +27,7 @@ VkFormat swapchain_image_format;
 VkExtent2D swapchain_extent;
 
 VkDescriptorSetLayout global_descriptor_layout = VK_NULL_HANDLE;
-DescriptorPack global_descriptors;
+DescriptorPack* global_descriptors = NULL;
 
 VkFramebuffer* framebuffers = NULL;
 size_t framebuffer_count = 0;

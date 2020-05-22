@@ -34,12 +34,14 @@ typedef struct UniformBuffer UniformBuffer;
 int descriptorlayout_create(VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, VkDescriptorSetLayout* dst_layout);
 
 // Creates multiple descriptors, one for each frame in flight (swapchain_image_count)
+DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count);
+
 // Writes the buffers and samplers to each frame's descriptor as specified in bindings
+// Can be used multiple times but all data needs to be resupplied if only partial changes, e.g; sampler change
 // The number of uniformbuffers should match the bindings
 // The number of textures should match the bindings
-// dst_descriptors should be an array of swapchain_image_count length. Arrays data will be overwritten
-int descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count,
-						  UniformBuffer** uniformbuffers, Texture** textures, DescriptorPack* dst_pack);
+void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers,
+						  Texture** textures);
 
 // Destroys a descriptor pack, and if necessary, destroy the pool
 void descriptorpack_destroy(DescriptorPack* pack);
