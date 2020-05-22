@@ -4,6 +4,7 @@ Renderer:
   - One uniform buffer for all entities positions to render
   - Push constants
   - Remove global variables used by vulkan
+  - Dynamic offsets for entity data
 
 Entities:
   - Implement entities
