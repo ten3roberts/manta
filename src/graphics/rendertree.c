@@ -40,6 +40,23 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void)
 	return entity_data_layout;
 }
 
+static void rendertree_create_shader_data(RenderTreeNode* node)
+{
+	// Create secondary command buffers
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		// The fence is assigned on render
+		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, i, VK_NULL_HANDLE, renderPass, framebuffers[i]);
+	}
+
+	// Create uniform buffers for entity data
+	node->entity_data = ub_create((sizeof node->entities / sizeof *node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
+
+	// Create and write set=2 for entity data
+	node->entity_data_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1);
+	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL);
+}
+
 RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx)
 {
 	RenderTreeNode* node = mempool_alloc(&node_pool);
@@ -57,20 +74,15 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 		node->children[i] = NULL;
 
 	node->entity_count = 0;
-
 	// Create command buffers for eac swapchain image
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		// The fence is assigned on render
-		node->commandbuffers[i] = commandbuffer_create_secondary(thread_idx, i, VK_NULL_HANDLE, renderPass, framebuffers[i]);
+		node->commandbuffers[i] = NULL;
 	}
 
-	// Create shader data
-	node->entity_data = ub_create((sizeof node->entities / sizeof *node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
-
-	// Create and write set=2 for entity data
-	node->entity_data_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1);
-	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL);
+	node->entity_data = NULL;
+	node->entity_data_descriptors = NULL;
 	return node;
 }
 
@@ -192,7 +204,6 @@ static void rendertree_check(RenderTreeNode* node)
 
 void rendertree_update(RenderTreeNode* node, uint32_t frame)
 {
-
 	// Check if child is leaf node
 	if (node->children[0] && node->children[0]->children[0] == NULL)
 	{
@@ -201,7 +212,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 		for (uint32_t i = 0; node->children[0] && i < 8; i++)
 			entity_count += node->children[i]->entity_count;
 
-		if (entity_count < RENDER_TREE_LIM)
+		if (entity_count < RENDER_TREE_LIM * 0.8)
 		{
 			LOG("Merging node with %d entities in children", entity_count);
 			rendertree_merge(node);
@@ -212,6 +223,12 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 	// Update entities if not empty
 	if (node->entity_count != 0)
 	{
+		// Create shader resources if not yet created (rendertree node was previously empty)
+		if (node->entity_data == NULL)
+		{
+			rendertree_create_shader_data(node);
+		}
+
 		// Map entity info
 		if (node->entity_count > RENDER_TREE_LIM)
 		{
@@ -243,10 +260,18 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 
 void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* camera, uint32_t frame)
 {
-	node->commandbuffers[frame]->fence = primary->fence;
 	// Render entities if not empty
 	if (node->entity_count != 0)
 	{
+		// Create shader resources if not yet created (rendertree node was previously empty)
+		if (node->entity_data == NULL)
+		{
+			rendertree_create_shader_data(node);
+		}
+
+		// Assign fence from primary for proper destruction
+		node->commandbuffers[frame]->fence = primary->fence;
+
 		// Needs to rerecord secondary
 		if (node->changed & (1 << frame))
 		{
@@ -412,12 +437,16 @@ void rendertree_destroy(RenderTreeNode* node)
 		rendertree_destroy(node->children[i]);
 	}
 
-	ub_destroy(node->entity_data);
-	descriptorpack_destroy(node->entity_data_descriptors);
-	for (uint32_t i = 0; i < 3; i++)
+	if (node->entity_data)
 	{
-		commandbuffer_destroy(node->commandbuffers[i]);
+		for (uint32_t i = 0; i < 3; i++)
+		{
+			commandbuffer_destroy(node->commandbuffers[i]);
+		}
+		ub_destroy(node->entity_data);
+		descriptorpack_destroy(node->entity_data_descriptors);
 	}
+
 	mempool_free(&node_pool, node);
 
 	// Last node

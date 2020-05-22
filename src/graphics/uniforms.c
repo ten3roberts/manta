@@ -65,7 +65,6 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 
 	// No pool was found
 	// Allocate a new one
-
 	DescriptorPool* new_pool = NULL;
 	uint32_t index = 0;
 	// Search for a free hole in the list
