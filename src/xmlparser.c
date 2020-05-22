@@ -7,8 +7,6 @@
 
 #include "mempool.h"
 
-static mempool_t* node_pool = NULL;
-
 struct attribute_t
 {
 	// key\0value
@@ -28,16 +26,7 @@ struct XMLNode
 	XMLNode* children;
 };
 
-// Pool allocated a new node
-static XMLNode* xml_node_new()
-{
-	// Allocate pool for the first time
-	if (node_pool == NULL)
-	{
-		node_pool = mempool_create(sizeof(XMLNode), 16);
-	}
-	return mempool_alloc(node_pool);
-}
+static mempool_t node_pool = MEMPOOL_INIT(sizeof(XMLNode), 64);
 
 XMLNode* xml_loadfile(const char* filepath)
 {
@@ -57,7 +46,7 @@ XMLNode* xml_loadfile(const char* filepath)
 	fread(buf, 1, size, file);
 
 	// Loads the root node
-	XMLNode* root = xml_node_new();
+	XMLNode* root = mempool_alloc(&node_pool);
 	root->parent = NULL;
 	char* body = buf;
 	body = xml_load(root, buf);
@@ -207,12 +196,12 @@ char* xml_load(XMLNode* node, char* str)
 	while (1)
 	{
 
-		XMLNode* new_node = xml_node_new();
+		XMLNode* new_node = mempool_alloc(&node_pool);
 		char* buf = xml_load(new_node, str);
 		new_node->parent = node;
 		if (buf == NULL)
 		{
-			mempool_free(node_pool, new_node);
+			mempool_free(&node_pool, new_node);
 			break;
 		}
 		tag_close -= buf - str;
@@ -313,7 +302,7 @@ void xml_savefile(XMLNode* root, const char* filepath)
 
 XMLNode* xml_create(char* tag, char* content)
 {
-	XMLNode* node = xml_node_new();
+	XMLNode* node = mempool_alloc(&node_pool);
 	if (node == NULL)
 		return NULL;
 	if (tag)
@@ -476,12 +465,5 @@ void xml_destroy(XMLNode* node)
 	if (node->content)
 		free(node->content);
 
-	mempool_free(node_pool, node);
-
-	// Destroy pool if it is empty
-	if (mempool_get_count(node_pool) == 0)
-	{
-		mempool_destroy(node_pool);
-		node_pool = NULL;
-	}
+	mempool_free(&node_pool, node);
 }

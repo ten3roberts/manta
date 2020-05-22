@@ -3,6 +3,9 @@
 
 #include <vulkan/vulkan.h>
 #include "graphics/commandbuffer.h"
+#include "mempool.h"
+
+// MEMPOOL_INIT(sizeof(struct BufferPoolFree), 512);
 
 // Defines a buffer pool that can be used to create pools for different buffer types
 struct BufferPoolBlock
@@ -13,6 +16,8 @@ struct BufferPoolBlock
 	uint32_t alloc_size;
 	VkBuffer buffer;
 	VkDeviceMemory memory;
+	// Pooling of free blocks
+	mempool_t free_pool;
 	struct BufferPoolFree* free_blocks;
 };
 
@@ -60,8 +65,8 @@ uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties
 // Creates and allocates memory for a buffer
 // If alignment != NULL, alignment will be filled with the required buffer alignment
 // If corrected_size != NULL, corrected_size will be filled with the align-corrected size
-int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory,
-				  uint32_t* alignment, uint32_t* corrected_size);
+int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory, uint32_t* alignment,
+				  uint32_t* corrected_size);
 
 // Can be used to copy data to staging buffers
 void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset);
@@ -73,8 +78,8 @@ CommandBuffer* single_use_commands_begin();
 // Ends and frees a single time command buffer
 void single_use_commands_end(CommandBuffer* command_buffer);
 
-void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-				  VkImage* image, VkDeviceMemory* memory, VkSampleCountFlagBits num_samples);
+void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image,
+				  VkDeviceMemory* memory, VkSampleCountFlagBits num_samples);
 
 VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags);
 

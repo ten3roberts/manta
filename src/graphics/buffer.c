@@ -2,13 +2,12 @@
 #include "vulkan_internal.h"
 #include "log.h"
 #include "magpie.h"
+#include "mempool.h"
 #include <math.h>
-
-#define B_MILLION 1048576
 
 void buffer_pool_add(BufferPool* pool, uint32_t size)
 {
-	LOG_S("Creating new buffer pool with usage %d", pool->usage);
+	LOG_S("Creating new buffer pool block with usage %d", pool->usage);
 	pool->blocks = realloc(pool->blocks, ++pool->block_count * sizeof(struct BufferPoolBlock));
 	// Check for allocation errors
 	if (pool->blocks == NULL)
@@ -26,10 +25,10 @@ void buffer_pool_add(BufferPool* pool, uint32_t size)
 	}
 
 	// Create the buffer and memory for vulkan
-	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &new_block->buffer,
-				  &new_block->memory, &pool->alignment, NULL);
+	buffer_create(size, pool->usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &new_block->buffer, &new_block->memory, &pool->alignment, NULL);
 
 	// No blocks have been allocated nor freed, so initialize to 0
+	new_block->free_pool = (mempool_t){0};
 	new_block->free_blocks = NULL;
 	new_block->end = 0;
 	new_block->alloc_size = size;
@@ -90,7 +89,7 @@ void buffer_pool_alloc(BufferPool* pool, uint32_t size, VkBuffer* buffer, VkDevi
 					// Remove from list, middle or end
 					best_fit_prev->next = best_fit->next;
 				}
-				free(best_fit);
+				mempool_free(&pool->blocks[i].free_pool, best_fit);
 			}
 		}
 
@@ -132,7 +131,7 @@ int buffer_pool_merge_free(struct BufferPoolBlock* block)
 
 			// Remove the next block since it was merged
 			cur->next = next->next;
-			free(next);
+			mempool_free(&block->free_pool, next);
 			return EXIT_SUCCESS;
 		}
 		cur = cur->next;
@@ -160,10 +159,14 @@ void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDevice
 
 	struct BufferPoolFree* cur = block->free_blocks;
 
+	// Create free pool
+	if (block->free_pool.block_size == 0)
+		block->free_pool = MEMPOOL_INIT(sizeof(struct BufferPoolFree), 512);
+
 	// Handle beginning of list
 	if (block->free_blocks == NULL)
 	{
-		struct BufferPoolFree* free_block = malloc(sizeof(struct BufferPoolFree));
+		struct BufferPoolFree* free_block = mempool_alloc(&block->free_pool);
 		free_block->buffer = buffer;
 		free_block->memory = memory;
 		free_block->offset = offset;
@@ -179,7 +182,7 @@ void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDevice
 		if (cur->offset < offset)
 		{
 			// Insert a new block at tail
-			struct BufferPoolFree* free_block = malloc(sizeof(struct BufferPoolFree));
+			struct BufferPoolFree* free_block = mempool_alloc(&block->free_pool);
 			free_block->buffer = buffer;
 			free_block->memory = memory;
 			free_block->offset = offset;
@@ -209,7 +212,7 @@ void buffer_pool_array_destroy(BufferPool* pool)
 		{
 			next = cur->next;
 
-			free(cur);
+			mempool_free(&pool->blocks[i].free_pool, cur);
 
 			cur = next;
 		}
@@ -236,8 +239,8 @@ uint32_t find_memory_type(uint32_t type_filter, VkMemoryPropertyFlags properties
 	return 0;
 }
 
-int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory,
-				  uint32_t* alignment, uint32_t* corrected_size)
+int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer* buffer, VkDeviceMemory* buffer_memory, uint32_t* alignment,
+				  uint32_t* corrected_size)
 {
 	// Create the vertex buffer
 	VkBufferCreateInfo bufferInfo = {0};
@@ -307,8 +310,8 @@ void single_use_commands_end(CommandBuffer* commandbuffer)
 	commandbuffer_destroy(commandbuffer);
 }
 
-void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-				  VkImage* image, VkDeviceMemory* memory, VkSampleCountFlagBits num_samples)
+void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image,
+				  VkDeviceMemory* memory, VkSampleCountFlagBits num_samples)
 {
 	// Create the VKImage
 	VkImageCreateInfo imageInfo = {0};

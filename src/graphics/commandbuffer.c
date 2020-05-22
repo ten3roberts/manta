@@ -1,9 +1,12 @@
 #include "graphics/commandbuffer.h"
 #include "graphics/vulkan_members.h"
+#include "mempool.h"
 #include "magpie.h"
 #include "log.h"
 
 static VkCommandPool commandpools[RENDERER_MAX_THREADS] = {0};
+static mempool_t command_ptr_pool[RENDERER_MAX_THREADS] = {MEMPOOL_INIT(sizeof(CommandBuffer), 64), MEMPOOL_INIT(sizeof(CommandBuffer), 64),
+														   MEMPOOL_INIT(sizeof(CommandBuffer), 64), MEMPOOL_INIT(sizeof(CommandBuffer), 64)};
 
 static int commandpool_create(uint8_t thread_idx)
 {
@@ -46,7 +49,7 @@ CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 	allocInfo.commandBufferCount = 1;
 
-	CommandBuffer* commandbuffer = malloc(sizeof(CommandBuffer));
+	CommandBuffer* commandbuffer = mempool_alloc(&command_ptr_pool[thread_idx]);
 	commandbuffer->thread_idx = thread_idx;
 	commandbuffer->recording = false;
 	commandbuffer->frame = frame;
@@ -95,7 +98,7 @@ CommandBuffer* commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	CommandBuffer* commandbuffer = malloc(sizeof(CommandBuffer));
+	CommandBuffer* commandbuffer = mempool_alloc(&command_ptr_pool[thread_idx]);
 	commandbuffer->thread_idx = thread_idx;
 	commandbuffer->recording = false;
 	commandbuffer->frame = frame;
@@ -193,7 +196,9 @@ void commandbuffer_destroy(CommandBuffer* commandbuffer)
 	vkFreeCommandBuffers(device, commandpools[commandbuffer->thread_idx], 1, &commandbuffer->cmd);
 	if (commandbuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 		vkDestroyFence(device, commandbuffer->fence, NULL);
-	free(commandbuffer);
+
+	uint32_t thread_idx = commandbuffer->thread_idx;
+	mempool_free(&command_ptr_pool[thread_idx], commandbuffer);
 }
 
 void commandbuffer_handle_destructions()

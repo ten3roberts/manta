@@ -8,9 +8,6 @@
 #include "graphics/rendertree.h"
 #include <stdio.h>
 
-// Pool entity creation to allow for faster allocations and reduce memory fragmentation
-static mempool_t* entity_pool = NULL;
-
 struct Entity
 {
 	char name[256];
@@ -22,15 +19,12 @@ struct Entity
 	SphereCollider boundingsphere;
 };
 
+// Pool entity creation to allow for faster allocations and reduce memory fragmentation
+static mempool_t entity_pool = MEMPOOL_INIT(sizeof(Entity), 128);
+
 Entity* entity_create(const char* name, const char* material_name, const char* mesh_name, Transform transform, Rigidbody rigidbody)
 {
-	// Create the memory pool
-	if (entity_pool == NULL)
-	{
-		entity_pool = mempool_create(sizeof(Entity), 8);
-	}
-
-	Entity* entity = mempool_alloc(entity_pool);
+	Entity* entity = mempool_alloc(&entity_pool);
 	snprintf(entity->name, sizeof entity->name, "%s", name);
 
 	entity->transform = transform;
@@ -124,11 +118,6 @@ void entity_render(Entity* entity, CommandBuffer* commandbuffer, uint32_t index,
 
 void entity_destroy(Entity* entity)
 {
-	mempool_free(entity_pool, entity);
-	if (mempool_get_count(entity_pool) == 0)
-	{
-		mempool_destroy(entity_pool);
-		entity_pool = NULL;
-	}
+	mempool_free(&entity_pool, entity);
 	//scene_remove_entity(scene_get_current(), entity);
 }

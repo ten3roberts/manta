@@ -6,6 +6,7 @@
 #include "log.h"
 #include "magpie.h"
 #include <stb_image.h>
+#include "mempool.h"
 #include "defines.h"
 
 // The different flavors of descriptor pools
@@ -328,11 +329,12 @@ void descriptorpack_destroy(DescriptorPack* pack)
 
 	free(pack);
 }
+static mempool_t ub_ptr_pool = MEMPOOL_INIT(sizeof(UniformBuffer), 128);
 
 UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 {
 	//LOG_S("Creating uniform buffer");
-	UniformBuffer* ub = malloc(sizeof(UniformBuffer));
+	UniformBuffer* ub = mempool_alloc(&ub_ptr_pool);
 	if (size > memory_limits.maxUniformBufferRange)
 	{
 		LOG_E("Uniform buffer size %d is larger than device limit %d", size, memory_limits.maxUniformBufferRange);
@@ -417,7 +419,7 @@ void ub_destroy(UniformBuffer* ub)
 	{
 		buffer_pool_free(&ub_pool[ub->thread_idx], ub->size, ub->buffers[i], ub->memories[i], ub->offsets[i]);
 	}
-	free(ub);
+	mempool_free(&ub_ptr_pool, ub);
 }
 
 void ub_pools_destroy()

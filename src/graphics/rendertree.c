@@ -11,7 +11,7 @@
 #define ALL_CHANGED (1 | 2 | 4)
 
 static uint32_t node_count = 0;
-static mempool_t* node_pool = NULL;
+static mempool_t node_pool = MEMPOOL_INIT(sizeof(RenderTreeNode), 128);
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
 static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){.binding = 0,
 																						 .descriptorCount = 1,
@@ -42,14 +42,7 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void)
 
 RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx)
 {
-	// Pool allocations for faster deletion and creation without fragmenting
-	// memory
-	if (node_pool == 0)
-	{
-		node_pool = mempool_create(sizeof(RenderTreeNode), 256);
-	}
-
-	RenderTreeNode* node = mempool_alloc(node_pool);
+	RenderTreeNode* node = mempool_alloc(&node_pool);
 
 	node->parent = NULL;
 	node->depth = 0;
@@ -425,14 +418,9 @@ void rendertree_destroy(RenderTreeNode* node)
 	{
 		commandbuffer_destroy(node->commandbuffers[i]);
 	}
-	mempool_free(node_pool, node);
+	mempool_free(&node_pool, node);
 
 	// Last node
-	if (mempool_get_count(node_pool) == 0)
-	{
+	if (node_pool.alloc_count == 0)
 		vkDestroyDescriptorSetLayout(device, entity_data_layout, NULL);
-		entity_data_layout = VK_NULL_HANDLE;
-		mempool_destroy(node_pool);
-		node_pool = 0;
-	}
 }
