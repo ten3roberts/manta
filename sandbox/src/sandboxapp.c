@@ -20,7 +20,7 @@ int application_start(int argc, char** argv)
 	renderer_init();
 
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
-	LOG_ASSERT(false, "Window was not NULL");
+
 	if (log_get_count(LOG_SEVERITY_ERROR) > 0)
 	{
 		LOG("Errors encountered during initialization, exiting");
@@ -107,7 +107,7 @@ int application_start(int argc, char** argv)
 		if (timer_duration(&timer) > 2.0f)
 		{
 			timer_reset(&timer);
-			LOG("Framerate %d %f", time_framecount(), time_framerate());
+			LOG("Framerate %10d %10f", time_framecount(), time_framerate());
 		}
 	}
 	scene_destroy_entities(scene);

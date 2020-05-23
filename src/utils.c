@@ -482,7 +482,6 @@ int strcmp_s(const char* str1, const char* str2)
 
 size_t string_format(char* str, size_t size, const char* fmt, ...)
 {
-
 	va_list args;
 	va_start(args, fmt);
 	va_end(args);
@@ -715,9 +714,6 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 			case '#':
 				flags |= FORMAT_PRECED;
 				break;
-			case '0':
-				flags |= FORMAT_FLAG_PAD_ZERO;
-				break;
 			case '*':
 				flags |= FORMAT_WIDTH_ARG;
 				break;
@@ -726,9 +722,15 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 				break;
 
 			// Not a modifier
+			case '0':
+				if (width == 0 && precision == 0)
+				{
+					flags |= FORMAT_FLAG_PAD_ZERO;
+					break;
+				}
 			default: {
 				// Length modifier
-				if (ch > '0' && ch <= '9')
+				if (ch >= '0' && ch <= '9')
 				{
 					if (flags & FORMAT_WIDTH_PREC)
 					{
