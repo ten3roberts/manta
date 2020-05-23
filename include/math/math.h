@@ -83,4 +83,8 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 
 // Converts a float to scientific notation
 int ftos_sci(double num, char* buf, int precision);
+
+// Uses the shortest of ftos and ftos_sci
+// If num is smaller than precision sci is used
+int ftos_mixed(double num, char* buf, int precision);
 #endif

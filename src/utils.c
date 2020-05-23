@@ -633,6 +633,13 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 				length_mod = 0;
 
 				break;
+			case 'g':
+				double_tmp = va_arg(args, double);
+				ftos_mixed(double_tmp, buf_tmp, precision);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
 
 			case 'p':
 				int_tmp = (size_t)va_arg(args, void*);

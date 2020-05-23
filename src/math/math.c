@@ -299,3 +299,26 @@ int ftos_sci(double num, char* buf, int precision)
 	buf += itos(exponent, buf, 10, 0);
 	return buf - buf_start;
 }
+
+int ftos_mixed(double num, char* buf, int precision)
+{
+	// num is too small for ftos
+	if (fabs(num) < pow(10, -precision))
+	{
+		return ftos_sci(num, buf, precision);
+	}
+
+	char norm[256], sci[512];
+	int norm_len = 0, sci_len = 0;
+	norm_len = ftos(num, norm, precision);
+	sci_len = ftos_sci(num, sci, precision);
+	if (norm_len <= sci_len)
+	{
+		memcpy(buf, norm, norm_len);
+		buf[norm_len] = '\0';
+		return norm_len;
+	}
+	memcpy(buf, sci, sci_len);
+	buf[sci_len] = '\0';
+	return sci_len;
+}
