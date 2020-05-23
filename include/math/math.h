@@ -55,6 +55,7 @@ static int32_t sqrti(int32_t n)
 
 // Converts a signed integer to a string
 // Returns how many characters were written
+// Upper signifies to use ABCD rather than abcd for bases > 10
 int itos(int num, char* buf, int base, int upper);
 
 // Converts an unsigned integer to a string
@@ -64,7 +65,7 @@ int utos(unsigned int num, char* buf, int base, int upper);
 // Converts a double/float to a string
 // Precision indicates the max digits to include after the comma
 // Prints up to precision digits after the comma, can write less. Can be used to print integers, where the comma is not written
-// Returns how many characters were written
+// Returns how many characters were written, excluding the NULL character
 // Buf should be large enough for the result
 int ftos(double num, char* buf, int precision);
 
@@ -80,5 +81,6 @@ int ftos_fixed(double num, char* buf, int length);
 // Returns how many characters were written
 int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char);
 
-void ftoa_sci(char* buffer, double value);
+// Converts a float to scientific notation
+int ftos_sci(double num, char* buf, int precision);
 #endif

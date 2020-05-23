@@ -11,12 +11,13 @@ int application_start(int argc, char** argv)
 	puts(buf);
 	string_format(buf, sizeof buf, "%e", 12903.213);
 	puts(buf);
-	string_format(buf, sizeof buf, "%e", 23.23123);
+	string_format(buf, sizeof buf, "%e", -23.23183);
 	puts(buf);
 	string_format(buf, sizeof buf, "%e", 0.0023);
 	puts(buf);
 	string_format(buf, sizeof buf, "%e", 23.4);
 	puts(buf);
+
 	Timer timer = timer_start(CT_WALL_TICKS);
 
 	time_init();

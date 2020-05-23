@@ -628,7 +628,7 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 				// %e float in scientific form
 			case 'e':
 				double_tmp = va_arg(args, double);
-				ftoa_sci(buf_tmp, double_tmp);
+				ftos_sci(double_tmp, buf_tmp, precision);
 				WRITE(buf_tmp);
 				length_mod = 0;
 

@@ -268,62 +268,34 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 	return return_value;
 }
 
-int normalize(double* val)
+int ftos_sci(double num, char* buf, int precision)
 {
 	int exponent = 0;
-	double value = *val;
 
-	while (value >= 1.0)
+	// Save and remove sign
+	int sign = 1;
+	if (num < 0)
 	{
-		value /= 10.0;
+		sign = -1;
+		num *= -1;
+	}
+
+	// Normalize the coefficient to 1 and get exponent
+	while (num > 1.0)
+	{
+		num /= 10;
 		++exponent;
 	}
-
-	while (value < 0.1)
+	while (num < 1.0)
 	{
-		value *= 10.0;
+		num *= 10;
 		--exponent;
 	}
-	*val = value;
-	return exponent;
-}
 
-// Converts a float to scientific notation
-void ftoa_sci(char* buffer, double value)
-{
-	int exponent = 0;
-	static const int width = 4;
+	char* buf_start = buf;
+	buf += ftos(num * sign, buf, precision);
 
-	// If value is 0,
-	if (value == 0.0)
-	{
-		buffer[0] = '0';
-		buffer[1] = '\0';
-		return;
-	}
-
-	if (value < 0.0)
-	{
-		*buffer++ = '-';
-		value = -value;
-	}
-
-	exponent = normalize(&value);
-
-	int digit = value * 10.0;
-	*buffer++ = digit + '0';
-	value = value * 10.0 - digit;
-	--exponent;
-
-	*buffer++ = '.';
-
-	for (int i = 0; i < width; i++)
-	{
-		int digit = value * 10.0;
-		*buffer++ = digit + '0';
-		value = value * 10.0 - digit;
-	}
-
-	*buffer++ = 'e';
-	itos(exponent, buffer, 10, 1);
+	*buf++ = 'e';
+	buf += itos(exponent, buf, 10, 0);
+	return buf - buf_start;
 }

@@ -244,7 +244,7 @@ int log_call(int color, const char* name, const char* fmt, ...)
 				// %e float in scientific form
 			case 'e':
 				double_tmp = va_arg(arg, double);
-				ftoa_sci(buffer, double_tmp);
+				ftos_sci(double_tmp, buffer, 3);
 				WRITE(buffer);
 				length_mod = 0;
 
