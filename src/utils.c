@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "magpie.h"
+#include "math/vec.h"
+#include "math/mat4.h"
+#include "math/math.h"
 
 #if PL_LINUX
 #include <unistd.h>
@@ -475,4 +478,229 @@ int strcmp_s(const char* str1, const char* str2)
 
 	// C stdlib strcmp
 	return strcmp(str1, str2);
+}
+
+size_t string_format(char* str, size_t size, const char* fmt, ...)
+{
+
+	va_list args;
+	va_start(args, fmt);
+	va_end(args);
+	return string_vformat(str, size, fmt, args);
+}
+
+// Writes a string into another string
+// Returns written characters even if size is too small
+// Does not NULL terminate
+size_t string_vformat_write(char* buf, int64_t size, const char* str, size_t len)
+{
+	if (size > 0 && buf)
+	{
+		memcpy(buf, str, min(len, size));
+	}
+	return len;
+}
+
+//#define string_vformat_writechar(char* buf, size_t )
+
+#define WRITE(s)                                                             \
+	{                                                                        \
+		size_t written = string_vformat_write(str, remaining, s, strlen(s)); \
+		if (remaining > 0 && str)                                            \
+			str += min(written, remaining);                                  \
+		remaining -= written;                                                \
+	}
+
+#define WRITECH(c)            \
+	if (remaining > 0 && str) \
+	{                         \
+		*str++ = c;           \
+	}                         \
+	--remaining;
+
+size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
+{
+	char* str_start = str;
+	int64_t remaining = size;
+
+	char ch;
+	long long int_tmp;
+	char* string_tmp;
+	double double_tmp;
+
+	char buf_tmp[1024];
+
+	// Some specifiers require a length_mod before them, e.g; vectors %v
+	unsigned int length_mod = 0;
+	int precision = 4;
+
+	// Iterate fmt string
+	while ((ch = *fmt++) != '\0')
+	{
+		// Format specifier
+		if (ch == '%' || length_mod)
+		{
+			// Look at next character
+			switch (ch = *fmt++)
+			{
+				// %% percent sign
+			case '%':
+				WRITECH('%');
+				length_mod = 0;
+				break;
+
+				// %c character
+			case 'c':
+				WRITECH(va_arg(args, int));
+				length_mod = 0;
+
+				break;
+
+				// %s string
+			case 's':
+				string_tmp = va_arg(args, char*);
+				WRITE(string_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %o int
+			case 'b':
+				int_tmp = va_arg(args, int);
+				utos(int_tmp, buf_tmp, 2, 0);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %o int
+			case 'o':
+				int_tmp = va_arg(args, int);
+				utos(int_tmp, buf_tmp, 8, 0);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %d int
+			case 'd':
+				int_tmp = va_arg(args, int);
+				itos(int_tmp, buf_tmp, 10, 0);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %u int
+			case 'u':
+				int_tmp = va_arg(args, int);
+				utos(int_tmp, buf_tmp, 16, 0);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %x int hex
+			case 'x':
+				int_tmp = va_arg(args, int);
+				utos(int_tmp, buf_tmp, 16, 0);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %x int hex
+			case 'X':
+				int_tmp = va_arg(args, int);
+				utos(int_tmp, buf_tmp, 16, 1);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+				// %f float
+			case 'f':
+				double_tmp = va_arg(args, double);
+				ftos(double_tmp, buf_tmp, precision);
+				WRITE(buf_tmp);
+				length_mod = 0;
+				break;
+				// %e float in scientific form
+			case 'e':
+				double_tmp = va_arg(args, double);
+				ftoa_sci(buf_tmp, double_tmp);
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+			case 'p':
+				int_tmp = (size_t)va_arg(args, void*);
+				utos(int_tmp, buf_tmp, 16, 0);
+				WRITECH('b');
+				WRITE(buf_tmp);
+				length_mod = 0;
+
+				break;
+
+			case 'v':
+				if (length_mod == 1)
+				{
+					ftos(va_arg(args, double), buf_tmp, precision);
+				}
+				else if (length_mod == 2)
+				{
+					vec2_string(va_arg(args, vec2), buf_tmp, precision);
+				}
+				else if (length_mod == 3)
+				{
+					vec3_string(va_arg(args, vec3), buf_tmp, precision);
+				}
+				else if (length_mod == 4)
+				{
+					vec4_string(va_arg(args, vec4), buf_tmp, precision);
+				}
+				else
+				{
+					WRITE("[not a valid vector length]");
+					break;
+					length_mod = 0;
+				}
+				WRITE(buf_tmp);
+				length_mod = 0;
+				break;
+			case 'm': {
+				mat4 mat = va_arg(args, mat4);
+				WRITECH('\n');
+				mat4_string(&mat, buf_tmp, precision);
+				WRITE(buf_tmp);
+				length_mod = 0;
+				break;
+			}
+
+			// Not a modifier
+			default:
+				length_mod = atoi(--fmt);
+				if (length_mod)
+					continue;
+				WRITECH('%');
+				WRITECH(ch);
+
+				length_mod = 0;
+			}
+		}
+		else
+		{
+			WRITECH(ch);
+		}
+	}
+
+	// Not enough room, step back str ptr and write NULL pointer
+	if (remaining <= 0)
+		str--;
+	// NULL terminate
+	if (str)
+		*str = '\0';
+
+	return size - remaining;
 }

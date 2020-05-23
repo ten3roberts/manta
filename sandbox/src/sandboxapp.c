@@ -6,6 +6,11 @@ int swapchain_resize = 0;
 
 int application_start(int argc, char** argv)
 {
+	char buf[1024] = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	int w = string_format(NULL, 6, "%d", 9876);
+	string_format(buf, sizeof buf, "Wrote %d characters", w);
+	puts(buf);
+	return 0;
 	Timer timer = timer_start(CT_WALL_TICKS);
 
 	time_init();

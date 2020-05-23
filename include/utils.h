@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include "magpie.h"
+#include <stdarg.h>
+
 // Contains utility functions used by the engine
 
 // Returns 1 if the path is a regular file
@@ -64,4 +66,15 @@ char* stringdup_internal(const char* s);
 // Returns nonzero if strings don't match or one of them is NULL
 // Won't crash on NULL pointers
 int strcmp_s(const char* str1, const char* str2);
+
+// Formats a string
+// Like sprintf but supports Cuttle custom types
+// Writes result into string with a max of size bytes
+// Returns how many bytes would have been written, even if size was too small, excluding the NULL character
+// If str is NULL, nothing is written but final length is returned
+size_t string_format(char* str, size_t size, const char* fmt, ...);
+
+// Same as string_format but uses an already initialized va_list
+// Does not terminate va_list
+size_t string_vformat(char* str, size_t size, const char* fmt, va_list args);
 #endif

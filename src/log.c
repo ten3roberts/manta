@@ -10,8 +10,6 @@
 
 #include "math/vec.h"
 
-static void ftoa_sci(char* buffer, double value);
-
 #if PL_LINUX
 void set_print_color(int color)
 {
@@ -27,66 +25,6 @@ void set_print_color(int color)
 	SetConsoleTextAttribute(hConsole, color);
 }
 #endif
-
-int normalize(double* val)
-{
-	int exponent = 0;
-	double value = *val;
-
-	while (value >= 1.0)
-	{
-		value /= 10.0;
-		++exponent;
-	}
-
-	while (value < 0.1)
-	{
-		value *= 10.0;
-		--exponent;
-	}
-	*val = value;
-	return exponent;
-}
-
-// Converts a float to scientific notation
-void ftoa_sci(char* buffer, double value)
-{
-	int exponent = 0;
-	static const int width = 4;
-
-	// If value is 0,
-	if (value == 0.0)
-	{
-		buffer[0] = '0';
-		buffer[1] = '\0';
-		return;
-	}
-
-	if (value < 0.0)
-	{
-		*buffer++ = '-';
-		value = -value;
-	}
-
-	exponent = normalize(&value);
-
-	int digit = value * 10.0;
-	*buffer++ = digit + '0';
-	value = value * 10.0 - digit;
-	--exponent;
-
-	*buffer++ = '.';
-
-	for (int i = 0; i < width; i++)
-	{
-		int digit = value * 10.0;
-		*buffer++ = digit + '0';
-		value = value * 10.0 - digit;
-	}
-
-	*buffer++ = 'e';
-	itos(exponent, buffer, 10, 1);
-}
 
 static FILE* log_file = NULL;
 static size_t last_log_length = 0;

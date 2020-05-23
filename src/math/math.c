@@ -236,7 +236,7 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 	if (a == 0)
 	{
 		memset(buf, pad_char, pad_length);
-		buf[pad_length-1] = '0';
+		buf[pad_length - 1] = '0';
 		buf[pad_length] = '\0';
 		return pad_length;
 	}
@@ -259,9 +259,69 @@ int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char
 	}
 	if (neg)
 		*buf-- = '-';
-	for(int i = 0; i < pad; i++)
+	for (int i = 0; i < pad; i++)
 	{
 		*buf-- = pad_char;
 	}
 	return return_value;
+}
+
+int normalize(double* val)
+{
+	int exponent = 0;
+	double value = *val;
+
+	while (value >= 1.0)
+	{
+		value /= 10.0;
+		++exponent;
+	}
+
+	while (value < 0.1)
+	{
+		value *= 10.0;
+		--exponent;
+	}
+	*val = value;
+	return exponent;
+}
+
+// Converts a float to scientific notation
+void ftoa_sci(char* buffer, double value)
+{
+	int exponent = 0;
+	static const int width = 4;
+
+	// If value is 0,
+	if (value == 0.0)
+	{
+		buffer[0] = '0';
+		buffer[1] = '\0';
+		return;
+	}
+
+	if (value < 0.0)
+	{
+		*buffer++ = '-';
+		value = -value;
+	}
+
+	exponent = normalize(&value);
+
+	int digit = value * 10.0;
+	*buffer++ = digit + '0';
+	value = value * 10.0 - digit;
+	--exponent;
+
+	*buffer++ = '.';
+
+	for (int i = 0; i < width; i++)
+	{
+		int digit = value * 10.0;
+		*buffer++ = digit + '0';
+		value = value * 10.0 - digit;
+	}
+
+	*buffer++ = 'e';
+	itos(exponent, buffer, 10, 1);
 }

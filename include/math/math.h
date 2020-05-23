@@ -34,7 +34,8 @@ static int32_t sqrti(int32_t n)
 	unsigned int c = 0x8000;
 	unsigned int g = 0x8000;
 
-	for (;;) {
+	for (;;)
+	{
 		if (g * g > n)
 			g ^= c;
 		c >>= 1;
@@ -46,29 +47,29 @@ static int32_t sqrti(int32_t n)
 
 #define DEG_360 (2 * M_PI)
 #define DEG_180 (M_PI)
-#define DEG_90 (M_PI / 2)
-#define DEG_45 (M_PI / 4)
+#define DEG_90	(M_PI / 2)
+#define DEG_45	(M_PI / 4)
 
 #define min(a, b) (a < b ? a : b)
 #define max(a, b) (a > b ? a : b)
 
 // Converts a signed integer to a string
 // Returns how many characters were written
-int itos(int num, char * buf, int base, int upper);
+int itos(int num, char* buf, int base, int upper);
 
 // Converts an unsigned integer to a string
 // Returns how many characters were written
-int utos(unsigned int num, char * buf, int base, int upper);
+int utos(unsigned int num, char* buf, int base, int upper);
 
 // Converts a double/float to a string
 // Precision indicates the max digits to include after the comma
 // Prints up to precision digits after the comma, can write less. Can be used to print integers, where the comma is not written
 // Returns how many characters were written
-int ftos(double num, char * buf, int precision);
+int ftos(double num, char* buf, int precision);
 
 // Converts a double/float to a string
 // Writes a fixed length number
-int ftos_fixed(double num, char * buf, int length);
+int ftos_fixed(double num, char* buf, int length);
 
 // Converts a double/float to a string
 // Precision indicates the max digits to include after the comma
@@ -76,5 +77,7 @@ int ftos_fixed(double num, char * buf, int length);
 // Writes a minimum of pad characters
 // pad_length is recommended to be 2 less than precisio nto fit 0.
 // Returns how many characters were written
-int ftos_pad(double num, char * buf, int precision, int pad_length, char pad_char);
+int ftos_pad(double num, char* buf, int precision, int pad_length, char pad_char);
+
+void ftoa_sci(char* buffer, double value);
 #endif
