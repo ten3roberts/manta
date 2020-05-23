@@ -45,6 +45,7 @@ void log_terminate();
 // -> 2 : warning message
 // -> 3 : error message
 // -> 4 : assertion
+// Errors will cause a short delay in debug mode but not in release mode. This is too slow down so that the first error doesn't go beyond term scrollback
 // Severity 4 (assert) will abort the program
 // Severity cannot any other than these listed
 

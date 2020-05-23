@@ -165,6 +165,13 @@ int log_call(int severity, const char* name, const char* fmt, ...)
 	WRITE(buf);
 	WRITE("\n");
 
+#ifdef DEBUG
+	if (severity == LOG_SEVERITY_ERROR)
+	{
+		SLEEP(1);
+	}
+#endif
+
 	// Terminate at assert
 	if (severity == LOG_SEVERITY_ASSERT)
 	{
