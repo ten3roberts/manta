@@ -80,8 +80,9 @@ int log_call(int severity, const char* name, const char* fmt, ...);
 #define LOG_E(fmt, ...) log_call(3, __FILENAME__, fmt, ##__VA_ARGS__)
 
 // Asserts the program with a message if cond equals to zero
+// Aborts all execution after 1 second to allow the user to read before terminal closes
 #define LOG_ASSERT(cond, fmt, ...) \
-	if (cond == 0)                 \
-	log_call(4, __FILENAME__, fmt, ##__VA_ARGS__)
+	if ((cond) == 0)               \
+	log_call(LOG_SEVERITY_ASSERT, __FILENAME__, fmt, ##__VA_ARGS__)
 
 #endif

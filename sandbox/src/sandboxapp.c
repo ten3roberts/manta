@@ -20,10 +20,11 @@ int application_start(int argc, char** argv)
 	renderer_init();
 
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
-
+	LOG_ASSERT(false, "Window was not NULL");
 	if (log_get_count(LOG_SEVERITY_ERROR) > 0)
 	{
 		LOG("Errors encountered during initialization, exiting");
+		SLEEP(5);
 		exit(-1);
 	}
 

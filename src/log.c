@@ -90,7 +90,7 @@ int log_call(int severity, const char* name, const char* fmt, ...)
 	if (severity <= -1)
 		severity = last_severity;
 
-	if (severity >= LOG_SEVERIY_MAX)
+	if (severity > LOG_SEVERIY_MAX)
 		severity = 0;
 
 	++message_count[severity];
@@ -159,6 +159,13 @@ int log_call(int severity, const char* name, const char* fmt, ...)
 
 	WRITE(buf);
 	WRITE("\n");
+
+	// Terminate at assert
+	if (severity == LOG_SEVERITY_ASSERT)
+	{
+		SLEEP(1);
+		abort();
+	}
 
 	set_print_color(CONSOLE_WHITE);
 	return last_log_length;
