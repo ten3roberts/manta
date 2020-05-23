@@ -348,7 +348,7 @@ VkPhysicalDevice pick_physical_device()
 	// Print the best one and assign it to physical_device
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(best_device, &deviceProperties);
-	LOG_OK("Picking graphical device '%s'", deviceProperties.deviceName);
+	LOG_S("Picking graphical device '%s'", deviceProperties.deviceName);
 	VkSampleCountFlagBits wanted_samples = (VkSampleCountFlagBits)settings_get_msaa();
 
 	msaa_samples = min(wanted_samples, get_max_sample_count(best_device));
@@ -757,7 +757,7 @@ int graphics_init(Window* window, struct LayoutInfo* global_layout)
 	{
 		return -14;
 	}
-	LOG_OK("Successfully initialized vulkan");
+	LOG_S("Successfully initialized vulkan");
 	return 0;
 }
 

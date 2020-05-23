@@ -36,31 +36,47 @@ int log_init();
 void log_terminate();
 
 // Issues a formated log call that prints to stdout and a log file
-// name will be printed inside the header, "[ name @ %H.%M.%S ] {NONE, CONSOLE_RED:'WARNING', CONSOLE_YELLOW:'ERROR'}: "
+// name will be printed inside the header, "[ name @ %H:%M.%S ] {NONE, CONSOLE_RED:'WARNING', CONSOLE_YELLOW:'ERROR'}: "
 // If name is NULL, the header will not be printed
 // Can be called either directly or via the LOG_* macros provided for autmatic name and color assignment
-int log_call(int color, const char* name, const char* fmt, ...);
+// Severity indicates the different levels
+// -> 0 : normal message
+// -> 1 : status message
+// -> 2 : warning message
+// -> 3 : error message
+// -> 4 : assertion
+// Severity 4 (assert) will abort the program
+
+#define LOG_SEVERITY_NORMAL	 0
+#define LOG_SEVERITY_STATUS	 1
+#define LOG_SEVERITY_WARNING 2
+#define LOG_SEVERITY_ERROR	 3
+#define LOG_SEVERITY_ASSERT	 4
+
+int log_call(int severity, const char* name, const char* fmt, ...);
 
 // Continues the previous log call
-#define LOG_CONT(fmt, ...) log_call(CONSOLE_WHITE, NULL, fmt, ##__VA_ARGS__)
+#define LOG_CONT(fmt, ...) log_call(-1, NULL, fmt, ##__VA_ARGS__)
 
 // Issues a formated log call that prints to stdout and a log file
 // Prints in white color and indicates a normal message
-#define LOG(fmt, ...) log_call(CONSOLE_WHITE, __FILENAME__, fmt, ##__VA_ARGS__)
-
-// Issues a formated log call that prints to stdout and a log file
-// Prints in green color and indicates an ok or successful status message
-#define LOG_OK(fmt, ...) log_call(CONSOLE_GREEN, __FILENAME__, fmt, ##__VA_ARGS__)
-
-// Issues a formated log call that prints to stdout and a log file
-// Prints in yellow color and indicates a warning or non-significant message
-#define LOG_W(fmt, ...) log_call(CONSOLE_YELLOW, __FILENAME__, fmt, ##__VA_ARGS__)
-
-// Issues a formated log call that prints to stdout and a log file
-// Prints in red color and indicates an error message
-#define LOG_E(fmt, ...) log_call(CONSOLE_RED, __FILENAME__, fmt, ##__VA_ARGS__)
+#define LOG(fmt, ...) log_call(0, __FILENAME__, fmt, ##__VA_ARGS__)
 
 // Issues a formated log call that prints to stdout and a log file
 // Prints in blue color and indicates a status message
-#define LOG_S(fmt, ...) log_call(CONSOLE_BLUE, __FILENAME__, fmt, ##__VA_ARGS__)
+#define LOG_S(fmt, ...) log_call(1, __FILENAME__, fmt, ##__VA_ARGS__)
+
+// Issues a formated log call that prints to stdout and a log file
+// Prints in yellow color and indicates a warning or non-significant message
+#define LOG_W(fmt, ...) log_call(2, __FILENAME__, fmt, ##__VA_ARGS__)
+
+// Issues a formated log call that prints to stdout and a log file
+// Prints in red color and indicates an error message
+#define LOG_E(fmt, ...) log_call(3, __FILENAME__, fmt, ##__VA_ARGS__)
+
+// Asserts the program with a message if cond equals to zero
+#define LOG_ASSERT(cond, fmt, ...) \
+	if (cond == 0)                 \
+	log_call(4, __FILENAME__, fmt, ##__VA_ARGS__)
+
 #endif
