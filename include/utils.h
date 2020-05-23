@@ -68,8 +68,9 @@ char* stringdup_internal(const char* s);
 int strcmp_s(const char* str1, const char* str2);
 
 // Formats a string
-// Like sprintf but supports Cuttle custom types
+// Like sprintf but supports custom types
 // Writes result into string with a max of size bytes
+// If string is not large enough, the result is still NULL terminated but not overrun
 // Returns how many bytes would have been written, even if size was too small, excluding the NULL character
 // If str is NULL, nothing is written but final length is returned
 size_t string_format(char* str, size_t size, const char* fmt, ...);

@@ -752,7 +752,11 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 		}
 		else
 		{
-			WRITECH(ch);
+			if (remaining > 0 && str)
+				*str++ = ch;
+			flags = 0;
+			width = 0;
+			precision = 0;
 		}
 	}
 
