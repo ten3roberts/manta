@@ -7,7 +7,7 @@
 
 void buffer_pool_add(BufferPool* pool, uint32_t size)
 {
-	LOG_S("Creating new buffer pool block with usage %d", pool->usage);
+	//LOG_S("Creating new buffer pool block with usage %d", pool->usage);
 	pool->blocks = realloc(pool->blocks, ++pool->block_count * sizeof(struct BufferPoolBlock));
 	// Check for allocation errors
 	if (pool->blocks == NULL)
@@ -202,7 +202,7 @@ void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDevice
 
 void buffer_pool_array_destroy(BufferPool* pool)
 {
-	LOG_S("Destroying buffer pool array");
+	//LOG_S("Destroying buffer pool array");
 	for (int i = 0; i < pool->block_count; i++)
 	{
 		// Remove all freed spaces
