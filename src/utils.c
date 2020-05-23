@@ -496,7 +496,9 @@ size_t string_format(char* str, size_t size, const char* fmt, ...)
 #define FORMAT_PRECED		 4
 #define FORMAT_FLAG_PAD_ZERO 8
 
-#define FORMAT_WIDTH_INT 16
+#define FORMAT_WIDTH_ARG 16
+// The width specifies the precision instead
+#define FORMAT_WIDTH_PREC 32
 
 // Writes a string into another string
 // Returns written characters even if size is too small
@@ -533,6 +535,7 @@ size_t string_vformat_write(char* buf, int64_t size, const char* str, size_t len
 	}                                                                                      \
 	flags = 0;                                                                             \
 	width = 0;                                                                             \
+	precision = 0;                                                                         \
 	fmt++;
 // Write a single character
 #define WRITECH(c)                                                                        \
@@ -545,6 +548,7 @@ size_t string_vformat_write(char* buf, int64_t size, const char* str, size_t len
 	}                                                                                     \
 	flags = 0;                                                                            \
 	width = 0;                                                                            \
+	precision = 0;                                                                        \
 	fmt++;
 
 size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
@@ -561,7 +565,7 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 	// Some specifiers require a length_mod before them, e.g; vectors %v
 	unsigned int width = 0;
 	int flags = 0;
-	int precision = 4;
+	int precision = 0;
 
 	// Iterate fmt string
 	while ((ch = *fmt++) != '\0')
@@ -645,19 +649,19 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 				// %f float
 			case 'f':
 				double_tmp = va_arg(args, double);
-				ftos(double_tmp, buf_tmp, precision);
+				ftos(double_tmp, buf_tmp, (precision == 0 ? 4 : precision));
 				WRITE(buf_tmp);
 				break;
 				// %e float in scientific form
 			case 'e':
 				double_tmp = va_arg(args, double);
-				ftos_sci(double_tmp, buf_tmp, precision);
+				ftos_sci(double_tmp, buf_tmp, (precision == 0 ? 4 : precision));
 				WRITE(buf_tmp);
 
 				break;
 			case 'g':
 				double_tmp = va_arg(args, double);
-				ftos_mixed(double_tmp, buf_tmp, precision);
+				ftos_mixed(double_tmp, buf_tmp, (precision == 0 ? 4 : precision));
 				WRITE(buf_tmp);
 
 				break;
@@ -673,19 +677,19 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 			case 'v':
 				if (width == 1)
 				{
-					ftos(va_arg(args, double), buf_tmp, precision);
+					ftos(va_arg(args, double), buf_tmp, (precision == 0 ? 4 : precision));
 				}
 				else if (width == 2)
 				{
-					vec2_string(va_arg(args, vec2), buf_tmp, precision);
+					vec2_string(va_arg(args, vec2), buf_tmp, (precision == 0 ? 4 : precision));
 				}
 				else if (width == 3)
 				{
-					vec3_string(va_arg(args, vec3), buf_tmp, precision);
+					vec3_string(va_arg(args, vec3), buf_tmp, (precision == 0 ? 4 : precision));
 				}
 				else if (width == 4)
 				{
-					vec4_string(va_arg(args, vec4), buf_tmp, precision);
+					vec4_string(va_arg(args, vec4), buf_tmp, (precision == 0 ? 4 : precision));
 				}
 				else
 				{
@@ -697,7 +701,7 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 			case 'm': {
 				mat4 mat = va_arg(args, mat4);
 				WRITECH('\n');
-				mat4_string(&mat, buf_tmp, precision);
+				mat4_string(&mat, buf_tmp, (precision == 0 ? 4 : precision));
 				WRITE(buf_tmp);
 				break;
 			}
@@ -714,17 +718,31 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 			case '0':
 				flags |= FORMAT_FLAG_PAD_ZERO;
 				break;
+			case '*':
+				flags |= FORMAT_WIDTH_ARG;
+				break;
+			case '.':
+				flags |= FORMAT_WIDTH_PREC;
+				break;
 
 			// Not a modifier
 			default: {
 				// Length modifier
 				if (ch > '0' && ch <= '9')
 				{
-					width *= 10;
-					width += ch - '0';
+					if (flags & FORMAT_WIDTH_PREC)
+					{
+						precision *= 10;
+						precision += ch - '0';
+					}
+					else
+					{
+						width *= 10;
+						width += ch - '0';
+					}
 				}
 			}
-				if (width)
+				if (width || precision)
 					continue;
 				WRITECH('%');
 				WRITECH(ch);
