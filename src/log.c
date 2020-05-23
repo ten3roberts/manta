@@ -110,6 +110,7 @@ int log_call(int severity, const char* name, const char* fmt, ...)
 		memset(buf, '-', last_log_length);
 		buf[last_log_length] = '\n';
 		buf[last_log_length + 1] = '\0';
+		WRITE(buf);
 	}
 
 	last_log_length = 0;
@@ -144,17 +145,21 @@ int log_call(int severity, const char* name, const char* fmt, ...)
 		}
 
 		strcat(buf, ": ");
+		last_log_length += strlen(buf);
 		WRITE(buf);
 	}
 	else
 	{
 		WRITE(" -> ");
+		last_log_length += strlen(" -> ");
 	}
 
 	// Format the message
 	va_list args;
 	va_start(args, fmt);
 	string_vformat(buf, sizeof buf, fmt, args);
+	last_log_length += strlen(buf);
+
 	va_end(args);
 
 	WRITE(buf);
