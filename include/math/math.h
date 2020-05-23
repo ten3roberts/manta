@@ -65,6 +65,7 @@ int utos(unsigned int num, char* buf, int base, int upper);
 // Precision indicates the max digits to include after the comma
 // Prints up to precision digits after the comma, can write less. Can be used to print integers, where the comma is not written
 // Returns how many characters were written
+// Buf should be large enough for the result
 int ftos(double num, char* buf, int precision);
 
 // Converts a double/float to a string

@@ -85,8 +85,9 @@ int ftos(double num, char* buf, int precision)
 	if (neg)
 		num *= -1;
 	// Shift decimal to precision places to an int
-	uint64_t a = num * pow(10, precision + 1);
+	size_t a = num * pow(10, precision + 1);
 
+	// Round initially
 	if (a % 10 >= 5)
 		a += 10;
 	a /= 10;
@@ -113,7 +114,8 @@ int ftos(double num, char* buf, int precision)
 		return 1;
 	}
 
-	size_t buf_index = log10(a) + (dec_pos ? 2 : 1) + max(dec_pos - log10(a), 0) + neg;
+	size_t digitcount = log10(a) + 1;
+	size_t buf_index = digitcount + neg + (dec_pos >= digitcount ? dec_pos - digitcount + 1 : 0) + (dec_pos ? 1 : 0);
 	int return_value = buf_index;
 
 	buf[buf_index] = '\0';
