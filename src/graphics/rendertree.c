@@ -84,8 +84,6 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	node->entity_data = NULL;
 	node->entity_data_descriptors = NULL;
 
-	rendertree_create_shader_data(node);
-
 	return node;
 }
 
@@ -238,33 +236,14 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 	{
 		//LOG("Updating %d entities", node->entity_count);
 
-		// Create shader resources if not yet created (rendertree node was previously empty)
-		if (node->entity_data == NULL)
-		{
-			rendertree_create_shader_data(node);
-		}
-
 		// Map entity info
 		if (node->entity_count > RENDER_TREE_LIM)
 		{
 			LOG_E("Entities in tree node exceeds capacity of %d", RENDER_TREE_LIM);
 		}
-		void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
 
 		// Check and replace necessary entities
 		rendertree_check(node);
-
-		// Update all entities
-		for (uint32_t i = 0; i < node->entity_count; i++)
-		{
-			Entity* entity = node->entities[i];
-			entity_set_color(entity, vec4_hsv(node->depth, 1, 1));
-			// Update entity normally
-			entity_update(entity);
-			entity_update_shaderdata(entity, p_entity_data, i);
-		}
-
-		ub_unmap(node->entity_data, frame);
 	}
 
 	// Recursively update children
@@ -286,6 +265,18 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 			node->changed = ALL_CHANGED;
 		}
 
+		// Update entity shader data
+		void* p_entity_data = ub_map(node->entity_data, 0, node->entity_count * sizeof(struct EntityData), frame);
+		for (uint32_t i = 0; i < node->entity_count; i++)
+		{
+			Entity* entity = node->entities[i];
+			//entity_set_color(entity, vec4_hsv(node->depth, 1, 1));
+			// Update entity normally
+			entity_update(entity);
+			entity_update_shaderdata(entity, p_entity_data, i);
+		}
+		ub_unmap(node->entity_data, frame);
+
 		// Assign fence from primary for proper destruction
 		node->commandbuffers[frame]->fence = primary->fence;
 
@@ -306,8 +297,9 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 
 			// End recording
 			commandbuffer_end(node->commandbuffers[frame]);
-			renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth}, vec4_hsv(node->depth, 1, 1));
+			//renderer_draw_cube(node->center, quat_identity, (vec3){1.0f / node->depth, 1.0f / node->depth, 1.0f / node->depth}, vec4_hsv(node->depth, 1, 1));
 		}
+		//renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 		// Record into primary
 
 		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
@@ -316,7 +308,6 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		node->changed = node->changed & ~(1 << frame);
 	}
 
-	renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 	// For debug mode, show tree
 	// Recurse children
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
@@ -328,7 +319,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 {
 	SphereCollider* e_bound = (SphereCollider*)entity_get_boundingsphere(entity);
-	// Left bound (-x)
+	/*// Left bound (-x)
 	if (e_bound->base.transform->position.x < node->center.x - node->halfwidth)
 	{
 		return false;
@@ -358,9 +349,9 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 	if (e_bound->base.transform->position.z > node->center.z + node->halfwidth)
 	{
 		return false;
-	}
+	}*/
 
-	/*if (e_bound->base.transform->position.x + e_bound->radius < node->center.x - node->halfwidth)
+	if (e_bound->base.transform->position.x + e_bound->radius < node->center.x - node->halfwidth)
 	{
 		return false;
 	}
@@ -389,7 +380,7 @@ bool rendertree_fits(RenderTreeNode* node, Entity* entity)
 	if (e_bound->base.transform->position.z + e_bound->radius > node->center.z + node->halfwidth)
 	{
 		return false;
-	}*/
+	}
 
 	return true;
 }
