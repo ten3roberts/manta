@@ -75,14 +75,27 @@ void log_terminate()
 	fputs(s, log_file);
 #endif
 
+static int message_count[LOG_SEVERIY_MAX] = {0};
+
+int log_get_count(int severity)
+{
+	if ((unsigned int)severity >= LOG_SEVERIY_MAX)
+		return -1;
+
+	return message_count[severity];
+}
+
 int log_call(int severity, const char* name, const char* fmt, ...)
 {
-	if (severity == -1)
+	if (severity <= -1)
 		severity = last_severity;
 
-	static const int color_map[] = {CONSOLE_WHITE, CONSOLE_BLUE, CONSOLE_YELLOW, CONSOLE_RED, CONSOLE_MAGENTA};
-	if (severity >= sizeof color_map / sizeof *color_map)
+	if (severity >= LOG_SEVERIY_MAX)
 		severity = 0;
+
+	++message_count[severity];
+
+	static const int color_map[] = {CONSOLE_WHITE, CONSOLE_BLUE, CONSOLE_YELLOW, CONSOLE_RED, CONSOLE_MAGENTA};
 	set_print_color(color_map[severity]);
 	last_severity = severity;
 

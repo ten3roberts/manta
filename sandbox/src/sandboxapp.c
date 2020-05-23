@@ -21,6 +21,12 @@ int application_start(int argc, char** argv)
 
 	LOG_S("Initialization took %f ms", timer_stop(&timer) * 1000);
 
+	if (log_get_count(LOG_SEVERITY_ERROR) > 0)
+	{
+		LOG("Errors encountered during initialization, exiting");
+		exit(-1);
+	}
+
 	timer_reset(&timer);
 	time_init();
 

@@ -46,12 +46,17 @@ void log_terminate();
 // -> 3 : error message
 // -> 4 : assertion
 // Severity 4 (assert) will abort the program
+// Severity cannot any other than these listed
 
 #define LOG_SEVERITY_NORMAL	 0
 #define LOG_SEVERITY_STATUS	 1
 #define LOG_SEVERITY_WARNING 2
 #define LOG_SEVERITY_ERROR	 3
 #define LOG_SEVERITY_ASSERT	 4
+#define LOG_SEVERIY_MAX		 LOG_SEVERITY_ASSERT
+
+// Returns the count of messages printed with specified severity
+int log_get_count(int severity);
 
 int log_call(int severity, const char* name, const char* fmt, ...);
 
