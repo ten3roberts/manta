@@ -35,11 +35,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverity
 													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-		log_call(CONSOLE_RED, "Vulkan debug callback", "(%d)%s", messageSeverity, pCallbackData->pMessage);
+		log_call(LOG_SEVERITY_ERROR, "Vulkan debug", "(%d)%s", messageSeverity, pCallbackData->pMessage);
 	else if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-		log_call(CONSOLE_YELLOW, "Vulkan debug callback", "(%d)%s", messageSeverity, pCallbackData->pMessage);
+		log_call(LOG_SEVERITY_WARNING, "Vulkan debug", "(%d)%s", messageSeverity, pCallbackData->pMessage);
 	else
-		log_call(CONSOLE_BLUE, "Vulkan debug callback", "(%d)%s", messageSeverity, pCallbackData->pMessage);
+		log_call(LOG_SEVERITY_STATUS, "Vulkan debug", "(%d)%s", messageSeverity, pCallbackData->pMessage);
 	return VK_FALSE;
 }
 
