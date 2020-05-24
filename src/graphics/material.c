@@ -37,6 +37,8 @@ struct Material
 	// The material indexes are specified by the json bindings
 	uint32_t texture_count;
 	Texture* textures[7];
+	uint32_t sampler_count;
+	VkSampler samplers[7];
 	// The resource management part, inaccessible for the use
 	struct Material *prev, *next;
 };
@@ -105,12 +107,17 @@ Material* material_load_internal(JSON* object)
 		material_destroy(mat);
 		return NULL;
 	}
+
+	// Since samplers and images take up two layout bindings allocate twice the amount of children
 	const int material_binding_count = json_get_count(jbindings);
 
 	// Freed on destruction of pipeline
 	VkDescriptorSetLayoutBinding* material_bindings = malloc(material_binding_count * sizeof(VkDescriptorSetLayoutBinding));
 	// Iterate and fill out the bindings
 	JSON* bindcur = json_get_elements(jbindings);
+
+	mat->texture_count = 0;
+	mat->sampler_count = 0;
 	// The current iterator on where to fill the next used texture slot
 	for (int i = 0; i < material_binding_count; i++)
 	{
@@ -126,12 +133,13 @@ Material* material_load_internal(JSON* object)
 
 		// Read the descriptor type
 		const char* type = json_get_member_string(bindcur, "type");
-		if (strcmp(type, "uniformbuffer") == 0)
+		if (strcmp(type, "uniform") == 0)
 		{
 			material_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			// [TODO]: create uniform buffer
 		}
-		else if (strcmp(type, "sampler") == 0)
+
+		else if (strcmp(type, "texture") == 0)
 		{
 			material_bindings[i].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			// Load the texture it specifies
@@ -152,6 +160,49 @@ Material* material_load_internal(JSON* object)
 				return NULL;
 			}
 			mat->textures[mat->texture_count++] = texture_get(texture_path);
+
+			// Sampler options
+
+			const char* j_filterMode = json_get_member_string(bindcur, "filterMode");
+			const char* j_wrapMode = json_get_member_string(bindcur, "wrapMode");
+
+			VkFilter filterMode = VK_FILTER_LINEAR;
+			VkSamplerAddressMode wrapMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+			if (j_filterMode == NULL)
+			{
+			}
+			else if (strcmp(j_filterMode, "linear") == 0)
+			{
+				filterMode = VK_FILTER_LINEAR;
+			}
+			else if (strcmp(j_filterMode, "point") == 0 || strcmp(j_filterMode, "nearest") == 0)
+			{
+				filterMode = VK_FILTER_NEAREST;
+			}
+			if (j_wrapMode == NULL)
+			{
+			}
+			else if (strcmp(j_wrapMode, "repeat") == 0)
+			{
+				wrapMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			}
+			else if (strcmp(j_wrapMode, "clamp_edge") == 0)
+			{
+				wrapMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+			}
+
+			else if (strcmp(j_wrapMode, "clamp_border") == 0)
+			{
+				wrapMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+			}
+
+			JSON* j_aniso = json_get_member(bindcur, "anisotropy");
+			float anisotropy = 16;
+			if (j_aniso && json_type(j_aniso) == JSON_TNUMBER)
+				anisotropy = json_get_number(j_aniso);
+
+			mat->samplers[mat->sampler_count++] = sampler_create(filterMode, wrapMode, anisotropy);
 		}
 		else
 		{
@@ -160,8 +211,13 @@ Material* material_load_internal(JSON* object)
 			material_destroy(mat);
 			return NULL;
 		}
+
 		// Read the shader stage of the resource
 		const char* stage = json_get_member_string(bindcur, "stage");
+		if (stage == NULL)
+		{
+			LOG_E("Missing stage for binding %d in material %s", material_bindings[i].binding, mat->name);
+		}
 		if (strcmp(stage, "vertex") == 0)
 		{
 			material_bindings[i].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -187,7 +243,7 @@ Material* material_load_internal(JSON* object)
 	mat->material_descriptors = descriptorpack_create(mat->descriptor_layouts[MATERIAL_DESCRIPTOR_INDEX], material_bindings, material_binding_count);
 
 	// Write the descriptors
-	descriptorpack_write(mat->material_descriptors, material_bindings, material_binding_count, NULL, mat->textures);
+	descriptorpack_write(mat->material_descriptors, material_bindings, material_binding_count, NULL, mat->textures, mat->samplers);
 
 	free(material_bindings);
 	// Load the shaders
@@ -296,7 +352,7 @@ Material* material_get_default()
 	JSON* binding = json_create_object();
 	json_add_member(binding, "binding", json_create_number(0));
 	json_add_member(binding, "texture", json_create_string("albedo"));
-	json_add_member(binding, "type", json_create_string("sampler"));
+	json_add_member(binding, "type", json_create_string("texture"));
 	json_add_member(binding, "stage", json_create_string("fragment"));
 	json_add_element(bindings, binding);
 	json_add_member(root, "bindings", bindings);
@@ -315,21 +371,20 @@ void material_bind(Material* mat, CommandBuffer* commandbuffer, VkDescriptorSet 
 	VkPipelineLayout pipeline_layout = pipeline_get_layout(mat->pipeline);
 
 	// Bind global set 0
-	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, GLOBAL_DESCRIPTOR_INDEX, 1,
-							&global_descriptors->sets[commandbuffer->frame], 0, NULL);
+	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, GLOBAL_DESCRIPTOR_INDEX, 1, &global_descriptors->sets[commandbuffer->frame], 0,
+							NULL);
 	// Bind material set 1
 	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, MATERIAL_DESCRIPTOR_INDEX, 1,
 							&mat->material_descriptors->sets[commandbuffer->frame], 0, NULL);
 
 	// Per entity data set 2
-	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, ENTITY_DESCRIPTOR_INDEX, 1, &data_descriptors, 0,
-							NULL);
+	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, ENTITY_DESCRIPTOR_INDEX, 1, &data_descriptors, 0, NULL);
 }
 
 void material_push_constants(Material* mat, CommandBuffer* commandbuffer, uint32_t index, void* data)
 {
-	vkCmdPushConstants(commandbuffer->cmd, pipeline_get_layout(mat->pipeline), mat->push_constants[index].stageFlags,
-					   mat->push_constants[index].offset, mat->push_constants[index].size, data);
+	vkCmdPushConstants(commandbuffer->cmd, pipeline_get_layout(mat->pipeline), mat->push_constants[index].stageFlags, mat->push_constants[index].offset,
+					   mat->push_constants[index].size, data);
 }
 
 void material_destroy(Material* mat)

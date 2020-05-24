@@ -14,6 +14,7 @@ struct Camera
 	mat4 view;
 	// The projection matrix of the camera
 	mat4 proj;
+	//Framebuffer framebuffers;
 };
 
 Camera* camera_create_perspective(const char* name, Transform transform, float aspect, float fov, float near, float far)

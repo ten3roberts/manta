@@ -5,9 +5,10 @@
 	"bindings": [
 		{
 			"binding": 0,
+			"type": "texture",
 			"texture": "albedo",
-			"type": "sampler",
-			"stage": "fragment"
+			"stage": "fragment",
+			"filterMode": "linear"
 		}
 	]
 }

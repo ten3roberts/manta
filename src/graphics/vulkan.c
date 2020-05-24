@@ -23,6 +23,7 @@
 
 static uint32_t global_uniform_count = 0;
 static uint32_t global_sampler_count = 0;
+static uint32_t global_texture_count = 0;
 static UniformBuffer** global_uniform_buffers = NULL;
 static Texture** global_textures = NULL;
 // List that maps the bindings to the uniforms and textures
@@ -553,6 +554,7 @@ int create_color_buffer()
 	image_create(swapchain_extent.width, swapchain_extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL,
 				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory,
 				 msaa_samples);
+
 	color_image_view = image_view_create(color_image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	return 0;
 }
@@ -622,9 +624,13 @@ int create_global_resources(struct LayoutInfo* layout_info)
 		{
 			global_uniform_count += layout_info->bindings[i].descriptorCount;
 		}
-		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER)
 		{
 			global_sampler_count += layout_info->bindings[i].descriptorCount;
+		}
+		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
+		{
+			global_texture_count += layout_info->bindings[i].descriptorCount;
 		}
 		else
 		{
@@ -642,7 +648,8 @@ int create_global_resources(struct LayoutInfo* layout_info)
 	global_resource_map = calloc(max_binding + 1, sizeof *global_resource_map);
 	uint32_t buffer_it = 0;
 	uint32_t sampler_it = 0;
-	// Create the resources for al bindings
+
+	// Create the resources for all bindings
 	for (uint32_t i = 0; i < layout_info->binding_count; i++)
 	{
 		// Add to map
@@ -652,7 +659,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 			global_resource_map[layout_info->bindings[i].binding] = global_uniform_buffers[buffer_it];
 			++buffer_it;
 		}
-		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		else if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_SAMPLER)
 		{
 			// TODO: create samplers
 			//global_textures[texture_it] = texture_create
@@ -669,7 +676,8 @@ int create_global_resources(struct LayoutInfo* layout_info)
 
 	// Create and write the global descriptors
 	global_descriptors = descriptorpack_create(global_descriptor_layout, layout_info->bindings, layout_info->binding_count);
-	descriptorpack_write(global_descriptors, layout_info->bindings, layout_info->binding_count, global_uniform_buffers, global_textures);
+	// Todo, samplers
+	descriptorpack_write(global_descriptors, layout_info->bindings, layout_info->binding_count, global_uniform_buffers, global_textures, NULL);
 
 	return 0;
 }

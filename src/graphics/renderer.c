@@ -74,7 +74,7 @@ int renderer_init()
 
 	oneframe_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count());
 
-	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL);
+	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL, NULL);
 
 	return 0;
 }

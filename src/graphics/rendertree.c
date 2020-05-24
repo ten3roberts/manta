@@ -54,7 +54,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 
 	// Create and write set=2 for entity data
 	node->entity_data_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1);
-	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL);
+	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL, NULL);
 }
 
 RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx)

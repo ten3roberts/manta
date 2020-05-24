@@ -22,27 +22,25 @@ typedef struct Texture
 	VkImage vkimage;
 	VkDeviceMemory memory;
 	VkImageView view;
-	VkSampler sampler;
-	VkDescriptorSet descriptors[3];
 } Texture;
 
-VkSampler sampler_create()
+VkSampler sampler_create(VkFilter filterMode, VkSamplerAddressMode wrapMode, float maxAnisotropy)
 {
 	VkSamplerCreateInfo samplerInfo = {0};
 
 	// Linear of pixel art, downscaling; upscaling
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.magFilter = filterMode;
+	samplerInfo.minFilter = filterMode;
 
 	// Tiling
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeU = wrapMode;
+	samplerInfo.addressModeV = wrapMode;
+	samplerInfo.addressModeW = wrapMode;
 
 	// Anisotropic filtering
-	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
+	samplerInfo.anisotropyEnable = maxAnisotropy > 1 ? VK_TRUE : VK_FALSE;
+	samplerInfo.maxAnisotropy = maxAnisotropy;
 
 	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 
@@ -65,6 +63,30 @@ VkSampler sampler_create()
 	{
 		LOG_E("Failed to create image sampler - code %d", result);
 		return NULL;
+	}
+	return sampler;
+}
+
+void sampler_destroy(VkSampler sampler)
+{
+	vkDestroySampler(device, sampler, NULL);
+}
+
+VkSampler sampler_get_linear()
+{
+	static VkSampler sampler = VK_NULL_HANDLE;
+	if (sampler == VK_NULL_HANDLE)
+	{
+		sampler = sampler_create(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
+	}
+	return sampler;
+}
+VkSampler sampler_get_nearest()
+{
+	static VkSampler sampler = VK_NULL_HANDLE;
+	if (sampler == VK_NULL_HANDLE)
+	{
+		sampler = sampler_create(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
 	}
 	return sampler;
 }
@@ -102,8 +124,8 @@ Texture* texture_load(const char* file)
 	// Save the name
 	char name[256];
 	snprintf(name, sizeof name, "%s", file);
-	Texture* tex = texture_create(name, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-								  VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	Texture* tex = texture_create(name, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT,
+								  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
 
 	texture_update(tex, pixels);
 
@@ -111,40 +133,44 @@ Texture* texture_load(const char* file)
 	return tex;
 }
 // Creates a texture with no data
-Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkSampleCountFlagBits samples,
-						VkImageLayout layout)
+Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout,
+						VkImageAspectFlags imageAspect)
 {
 	Texture* tex = malloc(sizeof(Texture));
-	snprintf(tex->name, sizeof tex->name, "%s", name);
 
-	// Create table if it doesn't exist
-	if (texture_table == NULL)
+	if (name)
 	{
-		texture_table = hashtable_create_string();
-	}
-	// Insert material into tracking table after name is acquired
-	if (hashtable_find(texture_table, tex->name) != NULL)
-	{
-		LOG_W("Duplicate material %s", tex->name);
-		free(tex);
-		return NULL;
-	}
-	// Insert into table
-	hashtable_insert(texture_table, tex->name, tex);
+		snprintf(tex->name, sizeof tex->name, "%s", name);
 
+		// Create table if it doesn't exist
+		if (texture_table == NULL)
+		{
+			texture_table = hashtable_create_string();
+		}
+		// Insert material into tracking table after name is acquired
+		if (hashtable_find(texture_table, tex->name) != NULL)
+		{
+			LOG_W("Duplicate material %s", tex->name);
+			free(tex);
+			return NULL;
+		}
+		// Insert into table
+		hashtable_insert(texture_table, tex->name, tex);
+	}
+	else
+	{
+		snprintf(tex->name, sizeof name, "%s", "\0");
+	}
 	tex->width = width;
 	tex->height = height;
 	tex->layout = layout;
 	tex->format = format;
 
-	tex->size = image_create(tex->width, tex->height, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-							 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &tex->vkimage, &tex->memory, VK_SAMPLE_COUNT_1_BIT);
+	tex->size = image_create(tex->width, tex->height, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &tex->vkimage, &tex->memory, samples);
 
 	// Create image view
-	tex->view = image_view_create(tex->vkimage, format, VK_IMAGE_ASPECT_COLOR_BIT);
+	tex->view = image_view_create(tex->vkimage, format, imageAspect);
 
-	// Create sampler
-	tex->sampler = sampler_create();
 	return tex;
 }
 
@@ -212,7 +238,6 @@ void texture_destroy(Texture* tex)
 	vkDestroyImage(device, tex->vkimage, NULL);
 	vkFreeMemory(device, tex->memory, NULL);
 	vkDestroyImageView(device, tex->view, NULL);
-	vkDestroySampler(device, tex->sampler, NULL);
 
 	free(tex);
 }
@@ -229,9 +254,4 @@ void texture_destroy_all()
 void* texture_get_image_view(Texture* tex)
 {
 	return tex->view;
-}
-
-void* texture_get_sampler(Texture* tex)
-{
-	return tex->sampler;
 }
