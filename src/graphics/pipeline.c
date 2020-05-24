@@ -11,10 +11,9 @@
 // The hash function will hash the info struct
 static hashtable_t* pipeline_table = NULL;
 
-// The hash checks if the
-static uint32_t hash_pipelineinfo(const void* key)
+static uint32_t hash_pipelineinfo(const void* pkey)
 {
-	struct PipelineInfo* info = (struct PipelineInfo*)key;
+	struct PipelineInfo* info = (struct PipelineInfo*)pkey;
 	uint32_t result = 0;
 	if (info->vertexshader)
 		result += hashtable_hashfunc_string(info->vertexshader);
