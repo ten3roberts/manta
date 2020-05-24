@@ -38,7 +38,7 @@ struct Material
 	uint32_t texture_count;
 	Texture* textures[7];
 	uint32_t sampler_count;
-	VkSampler samplers[7];
+	Sampler* samplers[7];
 	// The resource management part, inaccessible for the use
 	struct Material *prev, *next;
 };
@@ -198,11 +198,11 @@ Material* material_load_internal(JSON* object)
 			}
 
 			JSON* j_aniso = json_get_member(bindcur, "anisotropy");
-			float anisotropy = 16;
+			int anisotropy = 16;
 			if (j_aniso && json_type(j_aniso) == JSON_TNUMBER)
 				anisotropy = json_get_number(j_aniso);
 
-			mat->samplers[mat->sampler_count++] = sampler_create(filterMode, wrapMode, anisotropy);
+			mat->samplers[mat->sampler_count++] = sampler_get(filterMode, wrapMode, anisotropy);
 		}
 		else
 		{

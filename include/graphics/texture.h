@@ -5,17 +5,34 @@
 // Note: textures do not contain their own sampler, unlike OpenGL
 
 typedef struct Texture Texture;
+typedef struct Sampler Sampler;
+
+typedef enum
+{
+	SAMPLER_FILTER_LINEAR,
+	SAMPLER_FILTER_NEAREST
+} SamplerFilterMode;
+
+typedef enum
+{
+	SAMPLER_WRAP_REPEAT,
+	SAMPLER_WRAP_REPEAT_MIRROR,
+	SAMPLER_WRAP_CLAMP_EDGE,
+	SAMPLER_WRAP_CLAMP_BORDER
+} SamplerWrapMode;
+
 #include "vulkan/vulkan.h"
 
-// Creates a sampler
-VkSampler sampler_create(VkFilter filterMode, VkSamplerAddressMode wrapMode, float maxAnisotropy);
+// Returns a sampler with the specified options
+// If a sampler with options doesn't exist it is created and stored
+Sampler* sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy);
 
-void sampler_destroy(VkSampler sampler);
+VkSampler sampler_get_vksampler(Sampler* sampler);
 
-// Returns a basic sampler with linear filtering, tiling, and 16 anisotropic filtering
-VkSampler sampler_get_linear();
-// Returns a basic sampler with nearest/point filtering, tiling, and 16 anisotropic filtering
-VkSampler sampler_get_nearest();
+void sampler_destroy(Sampler* sampler);
+
+// Destroys all samplers
+void sampler_destroy_all();
 
 // Loads a texture from a file
 // The textures name is the full file path

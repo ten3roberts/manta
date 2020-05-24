@@ -814,6 +814,7 @@ void graphics_terminate()
 	material_destroy_all();
 	model_destroy_all();
 	texture_destroy_all();
+	sampler_destroy_all();
 
 	// Free global resources
 	for (uint32_t i = 0; i < global_uniform_count; i++)

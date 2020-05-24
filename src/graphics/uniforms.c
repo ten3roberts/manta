@@ -223,7 +223,7 @@ DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptor
 	return pack;
 }
 
-void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture** textures, VkSampler* samplers)
+void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture** textures, Sampler** samplers)
 {
 	// vkDeviceWaitIdle(device);
 	// Find out how many of each type of descriptor type is required
@@ -283,7 +283,7 @@ void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bi
 			{
 				image_infos[sampler_it].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				image_infos[sampler_it].imageView = texture_get_image_view(textures[sampler_it]);
-				image_infos[sampler_it].sampler = samplers[sampler_it];
+				image_infos[sampler_it].sampler = sampler_get_vksampler(samplers[sampler_it]);
 
 				descriptor_writes[j].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptor_writes[j].dstSet = pack->sets[i];

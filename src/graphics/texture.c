@@ -6,6 +6,163 @@
 #include "stb_image.h"
 #include "hashtable.h"
 
+static hashtable_t* sampler_table;
+
+struct SamplerInfo
+{
+	SamplerFilterMode filterMode;
+	SamplerWrapMode wrapMode;
+	int maxAnisotropy;
+};
+
+struct Sampler
+{
+	VkSampler vksampler;
+	struct SamplerInfo info;
+};
+
+static uint32_t hash_sampler(const void* pkey)
+{
+	struct SamplerInfo* info = (struct SamplerInfo*)pkey;
+	uint32_t result = 0;
+	result += hashtable_hashfunc_uint32((uint32_t*)&info->filterMode);
+	result += hashtable_hashfunc_uint32((uint32_t*)&info->wrapMode);
+	result += hashtable_hashfunc_uint32((uint32_t*)&info->maxAnisotropy);
+
+	return result;
+}
+
+static int32_t comp_sampler(const void* pkey1, const void* pkey2)
+{
+	struct SamplerInfo* info1 = (struct SamplerInfo*)pkey1;
+	struct SamplerInfo* info2 = (struct SamplerInfo*)pkey2;
+
+	return (info1->filterMode == info2->filterMode && info1->wrapMode == info2->wrapMode && info1->maxAnisotropy == info2->maxAnisotropy) == 0;
+}
+
+// Creates a sampler
+Sampler* sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy)
+{
+	// Create table if it doesn't exist
+	if (sampler_table == NULL)
+		sampler_table = hashtable_create(hash_sampler, comp_sampler);
+
+	struct SamplerInfo samplerInfo = {.filterMode = filterMode, .wrapMode = wrapMode, .maxAnisotropy = maxAnisotropy};
+
+	// Attempt to find sampler by info if it already exists
+	Sampler* sampler = hashtable_find(sampler_table, (void*)&samplerInfo);
+
+	if (sampler)
+		return sampler;
+
+	// Create sampler
+	LOG("Creating new sampler");
+	sampler = malloc(sizeof(Sampler));
+	sampler->info = samplerInfo;
+
+	// Insert into table
+	hashtable_insert(sampler_table, &sampler->info, sampler);
+
+	VkSamplerCreateInfo samplerCreateInfo = {0};
+
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+	// Filtering
+	switch (filterMode)
+	{
+	case SAMPLER_FILTER_LINEAR:
+		samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+		break;
+	case SAMPLER_FILTER_NEAREST:
+		samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
+		break;
+	default:
+		LOG_E("Invalid sampler filter mode %d", filterMode);
+	}
+
+	samplerCreateInfo.minFilter = samplerCreateInfo.magFilter;
+
+	// Tiling
+	switch (wrapMode)
+	{
+	case SAMPLER_WRAP_REPEAT:
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		break;
+	case SAMPLER_WRAP_REPEAT_MIRROR:
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+		break;
+	case SAMPLER_WRAP_CLAMP_EDGE:
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		break;
+	case SAMPLER_WRAP_CLAMP_BORDER:
+		samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+		break;
+	default:
+		LOG_E("Invalid sampler wrap mode %d", wrapMode);
+	}
+
+	samplerCreateInfo.addressModeV = samplerCreateInfo.addressModeU;
+	samplerCreateInfo.addressModeW = samplerCreateInfo.addressModeU;
+
+	// Anisotropic filtering
+	samplerCreateInfo.anisotropyEnable = maxAnisotropy > 1 ? VK_TRUE : VK_FALSE;
+	samplerCreateInfo.maxAnisotropy = maxAnisotropy;
+
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+	// Texels are adrees using 0 - 1, not 0 - texWidth
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+
+	// Can be used for precentage-closer filtering
+	samplerCreateInfo.compareEnable = VK_FALSE;
+	samplerCreateInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+	// Mipmapping
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.mipLodBias = 0.0f;
+	samplerCreateInfo.minLod = 0.0f;
+	samplerCreateInfo.maxLod = 0.0f;
+
+	// Samplers are not combined with one specific image
+	VkResult result = vkCreateSampler(device, &samplerCreateInfo, NULL, &sampler->vksampler);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to create image sampler - code %d", result);
+		return NULL;
+	}
+	return sampler;
+}
+
+VkSampler sampler_get_vksampler(Sampler* sampler)
+{
+	return sampler->vksampler;
+}
+
+void sampler_destroy(Sampler* sampler)
+{
+	hashtable_remove(sampler_table, &sampler->info);
+
+	// Last texture was removed
+	if (hashtable_get_count(sampler_table) == 0)
+	{
+		hashtable_destroy(sampler_table);
+		sampler_table = NULL;
+	}
+
+	vkDestroySampler(device, sampler->vksampler, NULL);
+
+	free(sampler);
+}
+
+void sampler_destroy_all()
+{
+	Sampler* sampler = NULL;
+	while (sampler_table && (sampler = hashtable_pop(sampler_table)))
+	{
+		sampler_destroy(sampler);
+	}
+}
+
 static hashtable_t* texture_table = NULL;
 
 typedef struct Texture
@@ -23,73 +180,6 @@ typedef struct Texture
 	VkDeviceMemory memory;
 	VkImageView view;
 } Texture;
-
-VkSampler sampler_create(VkFilter filterMode, VkSamplerAddressMode wrapMode, float maxAnisotropy)
-{
-	VkSamplerCreateInfo samplerInfo = {0};
-
-	// Linear of pixel art, downscaling; upscaling
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = filterMode;
-	samplerInfo.minFilter = filterMode;
-
-	// Tiling
-	samplerInfo.addressModeU = wrapMode;
-	samplerInfo.addressModeV = wrapMode;
-	samplerInfo.addressModeW = wrapMode;
-
-	// Anisotropic filtering
-	samplerInfo.anisotropyEnable = maxAnisotropy > 1 ? VK_TRUE : VK_FALSE;
-	samplerInfo.maxAnisotropy = maxAnisotropy;
-
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-
-	// Texels are adrees using 0 - 1, not 0 - texWidth
-	samplerInfo.unnormalizedCoordinates = VK_FALSE;
-
-	// Can be used for precentage-closer filtering
-	samplerInfo.compareEnable = VK_FALSE;
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-	// Mipmapping
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
-	VkSampler sampler;
-	// Samplers are not combined with one specific image
-	VkResult result = vkCreateSampler(device, &samplerInfo, NULL, &sampler);
-	if (result != VK_SUCCESS)
-	{
-		LOG_E("Failed to create image sampler - code %d", result);
-		return NULL;
-	}
-	return sampler;
-}
-
-void sampler_destroy(VkSampler sampler)
-{
-	vkDestroySampler(device, sampler, NULL);
-}
-
-VkSampler sampler_get_linear()
-{
-	static VkSampler sampler = VK_NULL_HANDLE;
-	if (sampler == VK_NULL_HANDLE)
-	{
-		sampler = sampler_create(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
-	}
-	return sampler;
-}
-VkSampler sampler_get_nearest()
-{
-	static VkSampler sampler = VK_NULL_HANDLE;
-	if (sampler == VK_NULL_HANDLE)
-	{
-		sampler = sampler_create(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, 16);
-	}
-	return sampler;
-}
 
 // Loads a texture from a file
 // The textures name is the full file path
@@ -147,7 +237,7 @@ Texture* texture_create(const char* name, int width, int height, VkFormat format
 		{
 			texture_table = hashtable_create_string();
 		}
-		// Insert material into tracking table after name is acquired
+		// Insert texture into tracking table after name is acquired
 		if (hashtable_find(texture_table, tex->name) != NULL)
 		{
 			LOG_W("Duplicate material %s", tex->name);
