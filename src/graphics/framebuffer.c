@@ -1,4 +1,5 @@
 #include "graphics/framebuffer.h"
+#include "magpie.h"
 
 /*static int create_color_buffer()
 {
