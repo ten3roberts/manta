@@ -5,6 +5,7 @@ Renderer:
   - Push constants
   - Remove global variables used by vulkan
   - Dynamic offsets for entity data
+  - Sampler caching
 
 Entities:
   - Implement entities
