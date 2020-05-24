@@ -78,8 +78,10 @@ CommandBuffer* single_use_commands_begin();
 // Ends and frees a single time command buffer
 void single_use_commands_end(CommandBuffer* command_buffer);
 
-void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image,
-				  VkDeviceMemory* memory, VkSampleCountFlagBits num_samples);
+// Creates and allocates a vulkan image
+// Returns the allocated size
+VkDeviceSize image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image,
+						  VkDeviceMemory* memory, VkSampleCountFlagBits num_samples);
 
 VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags);
 

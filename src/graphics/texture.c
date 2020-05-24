@@ -14,9 +14,12 @@ typedef struct Texture
 	char name[256];
 	int width;
 	int height;
-	int channels;
-	stbi_uc* pixels;
-	VkImage image;
+	// The allocated size of the image
+	// May be slightly larger than width*height*channels due to alignment requirements
+	VkDeviceSize size;
+	VkImageLayout layout;
+	VkFormat format;
+	VkImage vkimage;
 	VkDeviceMemory memory;
 	VkImageView view;
 	VkSampler sampler;
@@ -66,72 +69,112 @@ VkSampler sampler_create()
 	return sampler;
 }
 
-// Only used internally since textures are only loaded once
-static Texture* texture_load(const char* file)
+// Loads a texture from a file
+// The textures name is the full file path
+Texture* texture_load(const char* file)
 {
 	LOG_S("Loading texture %s", file);
-	Texture* tex = malloc(sizeof(Texture));
+
+	uint8_t* pixels;
+	int width = 0, height = 0, channels = 0;
+
 	// Solid color requested
 	// Create a solid white 256*256 texture
 	if (strcmp(file, "col:white") == 0)
 	{
-		tex->width = 256;
-		tex->height = 256;
-		tex->pixels = calloc(4 * tex->width * tex->height, sizeof(tex->pixels));
-		memset(tex->pixels, 255, 4 * tex->width * tex->height);
+		width = 256;
+		height = 256;
+		pixels = calloc(4 * width * height, sizeof(*pixels));
+		memset(pixels, 255, 4 * width * height);
 	}
 	else
 	{
-		tex->pixels = stbi_load(file, &tex->width, &tex->height, &tex->channels, STBI_rgb_alpha);
+		pixels = stbi_load(file, &width, &height, &channels, STBI_rgb_alpha);
 	}
-	uint32_t image_size = tex->width * tex->height * 4;
-	if (tex->pixels == NULL)
+
+	if (pixels == NULL)
 	{
 		LOG_E("Failed to load texture %s", file);
-		free(tex);
+		stbi_image_free(pixels);
 		return NULL;
 	}
 
 	// Save the name
-	snprintf(tex->name, sizeof tex->name, "%s", file);
+	char name[256];
+	snprintf(name, sizeof name, "%s", file);
+	Texture* tex = texture_create(name, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+								  VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	// Create a staging bufer
+	texture_update(tex, pixels);
+
+	stbi_image_free(pixels);
+	return tex;
+}
+// Creates a texture with no data
+Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkSampleCountFlagBits samples,
+						VkImageLayout layout)
+{
+	Texture* tex = malloc(sizeof(Texture));
+	snprintf(tex->name, sizeof tex->name, "%s", name);
+
+	// Create table if it doesn't exist
+	if (texture_table == NULL)
+	{
+		texture_table = hashtable_create_string();
+	}
+	// Insert material into tracking table after name is acquired
+	if (hashtable_find(texture_table, tex->name) != NULL)
+	{
+		LOG_W("Duplicate material %s", tex->name);
+		free(tex);
+		return NULL;
+	}
+	// Insert into table
+	hashtable_insert(texture_table, tex->name, tex);
+
+	tex->width = width;
+	tex->height = height;
+	tex->layout = layout;
+	tex->format = format;
+
+	tex->size = image_create(tex->width, tex->height, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &tex->vkimage, &tex->memory, VK_SAMPLE_COUNT_1_BIT);
+
+	// Create image view
+	tex->view = image_view_create(tex->vkimage, format, VK_IMAGE_ASPECT_COLOR_BIT);
+
+	// Create sampler
+	tex->sampler = sampler_create();
+	return tex;
+}
+
+// Updates the texture data from host memory
+void texture_update(Texture* tex, uint8_t* pixeldata)
+{ // Create a staging bufer
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
+	VkDeviceSize image_size = tex->size;
+
 	buffer_create(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory,
 				  NULL, NULL);
 
 	// Transfer image data to host visible staging buffer
 	void* data;
 	vkMapMemory(device, staging_buffer_memory, 0, image_size, 0, &data);
-	memcpy(data, tex->pixels, image_size);
+	memcpy(data, pixeldata, image_size);
 	vkUnmapMemory(device, staging_buffer_memory);
 
-	image_create(tex->width, tex->height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &tex->image, &tex->memory, VK_SAMPLE_COUNT_1_BIT);
+	// Transition image layout
+	transition_image_layout(tex->vkimage, tex->format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	copy_buffer_to_image(staging_buffer, tex->image, tex->width, tex->height);
+	copy_buffer_to_image(staging_buffer, tex->vkimage, tex->width, tex->height);
 
-	transition_image_layout(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	// Transition image layout
+	transition_image_layout(tex->vkimage, tex->format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex->layout);
 
-	// Clean up staging buffers
+	// Clean up staging buffer
 	vkDestroyBuffer(device, staging_buffer, NULL);
 	vkFreeMemory(device, staging_buffer_memory, NULL);
-
-	// Create image view
-	tex->view = image_view_create(tex->image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-
-	tex->sampler = sampler_create();
-
-	// Delete raw pixels
-	// Since this is just free(), it doesn't matter how the texture was created
-	stbi_image_free(tex->pixels);
-
-	tex->pixels = NULL;
-
-	// ub_create_descriptor_sets(tex->descriptors, 1, NULL, NULL, 0, tex->view, tex->sampler);
-	return tex;
 }
 
 Texture* texture_get(const char* name)
@@ -152,22 +195,21 @@ Texture* texture_get(const char* name)
 	if (tex == NULL)
 		return NULL;
 
-	hashtable_insert(texture_table, (void*)tex->name, tex);
 	return tex;
 }
 
 void texture_destroy(Texture* tex)
 {
 	hashtable_remove(texture_table, tex->name);
+
 	// Last texture was removed
 	if (hashtable_get_count(texture_table) == 0)
 	{
-
 		hashtable_destroy(texture_table);
 		texture_table = NULL;
 	}
 
-	vkDestroyImage(device, tex->image, NULL);
+	vkDestroyImage(device, tex->vkimage, NULL);
 	vkFreeMemory(device, tex->memory, NULL);
 	vkDestroyImageView(device, tex->view, NULL);
 	vkDestroySampler(device, tex->sampler, NULL);

@@ -310,8 +310,8 @@ void single_use_commands_end(CommandBuffer* commandbuffer)
 	commandbuffer_destroy(commandbuffer);
 }
 
-void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image,
-				  VkDeviceMemory* memory, VkSampleCountFlagBits num_samples)
+VkDeviceSize image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage* image,
+						  VkDeviceMemory* memory, VkSampleCountFlagBits num_samples)
 {
 	// Create the VKImage
 	VkImageCreateInfo imageInfo = {0};
@@ -360,6 +360,7 @@ void image_create(uint32_t width, uint32_t height, VkFormat format, VkImageTilin
 	}
 
 	vkBindImageMemory(device, *image, *memory, 0);
+	return memRequirements.size;
 }
 
 VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags)
