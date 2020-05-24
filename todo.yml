@@ -22,6 +22,7 @@ Vulkan:
   - Allow for long term mapping of buffer memory
   - Uniform buffer pool to respect memory limits
   - Wrap globals in struct
+  - Separate sampler and textures
 
 General bugs:
   
