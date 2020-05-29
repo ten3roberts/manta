@@ -66,8 +66,6 @@ extern VkExtent2D swapchain_extent;
 
 extern VkDescriptorSetLayout global_descriptor_layout;
 extern DescriptorPack* global_descriptors;
-extern VkFramebuffer* framebuffers;
-extern size_t framebuffer_count;
 
 extern VkImage color_image;
 extern VkDeviceMemory color_image_memory;

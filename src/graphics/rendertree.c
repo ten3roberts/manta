@@ -46,7 +46,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		// The fence is assigned on render
-		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, i, VK_NULL_HANDLE, renderPass, framebuffers[i]);
+		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, i, VK_NULL_HANDLE, renderPass, node->framebuffer->vkFramebuffers[i]);
 	}
 
 	// Create uniform buffers for entity data
@@ -57,7 +57,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL, NULL);
 }
 
-RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx)
+RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer* framebuffer)
 {
 	RenderTreeNode* node = mempool_alloc(&node_pool);
 
@@ -69,6 +69,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	node->depth = 0;
 	node->thread_idx = 0;
 	node->id = node_count++;
+	node->framebuffer = framebuffer;
 
 	for (uint8_t i = 0; i < 8; i++)
 		node->children[i] = NULL;
@@ -126,7 +127,7 @@ void rendertree_subdivide(RenderTreeNode* node)
 		{
 			center.z -= new_width;
 		}
-		node->children[i] = rendertree_create(new_width, center, node->thread_idx);
+		node->children[i] = rendertree_create(new_width, center, node->thread_idx, node->framebuffer);
 		node->children[i]->parent = node;
 		node->children[i]->depth = node->depth + 1;
 		node->changed = ALL_CHANGED;

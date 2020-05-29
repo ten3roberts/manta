@@ -1,5 +1,5 @@
 #include "log.h"
-#include "vulkan_members.h"
+#include "vulkan_internal.h"
 #include "graphics/graphics.h"
 #include "cr_time.h"
 #include "graphics/uniforms.h"
@@ -8,6 +8,9 @@
 #include "scene.h"
 #include "graphics/commandbuffer.h"
 #include "graphics/rendertree.h"
+#include "graphics/framebuffer.h"
+#include "utils.h"
+#include "magpie.h"
 
 #define ONE_FRAME_LIMIT 512
 
@@ -26,6 +29,10 @@ static UniformBuffer* oneframe_buffer = NULL;
 static DescriptorPack* oneframe_descriptors = NULL;
 static int oneframe_draw_index = 0;
 
+// The framebuffer with the swapchain images as attachments
+// The last framebuffer and renderer to the window
+static Framebuffer* framebuffer_main = NULL;
+
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
 static void renderer_rebuild(Scene* scene)
@@ -37,7 +44,7 @@ static void renderer_rebuild(Scene* scene)
 	VkRenderPassBeginInfo render_pass_info = {0};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_info.renderPass = renderPass;
-	render_pass_info.framebuffer = framebuffers[image_index];
+	render_pass_info.framebuffer = framebuffer_main->vkFramebuffers[image_index];
 	render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 	render_pass_info.renderArea.extent = swapchain_extent;
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
@@ -60,13 +67,6 @@ static void renderer_rebuild(Scene* scene)
 
 int renderer_init()
 {
-	// Create primary command buffers
-	for (int i = 0; i < 3; i++)
-	{
-		primarybuffers[i] = commandbuffer_create_primary(0, i);
-		oneframe_commands[i] = commandbuffer_create_secondary(0, i, primarybuffers[i]->fence, renderPass, framebuffers[i]);
-	}
-
 	// Load primitive models
 	model_load_collada("./assets/models/primitive.dae");
 
@@ -75,6 +75,52 @@ int renderer_init()
 	oneframe_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count());
 
 	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL, NULL);
+
+	// Create main framebuffer
+
+	// Color
+	// Depth
+	// Swapchain image
+	static const int attachment_count = 3;
+
+	Texture* color_attachment = texture_create("color_attachment", swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_ASPECT_COLOR_BIT);
+
+	Texture* depth_attachment = texture_create("depth_attachment", swapchain_extent.width, swapchain_extent.height, find_depth_format(), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	// Get the swapchain images
+	uint32_t swapchain_image_count = 0;
+	VkImage* swapchain_images = NULL;
+	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, NULL);
+	swapchain_images = malloc(swapchain_image_count * sizeof(VkImage));
+	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
+
+	Texture* swapchain_attachments[3] = {0};
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
+	{
+		char name[512];
+		string_format(name, sizeof name, "swapchain_image_%d", i);
+		swapchain_attachments[i] = texture_create_existing(name, swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED, swapchain_images[i], VK_IMAGE_ASPECT_COLOR_BIT);
+	}
+
+	Texture** attachments[3] = {0};
+
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
+	{
+		attachments[i] = malloc(3 * sizeof *attachments);
+
+		attachments[i][0] = color_attachment;
+		attachments[i][1] = depth_attachment;
+		attachments[i][2] = swapchain_attachments[i];
+	}
+
+	framebuffer_main = framebuffer_create(attachments, attachment_count);
+
+	// Create primary command buffers
+	for (int i = 0; i < 3; i++)
+	{
+		primarybuffers[i] = commandbuffer_create_primary(0, i);
+		oneframe_commands[i] = commandbuffer_create_secondary(0, i, primarybuffers[i]->fence, renderPass, framebuffer_main->vkFramebuffers[i]);
+	}
 
 	return 0;
 }
@@ -208,6 +254,11 @@ int renderer_get_frameindex()
 	return image_index;
 }
 
+Framebuffer* renderer_get_framebuffer()
+{
+	return framebuffer_main;
+}
+
 void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 scale, vec4 color)
 {
 	if (oneframe_draw_index >= ONE_FRAME_LIMIT)
@@ -255,6 +306,8 @@ void renderer_terminate()
 		commandbuffer_destroy(oneframe_commands[i]);
 		commandbuffer_destroy(primarybuffers[i]);
 	}
+
+	framebuffer_destroy(framebuffer_main);
 
 	descriptorpack_destroy(oneframe_descriptors);
 

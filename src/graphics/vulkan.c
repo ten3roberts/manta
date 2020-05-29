@@ -445,7 +445,7 @@ int create_logical_device()
 	return 0;
 }
 
-int create_image_views()
+/*int create_image_views()
 {
 	swapchain_image_views = malloc(swapchain_image_count * sizeof(VkImageView));
 	swapchain_image_view_count = swapchain_image_count;
@@ -455,7 +455,7 @@ int create_image_views()
 		swapchain_image_views[i] = image_view_create(swapchain_images[i], swapchain_image_format, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 	return 0;
-}
+}*/
 
 int create_render_pass()
 {
@@ -547,7 +547,7 @@ int create_render_pass()
 	return 0;
 }
 
-int create_color_buffer()
+/*int create_color_buffer()
 {
 	VkFormat colorFormat = swapchain_image_format;
 
@@ -571,35 +571,7 @@ int create_depth_buffer()
 	// Transition image layout explicitely
 	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	return 0;
-}
-
-int create_framebuffers()
-{
-	framebuffer_count = swapchain_image_view_count;
-	framebuffers = malloc(framebuffer_count * sizeof(VkFramebuffer));
-
-	for (size_t i = 0; i < swapchain_image_view_count; i++)
-	{
-		VkImageView attachments[] = {color_image_view, depth_image_view, swapchain_image_views[i]};
-
-		VkFramebufferCreateInfo framebufferInfo = {0};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = swapchain_extent.width;
-		framebufferInfo.height = swapchain_extent.height;
-		framebufferInfo.layers = 1;
-
-		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers[i]);
-		if (result != VK_SUCCESS)
-		{
-			LOG_E("Failed to create frambuffer %d - code %d", i, result);
-			return -i;
-		}
-	}
-	return 0;
-}
+}*/
 
 int create_global_resources(struct LayoutInfo* layout_info)
 {
@@ -730,10 +702,6 @@ int graphics_init(Window* window, struct LayoutInfo* global_layout)
 	{
 		return -6;
 	}
-	if (create_image_views())
-	{
-		return -7;
-	}
 	if (create_render_pass())
 	{
 		return -8;
@@ -743,18 +711,6 @@ int graphics_init(Window* window, struct LayoutInfo* global_layout)
 	if (create_global_resources(global_layout))
 	{
 		return -13;
-	}
-	if (create_color_buffer())
-	{
-		return -13;
-	}
-	if (create_depth_buffer())
-	{
-		return -13;
-	}
-	if (create_framebuffers())
-	{
-		return -11;
 	}
 
 	/*if (create_command_buffers())

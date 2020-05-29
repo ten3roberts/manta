@@ -261,6 +261,55 @@ Texture* texture_create(const char* name, int width, int height, VkFormat format
 	// Create image view
 	tex->view = image_view_create(tex->vkimage, format, imageAspect);
 
+	// Transition image if format is specified
+	if (layout != VK_IMAGE_LAYOUT_UNDEFINED)
+		transition_image_layout(tex->vkimage, format, VK_IMAGE_LAYOUT_UNDEFINED, layout);
+
+	return tex;
+}
+
+Texture* texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect)
+{
+	Texture* tex = malloc(sizeof(Texture));
+
+	if (name)
+	{
+		snprintf(tex->name, sizeof tex->name, "%s", name);
+
+		// Create table if it doesn't exist
+		if (texture_table == NULL)
+		{
+			texture_table = hashtable_create_string();
+		}
+		// Insert texture into tracking table after name is acquired
+		if (hashtable_find(texture_table, tex->name) != NULL)
+		{
+			LOG_W("Duplicate material %s", tex->name);
+			free(tex);
+			return NULL;
+		}
+		// Insert into table
+		hashtable_insert(texture_table, tex->name, tex);
+	}
+	else
+	{
+		snprintf(tex->name, sizeof name, "%s", "\0");
+	}
+	tex->width = width;
+	tex->height = height;
+	tex->layout = layout;
+	tex->format = format;
+
+	// Get image size
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+	tex->size = memRequirements.size;
+	tex->vkimage = image;
+
+	// Create image view
+	tex->view = image_view_create(tex->vkimage, format, imageAspect);
+
 	return tex;
 }
 
@@ -312,6 +361,18 @@ Texture* texture_get(const char* name)
 		return NULL;
 
 	return tex;
+}
+
+void texture_disown(Texture* tex)
+{
+	hashtable_remove(texture_table, tex->name);
+
+	// Last texture was removed
+	if (hashtable_get_count(texture_table) == 0)
+	{
+		hashtable_destroy(texture_table);
+		texture_table = NULL;
+	}
 }
 
 void texture_destroy(Texture* tex)

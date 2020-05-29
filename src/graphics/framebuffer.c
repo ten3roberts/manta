@@ -1,55 +1,55 @@
 #include "graphics/framebuffer.h"
+#include "graphics/vulkan_members.h"
 #include "magpie.h"
+#include "log.h"
 
-/*static int create_color_buffer()
-{
-	VkFormat colorFormat = swapchain_image_format;
-
-	image_create(swapchain_extent.width, swapchain_extent.height, colorFormat, VK_IMAGE_TILING_OPTIMAL,
-				 VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &color_image, &color_image_memory,
-				 msaa_samples);
-	color_image_view = image_view_create(color_image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-	return 0;
-}
-
-static int create_depth_buffer()
-{
-	depth_image_format = find_depth_format();
-
-	image_create(swapchain_extent.width, swapchain_extent.height, depth_image_format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-				 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &depth_image, &depth_image_memory, msaa_samples);
-
-	depth_image_view = image_view_create(depth_image, depth_image_format, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	// Transition image layout explicitely
-	transition_image_layout(depth_image, depth_image_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	return 0;
-}*/
-
-Framebuffer* framebuffer_create()
+Framebuffer* framebuffer_create(Texture** attachments[3], uint32_t attachment_count)
 {
 	Framebuffer* framebuffer = malloc(sizeof(Framebuffer));
 
-	/*for (size_t i = 0; i < 3; i++)
+	framebuffer->attachment_count = attachment_count;
+
+	VkImageView* attachment_views = malloc(attachment_count * sizeof(VkImageView));
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
-		VkImageView attachments[] = {color_image_view, depth_image_view, swapchain_image_views[i]};
+		framebuffer->attachments[i] = malloc(attachment_count * sizeof *framebuffer->attachments);
+
+		for (uint32_t j = 0; j < attachment_count; j++)
+		{
+			framebuffer->attachments[i][j] = attachments[i][j];
+			attachment_views[j] = texture_get_image_view(attachments[i][j]);
+		}
 
 		VkFramebufferCreateInfo framebufferInfo = {0};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = sizeof(attachments) / sizeof(*attachments);
-		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.attachmentCount = attachment_count;
+		framebufferInfo.pAttachments = attachment_views;
 		framebufferInfo.width = swapchain_extent.width;
 		framebufferInfo.height = swapchain_extent.height;
 		framebufferInfo.layers = 1;
 
-		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffers[i]);
+		VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->vkFramebuffers[i]);
 		if (result != VK_SUCCESS)
 		{
 			LOG_E("Failed to create frambuffer %d - code %d", i, result);
-			return -i;
+			free(framebuffer);
+			return NULL;
 		}
-	}*/
+	}
+
+	free(attachment_views);
+
 	return framebuffer;
 }
-void framebuffer_destroy(Framebuffer* framebuffer);
+
+void framebuffer_destroy(Framebuffer* framebuffer)
+{
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
+	{
+		vkDestroyFramebuffer(device, framebuffer->vkFramebuffers[i], NULL);
+		free(framebuffer->attachments[i]);
+	}
+
+	free(framebuffer);
+}

@@ -7,6 +7,7 @@
 #include "entity.h"
 #include "defines.h"
 #include "graphics/camera.h"
+#include "graphics/framebuffer.h"
 
 // A node of the render pruning octree
 // Handled by scene on update
@@ -25,6 +26,9 @@ typedef struct RenderTreeNode
 	// Entity data
 	uint32_t entity_count;
 	Entity* entities[RENDER_TREE_LIM];
+
+	// The framebuffer it is currently rendering to
+	Framebuffer* framebuffer;
 
 	// Contains all RENDER_TREE_LIM entities data
 	CommandBuffer* commandbuffers[3];
@@ -48,7 +52,7 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 // Creates a rendertree root node for a thread
 // Note, only the render thread with the correct index should use this
 // All children inherit the thread index
-RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx);
+RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer* framebuffer);
 
 void rendertree_destroy(RenderTreeNode* node);
 

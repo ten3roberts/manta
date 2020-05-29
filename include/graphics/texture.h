@@ -44,15 +44,23 @@ Texture* texture_load(const char* file);
 // Usage specifies the memory usage flags. Most common (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)
 // Samples specify if the image is multisampled. VK_SAMPLE_1_BIT for normal images
 // Layout specifies the pixel layout of the image. Most common (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+// Only transitions the layout if it is not VK_IMAGE_FORMAT_UNDEFINED
 // Image aspect specifies the aspect mask of the image view
-Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout,
-						VkImageAspectFlags imageAspect);
+Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout, VkImageAspectFlags imageAspect);
+
+// Creates a texture and image view from already existing image
+// This can be used when getting image from swapchain
+Texture* texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect);
 
 // Updates the texture data from host memory
 void texture_update(Texture* tex, uint8_t* pixeldata);
 
 // Attempts to find a texture by name
 Texture* texture_get(const char* name);
+
+// This will remove the texture if it exists from the internal texture table
+// The resource needs to be freed explicitely
+void texture_disown(Texture* tex);
 
 void texture_destroy(Texture* tex);
 

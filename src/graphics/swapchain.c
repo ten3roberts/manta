@@ -6,8 +6,6 @@
 #include "graphics/uniforms.h"
 #include "graphics/pipeline.h"
 
-
-
 int swapchain_create()
 {
 	SwapchainSupportDetails support = get_swapchain_support(physical_device);
@@ -89,14 +87,14 @@ int swapchain_recreate()
 	swapchain_destroy();
 
 	swapchain_create(NULL);
-	create_image_views();
 	create_render_pass();
 
 	pipeline_recreate_all();
 
-	create_color_buffer();
+	// TODO: framebuffer recreation
+	/*create_color_buffer();
 	create_depth_buffer();
-	create_framebuffers();
+	create_framebuffers();*/
 
 	//create_command_buffers();
 	return 0;
@@ -112,29 +110,15 @@ int swapchain_destroy()
 	vkDestroyImage(device, depth_image, NULL);
 	vkFreeMemory(device, depth_image_memory, NULL);
 
-	for (size_t i = 0; i < framebuffer_count; i++)
-		vkDestroyFramebuffer(device, framebuffers[i], NULL);
-
 	// Destroy render pass
 	vkDestroyRenderPass(device, renderPass, NULL);
 	renderPass = NULL;
-
-	// TODO: vkFreeCommandBuffers(device, command_pool, command_buffer_count, command_buffers);
 
 	// Destroy the image views since they were explicitely created
 	for (size_t i = 0; i < swapchain_image_view_count; i++)
 		vkDestroyImageView(device, swapchain_image_views[i], NULL);
 
 	vkDestroySwapchainKHR(device, swapchain, NULL);
-
-	// Freeing of local resources
-	free(framebuffers);
-	framebuffers = NULL;
-	framebuffer_count = 0;
-
-	/*free(command_buffers);
-	command_buffers = NULL;
-	command_buffer_count = 0;*/
 
 	free(swapchain_images);
 	swapchain_images = NULL;

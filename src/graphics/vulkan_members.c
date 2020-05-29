@@ -29,9 +29,6 @@ VkExtent2D swapchain_extent;
 VkDescriptorSetLayout global_descriptor_layout = VK_NULL_HANDLE;
 DescriptorPack* global_descriptors = NULL;
 
-VkFramebuffer* framebuffers = NULL;
-size_t framebuffer_count = 0;
-
 VkImage color_image = NULL;
 VkDeviceMemory color_image_memory = NULL;
 VkImageView color_image_view = NULL;

@@ -1,30 +1,21 @@
 #include "vulkan/vulkan.h"
+#include "graphics/texture.h"
 
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-struct FramebufferAttachment
-{
-	VkImage image;
-	VkDeviceMemory image_memory;
-};
-
-// Contains framebuffers for all swapchain images
 typedef struct Framebuffer
 {
 	VkFramebuffer vkFramebuffers[3];
-	VkImage color_image;
-	VkDeviceMemory color_image_memory;
-	VkImageView color_image_view;
-
-	VkImage depth_image;
-	VkDeviceMemory depth_image_memory;
-	VkImageView depth_image_view;
-	VkFormat depth_image_format;
+	Texture** attachments[3];
+	uint32_t attachment_count;
 } Framebuffer;
 
 // Creates a framebuffer with attachments
-Framebuffer* framebuffer_create();
+// Takes in a list of textures for each frame in the swapchain
+// The textures can be the same in the different frames except if the image is to be presented directly
+// Each texture works as an attachment for the framebuffer
+Framebuffer* framebuffer_create(Texture** attachments[3], uint32_t attachment_count);
 void framebuffer_destroy(Framebuffer* framebuffer);
 
 #endif

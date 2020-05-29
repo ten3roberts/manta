@@ -31,7 +31,7 @@ Scene* scene_create(const char* name)
 		(void)scene_set_current(scene);
 
 	// Create the render tree root node
-	scene->rendertree_root = rendertree_create(300, vec3_zero, 0);
+	scene->rendertree_root = rendertree_create(300, vec3_zero, 0, renderer_get_framebuffer());
 
 	return scene;
 }

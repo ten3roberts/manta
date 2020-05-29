@@ -420,6 +420,7 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 
 	VkPipelineStageFlags sourceStage;
 	VkPipelineStageFlags destinationStage;
+
 	if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 	{
 		barrier.srcAccessMask = 0;
@@ -434,6 +435,14 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
 		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
 

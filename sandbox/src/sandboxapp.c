@@ -43,11 +43,12 @@ int application_start(int argc, char** argv)
 	(void)entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one}, (Rigidbody){.velocity = (vec3){-5, 0, 0}});
 	Entity* entity3 = entity_create("entity2", "concrete", "multiple:Suzanne", (Transform){(vec3){-2, 2, -10}, quat_identity, vec3_one}, rigidbody_stationary);
 
-	/*for (int i = 0; i < 1000; i++)
+	/*for (int i = 0; i < 1000; i++) 	
 	{
 		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
 	}*/
-	for (int i = 0; i < 256; i++)
+
+	for (int i = 0; i < 100; i++)
 	{
 		entity_create("multiple", "grid", "cube", (Transform){vec3_add(vec3_random_sphere_even(10, 200), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
 					  (Rigidbody){.velocity = vec3_random_sphere(0, 1)});
