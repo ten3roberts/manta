@@ -215,6 +215,11 @@ static Texture_raw* texture_alloc()
 	// Resize for a new slot
 	texture_array_size++;
 	texture_array_count++;
+	if(texture_array_size >= 2 << MAX_HANDLE_INDEX_BITS)
+	{
+		LOG_E("Maximum number of textures reached");
+		return NULL;
+	}
 	Texture_raw* tmp = realloc(texture_array, texture_array_size * sizeof(*texture_array));
 	if (tmp == NULL)
 	{
