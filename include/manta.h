@@ -1,7 +1,7 @@
-// Contains basic includes for the cuttle engine
+// Contains basic includes for the manta engine
 
-#ifndef CUTTLE_H
-#define CUTTLE_H
+#ifndef MANTA_H
+#define MANTA_H
 #include "entrypoint.h"
 #include "event.h"
 #include "cr_time.h"

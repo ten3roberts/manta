@@ -1,4 +1,4 @@
-#include "cuttle.h"
+#include "manta.h"
 
 static Window* window = NULL;
 

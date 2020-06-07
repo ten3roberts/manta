@@ -75,9 +75,9 @@ int create_instance()
 {
 	VkApplicationInfo appInfo = {0};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "cuttle";
+	appInfo.pApplicationName = "manta";
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	appInfo.pEngineName = "cuttle";
+	appInfo.pEngineName = "manta";
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 

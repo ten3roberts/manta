@@ -5,9 +5,9 @@ cd $(dirname $0)
 cd ..
 DIR=`pwd`
 
-echo "--------Cleaning cuttle--------"
+echo "--------Cleaning manta--------"
 
-# cuttle
+# manta
 rm -rv bin
 rm -rv obj
 

@@ -2,7 +2,7 @@
 
 # This script will build the engine and the included tools
 
-# Move to cuttle folder to be agnostic of where the script is run
+# Move to manta folder to be agnostic of where the script is run
 cd $(dirname $0)
 cd ..
 DIR=`pwd`
