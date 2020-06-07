@@ -36,7 +36,7 @@ struct Material
 
 	// The material indexes are specified by the json bindings
 	uint32_t texture_count;
-	Texture* textures[7];
+	Texture textures[7];
 	uint32_t sampler_count;
 	Sampler* samplers[7];
 	// The resource management part, inaccessible for the use

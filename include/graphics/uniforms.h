@@ -42,7 +42,7 @@ DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptor
 // The number of textures should match the bindings
 // For each texture supplied a sampler should also be supplied with the same index. The same sampler can be used several times
 void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers,
-						  Texture** textures, Sampler** samplers);
+						  Texture* textures, Sampler** samplers);
 
 // Destroys a descriptor pack, and if necessary, destroy the pool
 void descriptorpack_destroy(DescriptorPack* pack);

@@ -25,7 +25,7 @@ static uint32_t global_uniform_count = 0;
 static uint32_t global_sampler_count = 0;
 static uint32_t global_texture_count = 0;
 static UniformBuffer** global_uniform_buffers = NULL;
-static Texture** global_textures = NULL;
+static Texture* global_textures = NULL;
 // List that maps the bindings to the uniforms and textures
 static void** global_resource_map = NULL;
 
@@ -635,7 +635,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 		{
 			// TODO: create samplers
 			//global_textures[texture_it] = texture_create
-			global_resource_map[layout_info->bindings[i].binding] = global_textures[sampler_it];
+			//global_resource_map[layout_info->bindings[i].binding] = global_textures[sampler_it];
 			++sampler_it;
 			LOG_W("Texture creation in global layout is not yet implemented");
 		}

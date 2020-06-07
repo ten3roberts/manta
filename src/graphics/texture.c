@@ -163,10 +163,9 @@ void sampler_destroy_all()
 	}
 }
 
-static hashtable_t* texture_table = NULL;
-
-typedef struct Texture
+typedef struct Texture_raw
 {
+	Texture handle;
 	// Name should not be modified after creation
 	char name[256];
 	int width;
@@ -179,11 +178,113 @@ typedef struct Texture
 	VkImage vkimage;
 	VkDeviceMemory memory;
 	VkImageView view;
-} Texture;
+	// If set to true, the texture owns the vkimage and will free it on destruction
+	bool owns_image;
+} Texture_raw;
+
+// Contains all textures one after another in memory
+// May resize and the pointer may change
+// Access by handles
+// Slots can be free
+static Texture_raw* texture_array = NULL;
+// The size of the texture array
+static uint32_t texture_array_size = 0;
+// The currently count of active textures
+static uint32_t texture_array_count = 0;
+
+// Finds memory for a texture
+// Initilizes handle member
+// Only handle should be returned outside this file
+// The returned value should not be stored across function calls
+static Texture_raw* texture_alloc()
+{
+	if (texture_array_count != texture_array_size)
+	{
+		for (uint32_t i = 0; i < texture_array_size; i++)
+		{
+			if (texture_array[i].handle.index == HANDLE_INDEX_FREE)
+			{
+				texture_array[i].handle.index = i;
+				// Generation count
+				texture_array[i].handle.pattern += 1;
+				return texture_array + i;
+			}
+		}
+	}
+
+	// Resize for a new slot
+	texture_array_size++;
+	texture_array_count++;
+	Texture_raw* tmp = realloc(texture_array, texture_array_size * sizeof(*texture_array));
+	if (tmp == NULL)
+	{
+		LOG_E("Failed to allocate memory for texture");
+		return NULL;
+	}
+	texture_array = tmp;
+	// Set the index to the array index
+	texture_array[texture_array_size - 1].handle.index = texture_array_size - 1;
+	// Start with 0, first generation
+	texture_array[texture_array_size - 1].handle.pattern = 0;
+
+	return texture_array + texture_array_size - 1;
+}
+
+// Marks the slot pointed to by handle as free
+// Frees internals
+// Throws an error on double free
+static void texture_free(Texture handle)
+{
+	if (handle.index >= texture_array_size)
+	{
+		LOG_E("Texture handle %d is not a valid slot index", handle.index);
+		return;
+	}
+
+	if (texture_array[handle.index].handle.index == HANDLE_INDEX_FREE || *(uint32_t*)&texture_array[handle.index].handle != *(uint32_t*)&handle)
+	{
+		LOG_E("Texture handle %d has already been freed", handle.index);
+		return;
+	}
+	Texture_raw* raw = texture_array + handle.index;
+	raw->handle.index = HANDLE_INDEX_FREE;
+	if (raw->owns_image)
+	{
+		vkDestroyImage(device, raw->vkimage, NULL);
+		vkFreeMemory(device, raw->memory, NULL);
+	}
+	vkDestroyImageView(device, raw->view, NULL);
+
+	texture_array_count--;
+	if (texture_array_count == 0)
+	{
+		free(texture_array);
+		texture_array = NULL;
+		texture_array_size = 0;
+		texture_array_count = 0;
+	}
+}
+
+static Texture_raw* texture_from_handle(Texture handle)
+{
+	if (handle.index >= texture_array_size)
+	{
+		LOG_E("Texture handle %d is not a valid slot index", handle.index);
+		return NULL;
+	}
+
+	if (texture_array[handle.index].handle.index == HANDLE_INDEX_FREE || *(uint32_t*)&texture_array[handle.index].handle != *(uint32_t*)&handle)
+	{
+		LOG_E("Texture handle %d is not valid", handle.index);
+		return NULL;
+	}
+
+	return texture_array + handle.index;
+}
 
 // Loads a texture from a file
 // The textures name is the full file path
-Texture* texture_load(const char* file)
+Texture texture_load(const char* file)
 {
 	LOG_S("Loading texture %s", file);
 
@@ -208,117 +309,93 @@ Texture* texture_load(const char* file)
 	{
 		LOG_E("Failed to load texture %s", file);
 		stbi_image_free(pixels);
-		return NULL;
+		return (Texture){.index = HANDLE_INDEX_FREE, .pattern = -1};
 	}
 
 	// Save the name
 	char name[256];
 	snprintf(name, sizeof name, "%s", file);
-	Texture* tex = texture_create(name, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT,
-								  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
+	Texture tex = texture_create(name, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT,
+								 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT);
 
 	texture_update(tex, pixels);
 
 	stbi_image_free(pixels);
 	return tex;
 }
+
 // Creates a texture with no data
-Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout,
-						VkImageAspectFlags imageAspect)
+Texture texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout,
+					   VkImageAspectFlags imageAspect)
 {
-	Texture* tex = malloc(sizeof(Texture));
+	Texture_raw* raw = texture_alloc();
 
 	if (name)
 	{
-		snprintf(tex->name, sizeof tex->name, "%s", name);
-
-		// Create table if it doesn't exist
-		if (texture_table == NULL)
-		{
-			texture_table = hashtable_create_string();
-		}
-		// Insert texture into tracking table after name is acquired
-		if (hashtable_find(texture_table, tex->name) != NULL)
-		{
-			LOG_W("Duplicate material %s", tex->name);
-			free(tex);
-			return NULL;
-		}
-		// Insert into table
-		hashtable_insert(texture_table, tex->name, tex);
+		snprintf(raw->name, sizeof raw->name, "%s", name);
 	}
 	else
 	{
-		snprintf(tex->name, sizeof name, "%s", "\0");
+		snprintf(raw->name, sizeof raw->name, "%s", "unnamed");
 	}
-	tex->width = width;
-	tex->height = height;
-	tex->layout = layout;
-	tex->format = format;
 
-	tex->size = image_create(tex->width, tex->height, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &tex->vkimage, &tex->memory, samples);
+	raw->width = width;
+	raw->height = height;
+	raw->layout = layout;
+	raw->format = format;
+	raw->owns_image = true;
+
+	raw->size = image_create(raw->width, raw->height, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &raw->vkimage, &raw->memory, samples);
 
 	// Create image view
-	tex->view = image_view_create(tex->vkimage, format, imageAspect);
+	raw->view = image_view_create(raw->vkimage, format, imageAspect);
 
 	// Transition image if format is specified
 	if (layout != VK_IMAGE_LAYOUT_UNDEFINED)
-		transition_image_layout(tex->vkimage, format, VK_IMAGE_LAYOUT_UNDEFINED, layout);
+		transition_image_layout(raw->vkimage, format, VK_IMAGE_LAYOUT_UNDEFINED, layout);
 
-	return tex;
+	return raw->handle;
 }
 
-Texture* texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect)
+Texture texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect)
 {
-	Texture* tex = malloc(sizeof(Texture));
+	Texture_raw* raw = texture_alloc();
 
 	if (name)
 	{
-		snprintf(tex->name, sizeof tex->name, "%s", name);
-
-		// Create table if it doesn't exist
-		if (texture_table == NULL)
-		{
-			texture_table = hashtable_create_string();
-		}
-		// Insert texture into tracking table after name is acquired
-		if (hashtable_find(texture_table, tex->name) != NULL)
-		{
-			LOG_W("Duplicate material %s", tex->name);
-			free(tex);
-			return NULL;
-		}
-		// Insert into table
-		hashtable_insert(texture_table, tex->name, tex);
+		snprintf(raw->name, sizeof raw->name, "%s", name);
 	}
 	else
 	{
-		snprintf(tex->name, sizeof name, "%s", "\0");
+		snprintf(raw->name, sizeof raw->name, "%s", "unnamed");
 	}
-	tex->width = width;
-	tex->height = height;
-	tex->layout = layout;
-	tex->format = format;
+
+	raw->width = width;
+	raw->height = height;
+	raw->layout = layout;
+	raw->format = format;
+	raw->owns_image = false;
 
 	// Get image size
 	VkMemoryRequirements memRequirements;
 	vkGetImageMemoryRequirements(device, image, &memRequirements);
 
-	tex->size = memRequirements.size;
-	tex->vkimage = image;
+	raw->size = memRequirements.size;
+	raw->vkimage = image;
 
 	// Create image view
-	tex->view = image_view_create(tex->vkimage, format, imageAspect);
+	raw->view = image_view_create(raw->vkimage, format, imageAspect);
 
-	return tex;
+	return raw->handle;
 }
 
 // Updates the texture data from host memory
-void texture_update(Texture* tex, uint8_t* pixeldata)
+void texture_update(Texture tex, uint8_t* pixeldata)
 { // Create a staging bufer
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
-	VkDeviceSize image_size = tex->size;
+	Texture_raw* raw = texture_from_handle(tex);
+	VkDeviceSize image_size = raw->size;
 
 	buffer_create(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory,
 				  NULL, NULL);
@@ -330,79 +407,46 @@ void texture_update(Texture* tex, uint8_t* pixeldata)
 	vkUnmapMemory(device, staging_buffer_memory);
 
 	// Transition image layout
-	transition_image_layout(tex->vkimage, tex->format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	transition_image_layout(raw->vkimage, raw->format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	copy_buffer_to_image(staging_buffer, tex->vkimage, tex->width, tex->height);
+	copy_buffer_to_image(staging_buffer, raw->vkimage, raw->width, raw->height);
 
 	// Transition image layout
-	transition_image_layout(tex->vkimage, tex->format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex->layout);
+	transition_image_layout(raw->vkimage, raw->format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, raw->layout);
 
 	// Clean up staging buffer
 	vkDestroyBuffer(device, staging_buffer, NULL);
 	vkFreeMemory(device, staging_buffer_memory, NULL);
 }
 
-Texture* texture_get(const char* name)
+Texture texture_get(const char* name)
 {
-	// Create table if it doesn't exist
-	if (texture_table == NULL)
-		texture_table = hashtable_create_string();
-
-	// Attempt to find texture if it already exists
-	Texture* tex = hashtable_find(texture_table, (void*)name);
-
-	if (tex)
-		return tex;
+	for (uint32_t i = 0; i < texture_array_size; i++)
+	{
+		if (strcmp(name, texture_array[i].name) == 0)
+		{
+			return texture_array[i].handle;
+		}
+	}
 
 	// Load from file
-	tex = texture_load(name);
-	// File was not found
-	if (tex == NULL)
-		return NULL;
-
-	return tex;
+	return texture_load(name);
 }
 
-void texture_disown(Texture* tex)
+void texture_destroy(Texture tex)
 {
-	hashtable_remove(texture_table, tex->name);
-
-	// Last texture was removed
-	if (hashtable_get_count(texture_table) == 0)
-	{
-		hashtable_destroy(texture_table);
-		texture_table = NULL;
-	}
-}
-
-void texture_destroy(Texture* tex)
-{
-	hashtable_remove(texture_table, tex->name);
-
-	// Last texture was removed
-	if (hashtable_get_count(texture_table) == 0)
-	{
-		hashtable_destroy(texture_table);
-		texture_table = NULL;
-	}
-
-	vkDestroyImage(device, tex->vkimage, NULL);
-	vkFreeMemory(device, tex->memory, NULL);
-	vkDestroyImageView(device, tex->view, NULL);
-
-	free(tex);
+	texture_free(tex);
 }
 
 void texture_destroy_all()
 {
-	Texture* tex = NULL;
-	while (texture_table && (tex = hashtable_pop(texture_table)))
+	for (uint32_t i = 0; i < texture_array_size; i++)
 	{
-		texture_destroy(tex);
+		texture_free(texture_array[i].handle);
 	}
 }
 
-void* texture_get_image_view(Texture* tex)
+void* texture_get_image_view(Texture tex)
 {
-	return tex->view;
+	return texture_from_handle(tex)->view;
 }

@@ -83,9 +83,9 @@ int renderer_init()
 	// Swapchain image
 	static const int attachment_count = 3;
 
-	Texture* color_attachment = texture_create("color_attachment", swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_ASPECT_COLOR_BIT);
+	Texture color_attachment = texture_create("color_attachment", swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_ASPECT_COLOR_BIT);
 
-	Texture* depth_attachment = texture_create("depth_attachment", swapchain_extent.width, swapchain_extent.height, find_depth_format(), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
+	Texture depth_attachment = texture_create("depth_attachment", swapchain_extent.width, swapchain_extent.height, find_depth_format(), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	// Get the swapchain images
 	uint32_t swapchain_image_count = 0;
@@ -94,7 +94,7 @@ int renderer_init()
 	swapchain_images = malloc(swapchain_image_count * sizeof(VkImage));
 	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
 
-	Texture* swapchain_attachments[3] = {0};
+	Texture swapchain_attachments[3] = {0};
 	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
 		char name[512];
@@ -102,7 +102,7 @@ int renderer_init()
 		swapchain_attachments[i] = texture_create_existing(name, swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED, swapchain_images[i], VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
-	Texture** attachments[3] = {0};
+	Texture* attachments[3] = {0};
 
 	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
@@ -114,6 +114,9 @@ int renderer_init()
 	}
 
 	framebuffer_main = framebuffer_create(attachments, attachment_count);
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
+		free(attachments[i]);
+	free(swapchain_images);
 
 	// Create primary command buffers
 	for (int i = 0; i < 3; i++)

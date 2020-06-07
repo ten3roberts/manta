@@ -3,7 +3,7 @@
 #include "magpie.h"
 #include "log.h"
 
-Framebuffer* framebuffer_create(Texture** attachments[3], uint32_t attachment_count)
+Framebuffer* framebuffer_create(Texture** attachments, uint32_t attachment_count)
 {
 	Framebuffer* framebuffer = malloc(sizeof(Framebuffer));
 

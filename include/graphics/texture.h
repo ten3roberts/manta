@@ -1,10 +1,12 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
+#include "defines.h"
 
 // Textures represent an image on the graphics card
 // Note: textures do not contain their own sampler, unlike OpenGL
 
-typedef struct Texture Texture;
+DEFINE_HANDLE(Texture);
+
 typedef struct Sampler Sampler;
 
 typedef enum
@@ -36,7 +38,7 @@ void sampler_destroy_all();
 
 // Loads a texture from a file
 // The textures name is the full file path
-Texture* texture_load(const char* file);
+Texture texture_load(const char* file);
 // Creates a texture from low level arguments
 // The contents of the texture is undefined until texture_update is called
 // If name is not NULL it shall be a unique name to get the texture by name later
@@ -46,26 +48,25 @@ Texture* texture_load(const char* file);
 // Layout specifies the pixel layout of the image. Most common (VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
 // Only transitions the layout if it is not VK_IMAGE_FORMAT_UNDEFINED
 // Image aspect specifies the aspect mask of the image view
-Texture* texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout, VkImageAspectFlags imageAspect);
+Texture texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout, VkImageAspectFlags imageAspect);
 
 // Creates a texture and image view from already existing image
 // This can be used when getting image from swapchain
-Texture* texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect);
+Texture texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect);
 
 // Updates the texture data from host memory
-void texture_update(Texture* tex, uint8_t* pixeldata);
+void texture_update(Texture tex, uint8_t* pixeldata);
 
 // Attempts to find a texture by name
-Texture* texture_get(const char* name);
+Texture texture_get(const char* name);
 
 // This will remove the texture if it exists from the internal texture table
 // The resource needs to be freed explicitely
-void texture_disown(Texture* tex);
 
-void texture_destroy(Texture* tex);
+void texture_destroy(Texture tex);
 
 // Destroys all loaded textures
 void texture_destroy_all();
 
-void* texture_get_image_view(Texture* tex);
+void* texture_get_image_view(Texture tex);
 #endif
