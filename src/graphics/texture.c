@@ -4,10 +4,7 @@
 #include "vulkan_members.h"
 #include "magpie.h"
 #include "stb_image.h"
-#include "hashtable.h"
 #include "handlepool.h"
-
-static hashtable_t* sampler_table;
 
 struct SamplerInfo
 {
@@ -16,53 +13,45 @@ struct SamplerInfo
 	int maxAnisotropy;
 };
 
-struct Sampler
+typedef struct Sampler_raw
 {
 	VkSampler vksampler;
 	struct SamplerInfo info;
-};
+} Sampler_raw;
 
-static uint32_t hash_sampler(const void* pkey)
+static int32_t comp_sampler(const struct SamplerInfo* info1, const struct SamplerInfo* info2)
 {
-	struct SamplerInfo* info = (struct SamplerInfo*)pkey;
-	uint32_t result = 0;
-	result += hashtable_hashfunc_uint32((uint32_t*)&info->filterMode);
-	result += hashtable_hashfunc_uint32((uint32_t*)&info->wrapMode);
-	result += hashtable_hashfunc_uint32((uint32_t*)&info->maxAnisotropy);
-
-	return result;
-}
-
-static int32_t comp_sampler(const void* pkey1, const void* pkey2)
-{
-	struct SamplerInfo* info1 = (struct SamplerInfo*)pkey1;
-	struct SamplerInfo* info2 = (struct SamplerInfo*)pkey2;
-
 	return (info1->filterMode == info2->filterMode && info1->wrapMode == info2->wrapMode && info1->maxAnisotropy == info2->maxAnisotropy) == 0;
 }
 
-// Creates a sampler
-Sampler* sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy)
-{
-	// Create table if it doesn't exist
-	if (sampler_table == NULL)
-		sampler_table = hashtable_create(hash_sampler, comp_sampler);
+static handlepool_t sampler_pool = HANDLEPOOL_INIT(sizeof(Sampler_raw));
 
+// Creates a sampler
+Sampler sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy)
+{
+	// Look if sampler already exists
 	struct SamplerInfo samplerInfo = {.filterMode = filterMode, .wrapMode = wrapMode, .maxAnisotropy = maxAnisotropy};
 
-	// Attempt to find sampler by info if it already exists
-	Sampler* sampler = hashtable_find(sampler_table, (void*)&samplerInfo);
+	for (uint32_t i = 0; i < sampler_pool.size; i++)
+	{
+		if (HANDLEPOOL_INDEX((&sampler_pool), i)->next != NULL)
+			continue;
 
-	if (sampler)
-		return sampler;
+		Sampler_raw* found = (Sampler_raw*)HANDLEPOOL_INDEX((&sampler_pool), i)->data;
+		if (comp_sampler(&samplerInfo, &found->info) == 0)
+		{
+			return PUN_HANDLE(HANDLEPOOL_INDEX((&sampler_pool), i)->handle, Sampler);
+		}
+	}
+
+	// Create new sampler
+	const struct handle_wrapper* wrapper = handlepool_alloc(&sampler_pool);
+	Sampler_raw* raw = (Sampler_raw*)wrapper->data;
+	Sampler handle = PUN_HANDLE(wrapper->handle, Sampler);
 
 	// Create sampler
 	LOG("Creating new sampler");
-	sampler = malloc(sizeof(Sampler));
-	sampler->info = samplerInfo;
-
-	// Insert into table
-	hashtable_insert(sampler_table, &sampler->info, sampler);
+	raw->info = samplerInfo;
 
 	VkSamplerCreateInfo samplerCreateInfo = {0};
 
@@ -125,42 +114,37 @@ Sampler* sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int
 	samplerCreateInfo.maxLod = 0.0f;
 
 	// Samplers are not combined with one specific image
-	VkResult result = vkCreateSampler(device, &samplerCreateInfo, NULL, &sampler->vksampler);
+	VkResult result = vkCreateSampler(device, &samplerCreateInfo, NULL, &raw->vksampler);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create image sampler - code %d", result);
-		return NULL;
+		return INVALID(Sampler);
 	}
-	return sampler;
+	return handle;
 }
 
-VkSampler sampler_get_vksampler(Sampler* sampler)
+VkSampler sampler_get_vksampler(Sampler sampler)
 {
-	return sampler->vksampler;
+	return ((Sampler_raw*)handlepool_get_raw(&sampler_pool, PUN_HANDLE(sampler, GenericHandle)))->vksampler;
 }
 
-void sampler_destroy(Sampler* sampler)
+void sampler_destroy(Sampler sampler)
 {
-	hashtable_remove(sampler_table, &sampler->info);
+	Sampler_raw* raw = handlepool_get_raw(&sampler_pool, PUN_HANDLE(sampler, GenericHandle));
 
-	// Last texture was removed
-	if (hashtable_get_count(sampler_table) == 0)
-	{
-		hashtable_destroy(sampler_table);
-		sampler_table = NULL;
-	}
+	vkDestroySampler(device, raw->vksampler, NULL);
 
-	vkDestroySampler(device, sampler->vksampler, NULL);
-
-	free(sampler);
+	handlepool_free(&sampler_pool, PUN_HANDLE(sampler, GenericHandle));
 }
 
 void sampler_destroy_all()
 {
-	Sampler* sampler = NULL;
-	while (sampler_table && (sampler = hashtable_pop(sampler_table)))
+	for (uint32_t i = 0; i < sampler_pool.size; i++)
 	{
-		sampler_destroy(sampler);
+		if (HANDLEPOOL_INDEX((&sampler_pool), i)->next != NULL)
+			continue;
+
+		sampler_destroy(PUN_HANDLE(HANDLEPOOL_INDEX((&sampler_pool), i)->handle, Sampler));
 	}
 }
 
@@ -182,7 +166,7 @@ typedef struct Texture_raw
 	bool owns_image;
 } Texture_raw;
 
-static handlepool_t texture_pool = HANDLEPOOL_INIT(sizeof(Texture_raw) + 100);
+static handlepool_t texture_pool = HANDLEPOOL_INIT(sizeof(Texture_raw));
 
 // Loads a texture from a file
 // The textures name is the full file path
@@ -230,7 +214,6 @@ Texture texture_load(const char* file)
 Texture texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout,
 					   VkImageAspectFlags imageAspect)
 {
-	LOG("%d", sizeof (Texture_raw));
 	const struct handle_wrapper* wrapper = handlepool_alloc(&texture_pool);
 	Texture_raw* raw = (Texture_raw*)wrapper->data;
 	Texture handle = PUN_HANDLE(wrapper->handle, Texture);

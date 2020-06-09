@@ -435,7 +435,7 @@ bool rendertree_place_up(RenderTreeNode* node, Entity* entity)
 		// At root element without fit
 		if (node == NULL)
 		{
-			LOG_E("Entity %s does not fit in the bounds of the tree", entity_get_name(entity));
+			LOG_W("Entity %s does not fit in the bounds of the tree", entity_get_name(entity));
 			return false;
 		}
 	}

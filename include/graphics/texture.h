@@ -5,9 +5,7 @@
 // Textures represent an image on the graphics card
 // Note: textures do not contain their own sampler, unlike OpenGL
 
-DEFINE_HANDLE(Texture);
-
-typedef struct Sampler Sampler;
+DEFINE_HANDLE(Sampler);
 
 typedef enum
 {
@@ -27,15 +25,16 @@ typedef enum
 
 // Returns a sampler with the specified options
 // If a sampler with options doesn't exist it is created and stored
-Sampler* sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy);
+Sampler sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy);
 
-VkSampler sampler_get_vksampler(Sampler* sampler);
+VkSampler sampler_get_vksampler(Sampler sampler);
 
-void sampler_destroy(Sampler* sampler);
+void sampler_destroy(Sampler sampler);
 
 // Destroys all samplers
 void sampler_destroy_all();
 
+DEFINE_HANDLE(Texture);
 // Loads a texture from a file
 // The textures name is the full file path
 Texture texture_load(const char* file);

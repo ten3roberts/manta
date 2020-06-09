@@ -223,7 +223,7 @@ DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptor
 	return pack;
 }
 
-void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture* textures, Sampler** samplers)
+void descriptorpack_write(DescriptorPack* pack, VkDescriptorSetLayoutBinding* bindings, uint32_t binding_count, UniformBuffer** uniformbuffers, Texture* textures, Sampler* samplers)
 {
 	// vkDeviceWaitIdle(device);
 	// Find out how many of each type of descriptor type is required

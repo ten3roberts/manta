@@ -38,7 +38,7 @@ struct Material
 	uint32_t texture_count;
 	Texture textures[7];
 	uint32_t sampler_count;
-	Sampler* samplers[7];
+	Sampler samplers[7];
 	// The resource management part, inaccessible for the use
 	struct Material *prev, *next;
 };
