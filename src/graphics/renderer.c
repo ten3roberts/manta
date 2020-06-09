@@ -11,6 +11,7 @@
 #include "graphics/framebuffer.h"
 #include "utils.h"
 #include "magpie.h"
+#include "defines.h"
 
 #define ONE_FRAME_LIMIT 512
 
@@ -153,7 +154,7 @@ void renderer_submit(Scene* scene)
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	VkSemaphore wait_semaphores[] = {semaphores_image_available[current_frame]};
 	VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-	submit_info.waitSemaphoreCount = sizeof wait_semaphores / sizeof *wait_semaphores;
+	submit_info.waitSemaphoreCount = LENOF(wait_semaphores);
 	submit_info.pWaitSemaphores = wait_semaphores;
 	submit_info.pWaitDstStageMask = wait_stages;
 
@@ -163,7 +164,7 @@ void renderer_submit(Scene* scene)
 
 	// Specify which semaphores to signal on completion
 	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};
-	submit_info.signalSemaphoreCount = sizeof signal_semaphores / sizeof *signal_semaphores;
+	submit_info.signalSemaphoreCount = LENOF(signal_semaphores);
 	submit_info.pSignalSemaphores = signal_semaphores;
 
 	// Synchronise CPU-GPU
@@ -179,11 +180,11 @@ void renderer_submit(Scene* scene)
 	// Presentation
 	VkPresentInfoKHR present_info = {0};
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	present_info.waitSemaphoreCount = sizeof signal_semaphores / sizeof *signal_semaphores;
+	present_info.waitSemaphoreCount = LENOF(signal_semaphores);
 	present_info.pWaitSemaphores = signal_semaphores;
 
 	VkSwapchainKHR swapchains[] = {swapchain};
-	present_info.swapchainCount = sizeof swapchains / sizeof *swapchains;
+	present_info.swapchainCount = LENOF(swapchains);
 	present_info.pSwapchains = swapchains;
 	present_info.pImageIndices = &image_index;
 

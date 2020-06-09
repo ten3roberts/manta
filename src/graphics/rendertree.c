@@ -50,7 +50,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	}
 
 	// Create uniform buffers for entity data
-	node->entity_data = ub_create((sizeof node->entities / sizeof *node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
+	node->entity_data = ub_create(LENOF(node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
 
 	// Create and write set=2 for entity data
 	node->entity_data_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1);

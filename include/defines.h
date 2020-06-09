@@ -8,4 +8,6 @@
 
 #define MAX_FRAMES_IN_FLIGHT 3
 
+#define LENOF(l) (sizeof l / sizeof *l)
+
 #endif
