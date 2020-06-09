@@ -13,7 +13,7 @@ struct Entity
 	char name[256];
 	Transform transform;
 	Rigidbody rigidbody;
-	Material* material;
+	Material material;
 	vec4 color;
 	Mesh* mesh;
 	SphereCollider boundingsphere;
@@ -31,7 +31,7 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 	entity->rigidbody = rigidbody;
 	entity->material = material_get(material_name);
 
-	if (entity->material == NULL)
+	if (entity->material.index == HANDLE_INVALID_INDEX)
 	{
 		LOG_W("Unknown material %s. Using default material", material_name);
 		entity->material = material_get_default();
@@ -65,7 +65,7 @@ Rigidbody* entity_get_rigidbody(Entity* entity)
 {
 	return &entity->rigidbody;
 }
-Material* entity_get_material(Entity* entity)
+Material entity_get_material(Entity* entity)
 {
 	return entity->material;
 }

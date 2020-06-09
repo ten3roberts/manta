@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include "handle.h"
 
+
 DEFINE_HANDLE(GenericHandle)
 
 #define HANDLEPOOL_INDEX(pool, i) ((struct handle_wrapper*)((uint8_t*)(pool)->handles + (pool)->stride * (i)))

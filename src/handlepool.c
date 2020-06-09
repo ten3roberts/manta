@@ -39,12 +39,6 @@ const struct handle_wrapper* handlepool_alloc(handlepool_t* pool)
 	// Initialize new handles
 	for (uint32_t i = old_size; i < pool->size; i++)
 	{
-		int bytes = pool->size * pool->stride;
-		int off = pool->stride * i;
-		uint8_t* arr = (uint8_t*)(pool->handles);
-		arr += pool->stride * i;
-
-
 		struct handle_wrapper* wrapper = HANDLEPOOL_INDEX(pool, i);
 		wrapper->next = NULL;
 		wrapper->handle.index = i;

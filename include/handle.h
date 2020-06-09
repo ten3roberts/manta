@@ -16,6 +16,6 @@
 
 // Returns an invalid handle of the specified type
 #define INVALID(handle) (handle){ \
-	.index = -1, .pattern = -1};
-
+	.index = -1, .pattern = 0}
+#define HANDLE_INVALID_INDEX (((1 << MAX_HANDLE_INDEX_BITS)- 1))
 #endif

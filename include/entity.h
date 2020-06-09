@@ -16,7 +16,7 @@ const char* entity_get_name(Entity* entity);
 
 Transform* entity_get_transform(Entity* entity);
 Rigidbody* entity_get_rigidbody(Entity* entity);
-Material* entity_get_material(Entity* entity);
+Material entity_get_material(Entity* entity);
 Mesh* entity_get_mesh(Entity* entity);
 const SphereCollider* entity_get_boundingsphere(Entity* entity);
 vec4 entity_get_color(Entity* entity);

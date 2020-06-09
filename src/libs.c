@@ -22,6 +22,9 @@
 
 #define HASHTABLE_IMPLEMENTATION
 #include "hashtable.h"
+#define HANDLETABLE_IMPLEMENTATION
+#define handletable_create(keyfunc, hashfunc, compfunc) mp_bind(handletable_create(keyfunc, hashfunc, compfunc))
+#include "handletable.h"
 #define MEMPOOL_MAGPIE
 #define MEMPOOL_IMPLEMENTATION
 #define MEMPOOL_MESSAGE(m) LOG_E(m)
