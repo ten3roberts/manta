@@ -1,6 +1,6 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
-#include "defines.h"
+#include "handle.h"
 
 // Textures represent an image on the graphics card
 // Note: textures do not contain their own sampler, unlike OpenGL

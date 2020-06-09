@@ -5,6 +5,7 @@
 #include "magpie.h"
 #include "stb_image.h"
 #include "hashtable.h"
+#include "handlepool.h"
 
 static hashtable_t* sampler_table;
 
@@ -165,7 +166,6 @@ void sampler_destroy_all()
 
 typedef struct Texture_raw
 {
-	Texture handle;
 	// Name should not be modified after creation
 	char name[256];
 	int width;
@@ -182,110 +182,7 @@ typedef struct Texture_raw
 	bool owns_image;
 } Texture_raw;
 
-// Contains all textures one after another in memory
-// May resize and the pointer may change
-// Access by handles
-// Slots can be free
-static Texture_raw* texture_array = NULL;
-// The size of the texture array
-static uint32_t texture_array_size = 0;
-// The currently count of active textures
-static uint32_t texture_array_count = 0;
-
-// Finds memory for a texture
-// Initilizes handle member
-// Only handle should be returned outside this file
-// The returned value should not be stored across function calls
-static Texture_raw* texture_alloc()
-{
-	if (texture_array_count != texture_array_size)
-	{
-		for (uint32_t i = 0; i < texture_array_size; i++)
-		{
-			if (texture_array[i].handle.index == HANDLE_INDEX_FREE)
-			{
-				texture_array[i].handle.index = i;
-				// Generation count
-				texture_array[i].handle.pattern += 1;
-				return texture_array + i;
-			}
-		}
-	}
-
-	// Resize for a new slot
-	texture_array_size++;
-	texture_array_count++;
-	if(texture_array_size >= 2 << MAX_HANDLE_INDEX_BITS)
-	{
-		LOG_E("Maximum number of textures reached");
-		return NULL;
-	}
-	Texture_raw* tmp = realloc(texture_array, texture_array_size * sizeof(*texture_array));
-	if (tmp == NULL)
-	{
-		LOG_E("Failed to allocate memory for texture");
-		return NULL;
-	}
-	texture_array = tmp;
-	// Set the index to the array index
-	texture_array[texture_array_size - 1].handle.index = texture_array_size - 1;
-	// Start with 0, first generation
-	texture_array[texture_array_size - 1].handle.pattern = 0;
-
-	return texture_array + texture_array_size - 1;
-}
-
-// Marks the slot pointed to by handle as free
-// Frees internals
-// Throws an error on double free
-static void texture_free(Texture handle)
-{
-	if (handle.index >= texture_array_size)
-	{
-		LOG_E("Texture handle %d is not a valid slot index", handle.index);
-		return;
-	}
-
-	if (texture_array[handle.index].handle.index == HANDLE_INDEX_FREE || *(uint32_t*)&texture_array[handle.index].handle != *(uint32_t*)&handle)
-	{
-		LOG_E("Texture handle %d has already been freed", handle.index);
-		return;
-	}
-	Texture_raw* raw = texture_array + handle.index;
-	raw->handle.index = HANDLE_INDEX_FREE;
-	if (raw->owns_image)
-	{
-		vkDestroyImage(device, raw->vkimage, NULL);
-		vkFreeMemory(device, raw->memory, NULL);
-	}
-	vkDestroyImageView(device, raw->view, NULL);
-
-	texture_array_count--;
-	if (texture_array_count == 0)
-	{
-		free(texture_array);
-		texture_array = NULL;
-		texture_array_size = 0;
-		texture_array_count = 0;
-	}
-}
-
-static Texture_raw* texture_from_handle(Texture handle)
-{
-	if (handle.index >= texture_array_size)
-	{
-		LOG_E("Texture handle %d is not a valid slot index", handle.index);
-		return NULL;
-	}
-
-	if (texture_array[handle.index].handle.index == HANDLE_INDEX_FREE || *(uint32_t*)&texture_array[handle.index].handle != *(uint32_t*)&handle)
-	{
-		LOG_E("Texture handle %d is not valid", handle.index);
-		return NULL;
-	}
-
-	return texture_array + handle.index;
-}
+static handlepool_t texture_pool = HANDLEPOOL_INIT(sizeof(Texture_raw) + 100);
 
 // Loads a texture from a file
 // The textures name is the full file path
@@ -314,7 +211,7 @@ Texture texture_load(const char* file)
 	{
 		LOG_E("Failed to load texture %s", file);
 		stbi_image_free(pixels);
-		return (Texture){.index = HANDLE_INDEX_FREE, .pattern = -1};
+		return (Texture){.index = -1, .pattern = -1};
 	}
 
 	// Save the name
@@ -333,7 +230,10 @@ Texture texture_load(const char* file)
 Texture texture_create(const char* name, int width, int height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImageLayout layout,
 					   VkImageAspectFlags imageAspect)
 {
-	Texture_raw* raw = texture_alloc();
+	LOG("%d", sizeof (Texture_raw));
+	const struct handle_wrapper* wrapper = handlepool_alloc(&texture_pool);
+	Texture_raw* raw = (Texture_raw*)wrapper->data;
+	Texture handle = PUN_HANDLE(wrapper->handle, Texture);
 
 	if (name)
 	{
@@ -359,12 +259,14 @@ Texture texture_create(const char* name, int width, int height, VkFormat format,
 	if (layout != VK_IMAGE_LAYOUT_UNDEFINED)
 		transition_image_layout(raw->vkimage, format, VK_IMAGE_LAYOUT_UNDEFINED, layout);
 
-	return raw->handle;
+	return handle;
 }
 
 Texture texture_create_existing(const char* name, int width, int height, VkFormat format, VkSampleCountFlagBits samples, VkImageLayout layout, VkImage image, VkImageAspectFlags imageAspect)
 {
-	Texture_raw* raw = texture_alloc();
+	const struct handle_wrapper* wrapper = handlepool_alloc(&texture_pool);
+	Texture_raw* raw = (Texture_raw*)wrapper->data;
+	Texture handle = PUN_HANDLE(wrapper->handle, Texture);
 
 	if (name)
 	{
@@ -391,7 +293,7 @@ Texture texture_create_existing(const char* name, int width, int height, VkForma
 	// Create image view
 	raw->view = image_view_create(raw->vkimage, format, imageAspect);
 
-	return raw->handle;
+	return handle;
 }
 
 // Updates the texture data from host memory
@@ -399,7 +301,7 @@ void texture_update(Texture tex, uint8_t* pixeldata)
 { // Create a staging bufer
 	VkBuffer staging_buffer;
 	VkDeviceMemory staging_buffer_memory;
-	Texture_raw* raw = texture_from_handle(tex);
+	Texture_raw* raw = (Texture_raw*)handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle));
 	VkDeviceSize image_size = raw->size;
 
 	buffer_create(image_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &staging_buffer, &staging_buffer_memory,
@@ -426,11 +328,15 @@ void texture_update(Texture tex, uint8_t* pixeldata)
 
 Texture texture_get(const char* name)
 {
-	for (uint32_t i = 0; i < texture_array_size; i++)
+	for (uint32_t i = 0; i < texture_pool.size; i++)
 	{
-		if (strcmp(name, texture_array[i].name) == 0)
+		if (HANDLEPOOL_INDEX((&texture_pool), i)->next != NULL)
+			continue;
+
+		Texture_raw* raw = (Texture_raw*)HANDLEPOOL_INDEX((&texture_pool), i)->data;
+		if (strcmp(name, raw->name) == 0)
 		{
-			return texture_array[i].handle;
+			return PUN_HANDLE(HANDLEPOOL_INDEX((&texture_pool), i)->handle, Texture);
 		}
 	}
 
@@ -440,18 +346,29 @@ Texture texture_get(const char* name)
 
 void texture_destroy(Texture tex)
 {
-	texture_free(tex);
+	Texture_raw* raw = handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle));
+
+	if (raw->owns_image)
+	{
+		vkDestroyImage(device, raw->vkimage, NULL);
+		vkFreeMemory(device, raw->memory, NULL);
+	}
+	vkDestroyImageView(device, raw->view, NULL);
+	handlepool_free(&texture_pool, PUN_HANDLE(tex, GenericHandle));
 }
 
 void texture_destroy_all()
 {
-	for (uint32_t i = 0; i < texture_array_size; i++)
+	for (uint32_t i = 0; i < texture_pool.size; i++)
 	{
-		texture_free(texture_array[i].handle);
+		if (HANDLEPOOL_INDEX((&texture_pool), i)->next != NULL)
+			continue;
+
+		texture_destroy(PUN_HANDLE(HANDLEPOOL_INDEX((&texture_pool), i)->handle, Texture));
 	}
 }
 
 void* texture_get_image_view(Texture tex)
 {
-	return texture_from_handle(tex)->view;
+	return ((Texture_raw*)handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle)))->view;
 }
