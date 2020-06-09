@@ -61,7 +61,7 @@ void handlepool_free(handlepool_t* pool, GenericHandle handle)
 
 	struct handle_wrapper* wrapper = HANDLEPOOL_INDEX(pool, handle.index);
 
-	if (wrapper->next != NULL || *(uint32_t*)&wrapper->handle != *(uint32_t*)&handle)
+	if (wrapper->next != NULL || !HANDLE_COMPARE(wrapper->handle, handle))
 	{
 		LOG_E("Handle %d has already been freed", handle.index);
 		return;
@@ -90,8 +90,8 @@ void* handlepool_get_raw(handlepool_t* pool, GenericHandle handle)
 	}
 
 	struct handle_wrapper* wrapper = HANDLEPOOL_INDEX(pool, handle.index);
-	
-	if (wrapper->next != NULL || *(uint32_t*)&wrapper->handle != *(uint32_t*)&handle)
+
+	if (wrapper->next != NULL || !HANDLE_COMPARE(wrapper->handle, handle))
 	{
 		LOG_E("Handle %d is not valid", handle.index);
 		return NULL;

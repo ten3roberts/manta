@@ -97,13 +97,13 @@ Material material_load_internal(JSON* object)
 		material_table = handletable_create(keyfunc_material, handletable_hashfunc_string, handletable_comp_string);
 	}
 
-	/*// Insert material into tracking table after name is acquired
-	if (handletable_find(material_table, raw->name).index != HANDLE_INVALID_INDEX)
+	// Insert material into tracking table after name is acquired
+	if (!HANDLE_VALID(handletable_find(material_table, raw->name)))
 	{
 		LOG_W("Duplicate material %s", raw->name);
 		material_destroy(handle);
 		return INVALID(Material);
-	}*/
+	}
 
 	// Insert into table
 	handletable_insert(material_table, PUN_HANDLE(handle, GenericHandle));

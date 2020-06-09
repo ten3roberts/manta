@@ -31,7 +31,7 @@ Entity* entity_create(const char* name, const char* material_name, const char* m
 	entity->rigidbody = rigidbody;
 	entity->material = material_get(material_name);
 
-	if (entity->material.index == HANDLE_INVALID_INDEX)
+	if (!HANDLE_VALID(entity->material))
 	{
 		LOG_W("Unknown material %s. Using default material", material_name);
 		entity->material = material_get_default();
