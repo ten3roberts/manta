@@ -84,6 +84,7 @@ void handlepool_free(handlepool_t* pool, GenericHandle handle)
 		pool->handles = NULL;
 		pool->size = 0;
 		pool->count = 0;
+		pool->free_handles = NULL;
 	}
 }
 
@@ -92,7 +93,7 @@ void* handlepool_get_raw(handlepool_t* pool, GenericHandle handle)
 	if(HANDLE_COMPARE(handle, INVALID(GenericHandle)))
 	{
 		LOG_E("Handle is invalid");
-		return;
+		return NULL;
 	}
 
 	if (handle.index >= pool->size)
