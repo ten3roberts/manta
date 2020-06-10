@@ -232,7 +232,7 @@ void commandbuffer_destroy(Commandbuffer commandbuffer)
 	if (raw->fence && vkGetFenceStatus(device, raw->fence) != VK_SUCCESS)
 	{
 		// Queue for destruction
-		LOG_W("Command buffer is still in use, queueing");
+		LOG_S("Command buffer is still in use, queueing");
 		// Insert at head
 		raw->next = destroy_queue;
 		destroy_queue = commandbuffer;
