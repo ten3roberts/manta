@@ -25,6 +25,6 @@ struct GenericHandle
 
 #define HANDLE_COMPARE(a, b) (a.index == b.index && a.pattern == b.pattern)
 // Returns true if a handle is valid
-#define HANDLE_VALID(handle) (handle.index != -1)
+#define HANDLE_VALID(handle) (handle.index != ((1 << MAX_HANDLE_INDEX_BITS) - 1))
 
 #endif
