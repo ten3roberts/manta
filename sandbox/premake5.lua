@@ -7,7 +7,7 @@ include ("../")
 project "sandbox"
 	kind		"ConsoleApp"
 	language	"C"
-	targetdir	"../bin"
+	targetdir	"../bin/%{cfg.buildcfg}"
 	objdir		"../obj"
 
 	-- Add C and H files

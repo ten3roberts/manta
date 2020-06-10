@@ -15,7 +15,7 @@ int main(int argc, char** argv)
 	// Changes the working directory to be consistent no matter how the application is started
 	{
 		char buf[2048];
-		dir_up(argv[0], buf, sizeof buf, 2);
+		dir_up(argv[0], buf, sizeof buf, 3);
 		set_workingdir(buf);
 	}
 
