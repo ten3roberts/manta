@@ -66,19 +66,9 @@ static void renderer_rebuild(Scene* scene)
 	commandbuffer_end(commandbuffer);
 }
 
-int renderer_init()
+// Create main framebuffer
+static void renderer_create_framebuffer()
 {
-	// Load primitive models
-	model_load_collada("./assets/models/primitive.dae");
-
-	oneframe_buffer = ub_create(sizeof(struct EntityData) * ONE_FRAME_LIMIT, 0, 0);
-
-	oneframe_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count());
-
-	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL, NULL);
-
-	// Create main framebuffer
-
 	// Color
 	// Depth
 	// Swapchain image
@@ -87,13 +77,6 @@ int renderer_init()
 	Texture color_attachment = texture_create("color_attachment", swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_ASPECT_COLOR_BIT);
 
 	Texture depth_attachment = texture_create("depth_attachment", swapchain_extent.width, swapchain_extent.height, find_depth_format(), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	// Get the swapchain images
-	uint32_t swapchain_image_count = 0;
-	VkImage* swapchain_images = NULL;
-	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, NULL);
-	swapchain_images = malloc(swapchain_image_count * sizeof(VkImage));
-	vkGetSwapchainImagesKHR(device, swapchain, &swapchain_image_count, swapchain_images);
 
 	Texture swapchain_attachments[3] = {0};
 	for (uint32_t i = 0; i < swapchain_image_count; i++)
@@ -115,9 +98,23 @@ int renderer_init()
 	}
 
 	framebuffer_main = framebuffer_create(attachments, attachment_count);
+
 	for (uint32_t i = 0; i < swapchain_image_count; i++)
 		free(attachments[i]);
-	free(swapchain_images);
+}
+
+int renderer_init()
+{
+	// Load primitive models
+	model_load_collada("./assets/models/primitive.dae");
+
+	oneframe_buffer = ub_create(sizeof(struct EntityData) * ONE_FRAME_LIMIT, 0, 0);
+
+	oneframe_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count());
+
+	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL, NULL);
+
+	renderer_create_framebuffer();
 
 	// Create primary command buffers
 	for (int i = 0; i < 3; i++)
@@ -125,8 +122,32 @@ int renderer_init()
 		primarybuffers[i] = commandbuffer_create_primary(0, i);
 		oneframe_commands[i] = commandbuffer_create_secondary(0, i, primarybuffers[i]->fence, renderPass, framebuffer_main->vkFramebuffers[i]);
 	}
-
 	return 0;
+}
+
+void renderer_hint_resize()
+{
+	resize_event = 1;
+}
+
+static void renderer_resize()
+{
+	vkDeviceWaitIdle(device);
+	swapchain_recreate();
+
+	framebuffer_destroy(framebuffer_main);
+	renderer_create_framebuffer();
+
+	VkFence fences[3];
+	for (int i = 0; i < 3; i++)
+	{
+		commandbuffer_set_info(oneframe_commands[i], primarybuffers[i]->fence, renderPass, framebuffer_main->vkFramebuffers[i]);
+		fences[i] = primarybuffers[i]->fence;
+	}
+
+	rendertree_set_info(scene_get_rendertree(scene_get_current()), fences, framebuffer_main);
+
+	resize_event = 0;
 }
 
 void renderer_submit(Scene* scene)
@@ -195,7 +216,7 @@ void renderer_submit(Scene* scene)
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 	{
 		LOG_S("Suboptimal swapchain");
-		swapchain_recreate();
+		renderer_resize();
 		return;
 	}
 	if (result != VK_SUCCESS)
@@ -215,7 +236,7 @@ void renderer_begin()
 	// Skip rendering if window is minimized
 	if (window_get_minimized(graphics_get_window()))
 	{
-		SLEEP(0.1f);
+		SLEEP(0.2f);
 		return;
 	}
 
@@ -229,7 +250,7 @@ void renderer_begin()
 	// There has been one frame clear of resize events
 	else if (resize_event == 2)
 	{
-		swapchain_recreate();
+		renderer_resize();
 		resize_event = 0;
 	}
 
@@ -241,11 +262,6 @@ void renderer_begin()
 	commandbuffer_begin(oneframe_commands[image_index]);
 	material_bind(material_get_default(), oneframe_commands[image_index], oneframe_descriptors->sets[image_index]);
 	oneframe_draw_index = 0;
-}
-
-void renderer_resize()
-{
-	resize_event = 1;
 }
 
 void renderer_flag_rebuild()
@@ -314,6 +330,4 @@ void renderer_terminate()
 	framebuffer_destroy(framebuffer_main);
 
 	descriptorpack_destroy(oneframe_descriptors);
-
-	vkDeviceWaitIdle(device);
 }

@@ -23,7 +23,7 @@ void renderer_submit(Scene* scene);
 // Does not explicitely resize the window, but recreates the swapchain and pipelines
 // Will not immidiately resize until resize events stop
 // This is to avoid resizing every frame when user drag-resizes window
-void renderer_resize();
+void renderer_hint_resize();
 
 // Will frag to the renderer that the command buffers need to be rebuilt
 // The command buffers will be redrawn on submit

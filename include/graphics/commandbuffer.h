@@ -29,6 +29,7 @@ typedef struct CommandBuffer
 // Return value should not be copied and only be freed with commandbuffer_destroy
 CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame, VkFence fence, VkRenderPass renderPass, VkFramebuffer frameBuffer);
 
+void commandbuffer_set_info(CommandBuffer* commandbuffer, VkFence fence, VkRenderPass renderPass, VkFramebuffer frameBuffer);
 // Takes in a thread index since recording of command buffers from the same queues can not be done in pararell
 // thread index need to be less than RENDERER_MAX_THREADS
 // Creates a fence for the command buffer
@@ -44,6 +45,7 @@ void commandbuffer_begin(CommandBuffer* commandbuffer);
 void commandbuffer_end(CommandBuffer* commandbuffer);
 
 void commandbuffer_submit(CommandBuffer* commandbuffer);
+
 
 // Commandbuffer is destroyed immediately if the fence is signaled, I.e; not in use
 // If the command buffer is in use, it is queued for destruction and is tried again with commandbuffer_handle_destructions()

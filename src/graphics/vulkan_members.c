@@ -20,23 +20,11 @@ VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 VkImage* swapchain_images = NULL;
 uint32_t swapchain_image_count = 0;
 
-VkImageView* swapchain_image_views = NULL;
-uint32_t swapchain_image_view_count = 0;
-
 VkFormat swapchain_image_format;
 VkExtent2D swapchain_extent;
 
 VkDescriptorSetLayout global_descriptor_layout = VK_NULL_HANDLE;
 DescriptorPack* global_descriptors = NULL;
-
-VkImage color_image = NULL;
-VkDeviceMemory color_image_memory = NULL;
-VkImageView color_image_view = NULL;
-
-VkImage depth_image = NULL;
-VkDeviceMemory depth_image_memory = NULL;
-VkImageView depth_image_view = NULL;
-VkFormat depth_image_format = VK_FORMAT_UNDEFINED;
 
 VkSampleCountFlagBits msaa_samples = VK_SAMPLE_COUNT_1_BIT;
 

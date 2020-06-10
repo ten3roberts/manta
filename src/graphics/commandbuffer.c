@@ -58,13 +58,7 @@ CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame
 	commandbuffer->destroy_next = NULL;
 
 	// Fill in inheritance info struct
-	commandbuffer->inheritanceInfo = (VkCommandBufferInheritanceInfo){.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-																	  .pNext = NULL,
-																	  .renderPass = renderPass,
-																	  .subpass = 0,
-																	  .framebuffer = frameBuffer,
-																	  .queryFlags = 0,
-																	  .pipelineStatistics = 0};
+	commandbuffer_set_info(commandbuffer, fence, renderPass, frameBuffer);
 
 	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &commandbuffer->cmd);
 	if (result != VK_SUCCESS)
@@ -73,6 +67,19 @@ CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame
 		return NULL;
 	}
 	return commandbuffer;
+}
+
+void commandbuffer_set_info(CommandBuffer* commandbuffer, VkFence fence, VkRenderPass renderPass, VkFramebuffer frameBuffer)
+{
+	commandbuffer->fence = fence;
+
+	commandbuffer->inheritanceInfo = (VkCommandBufferInheritanceInfo){.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+																	  .pNext = NULL,
+																	  .renderPass = renderPass,
+																	  .subpass = 0,
+																	  .framebuffer = frameBuffer,
+																	  .queryFlags = 0,
+																	  .pipelineStatistics = 0};
 }
 
 CommandBuffer* commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)

@@ -45,6 +45,14 @@ Framebuffer* framebuffer_create(Texture** attachments, uint32_t attachment_count
 
 void framebuffer_destroy(Framebuffer* framebuffer)
 {
+
+	texture_destroy(framebuffer->attachments[0][0]);
+	texture_destroy(framebuffer->attachments[0][1]);
+
+	texture_destroy(framebuffer->attachments[0][2]);
+	texture_destroy(framebuffer->attachments[1][2]);
+	texture_destroy(framebuffer->attachments[2][2]);
+
 	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
 		vkDestroyFramebuffer(device, framebuffer->vkFramebuffers[i], NULL);

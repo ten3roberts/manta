@@ -54,6 +54,10 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 // All children inherit the thread index
 RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer* framebuffer);
 
+
+// Change the framebuffer of all nodes from node
+void rendertree_set_info(RenderTreeNode* node, VkFence* fences, Framebuffer* framebuffer);
+
 void rendertree_destroy(RenderTreeNode* node);
 
 // Updates the tree recursively from node(root)

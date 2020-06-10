@@ -88,6 +88,20 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	return node;
 }
 
+void rendertree_set_info(RenderTreeNode* node, VkFence* fences, Framebuffer* framebuffer)
+{
+	node->framebuffer = framebuffer;
+	node->changed = ALL_CHANGED;
+
+	for (int i = 0; i < 3; i++)
+	{
+		commandbuffer_set_info(node->commandbuffers[i], fences[i], renderPass, framebuffer->vkFramebuffers[i]);
+	}
+
+	for (uint32_t i = 0; node->children[0] && i < 8; i++)
+		rendertree_set_info(node->children[i], fences, framebuffer);
+}
+
 void rendertree_subdivide(RenderTreeNode* node)
 {
 	float new_width = (node->halfwidth) / 2;
@@ -302,7 +316,6 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		}
 		//renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 		// Record into primary
-
 		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
 
 		// Remove changed bit for this frame

@@ -51,7 +51,7 @@ int application_start(int argc, char** argv)
 	for (int i = 0; i < 1000; i++)
 	{
 		entity_create("multiple", "grid", "cube", (Transform){vec3_add(vec3_random_sphere_even(10, 200), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
-					  (Rigidbody){.velocity = vec3_random_sphere(0, 1)});
+					  (Rigidbody){.velocity = vec3_random_sphere(0, 0)});
 	}
 
 	while (!window_get_close(window))
@@ -130,7 +130,7 @@ void application_send_event(Event event)
 	if (event.type == EVENT_WINDOW_RESIZE && event.idata[0] != 0 && event.idata[1] != 0)
 	{
 		LOG("%d %d", event.idata[0], event.idata[1]);
-		renderer_resize();
+		renderer_hint_resize();
 	}
 	/*if (event.type == EVENT_KEY)
 		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);*/

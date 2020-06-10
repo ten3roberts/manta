@@ -58,23 +58,12 @@ extern VkSwapchainKHR swapchain;
 extern VkImage* swapchain_images;
 extern uint32_t swapchain_image_count;
 
-extern VkImageView* swapchain_image_views;
-extern uint32_t swapchain_image_view_count;
 
 extern VkFormat swapchain_image_format;
 extern VkExtent2D swapchain_extent;
 
 extern VkDescriptorSetLayout global_descriptor_layout;
 extern DescriptorPack* global_descriptors;
-
-extern VkImage color_image;
-extern VkDeviceMemory color_image_memory;
-extern VkImageView color_image_view;
-
-extern VkImage depth_image;
-extern VkDeviceMemory depth_image_memory;
-extern VkImageView depth_image_view;
-extern VkFormat depth_image_format;
 
 extern VkSampleCountFlagBits msaa_samples;
 

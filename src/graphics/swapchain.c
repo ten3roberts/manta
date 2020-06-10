@@ -79,6 +79,7 @@ int swapchain_create()
 	LOG("Swapchain contains %d images", swapchain_image_count);
 	return 0;
 }
+
 int swapchain_recreate()
 {
 	vkDeviceWaitIdle(device);
@@ -86,7 +87,7 @@ int swapchain_recreate()
 
 	swapchain_destroy();
 
-	swapchain_create(NULL);
+	swapchain_create();
 	create_render_pass();
 
 	pipeline_recreate_all();
@@ -102,31 +103,16 @@ int swapchain_recreate()
 int swapchain_destroy()
 {
 	// Destroy color buffer
-	vkDestroyImageView(device, color_image_view, NULL);
-	vkDestroyImage(device, color_image, NULL);
-	vkFreeMemory(device, color_image_memory, NULL);
-	// Destroy depth buffer
-	vkDestroyImageView(device, depth_image_view, NULL);
-	vkDestroyImage(device, depth_image, NULL);
-	vkFreeMemory(device, depth_image_memory, NULL);
 
 	// Destroy render pass
 	vkDestroyRenderPass(device, renderPass, NULL);
 	renderPass = NULL;
-
-	// Destroy the image views since they were explicitely created
-	for (size_t i = 0; i < swapchain_image_view_count; i++)
-		vkDestroyImageView(device, swapchain_image_views[i], NULL);
 
 	vkDestroySwapchainKHR(device, swapchain, NULL);
 
 	free(swapchain_images);
 	swapchain_images = NULL;
 	swapchain_image_count = 0;
-
-	free(swapchain_image_views);
-	swapchain_image_views = NULL;
-	swapchain_image_view_count = 0;
 
 	return 0;
 }
