@@ -1,3 +1,4 @@
+#include "window.h"
 #include "string.h"
 #include "application.h"
 #include "keycodes.h"
@@ -15,14 +16,14 @@
 #define WS_BORDERLESS 2
 #define WS_FULLSCREEN 4
 
-typedef struct
+struct Window
 {
 	char title[256];
 	int width, height;
 	int in_focus;
 	int should_close;
 	GLFWwindow* raw_window;
-} Window;
+};
 
 int glfw_initialized = 0;
 size_t window_count = 0;
@@ -208,6 +209,27 @@ int window_set_icon(Window* window, const char* small, const char* large)
 	stbi_image_free(images[0].pixels);
 	stbi_image_free(images[1].pixels);
 	return EXIT_SUCCESS;
+}
+
+void window_set_cursor_mode(Window* window, enum CursorMode mode)
+{
+	int value = 0;
+	switch (mode)
+	{
+	case CURSORMODE_NORMAL:
+		value = GLFW_CURSOR_NORMAL;
+		break;
+	case CURSORMODE_HIDDEN:
+		value = GLFW_CURSOR_HIDDEN;
+		break;
+	case CURSORMODE_LOCKED:
+		value = GLFW_CURSOR_DISABLED;
+		break;
+	default:
+		value = GLFW_CURSOR_NORMAL;
+	}
+	
+	glfwSetInputMode(window->raw_window, GLFW_CURSOR, value);
 }
 
 void window_destroy(Window* window)
