@@ -53,6 +53,12 @@ const struct handle_wrapper* handlepool_alloc(handlepool_t* pool)
 // Checks if handle is still valid or double free
 void handlepool_free(handlepool_t* pool, GenericHandle handle)
 {
+	if(HANDLE_COMPARE(handle, INVALID(GenericHandle)))
+	{
+		LOG_E("Handle is invalid");
+		return;
+	}
+
 	if (handle.index >= pool->size)
 	{
 		LOG_E("Handle %d is not a valid slot index", handle.index);
@@ -83,6 +89,12 @@ void handlepool_free(handlepool_t* pool, GenericHandle handle)
 
 void* handlepool_get_raw(handlepool_t* pool, GenericHandle handle)
 {
+	if(HANDLE_COMPARE(handle, INVALID(GenericHandle)))
+	{
+		LOG_E("Handle is invalid");
+		return;
+	}
+
 	if (handle.index >= pool->size)
 	{
 		LOG_E("Handle %d is not a valid slot index", handle.index);
@@ -93,7 +105,7 @@ void* handlepool_get_raw(handlepool_t* pool, GenericHandle handle)
 
 	if (wrapper->next != NULL || !HANDLE_COMPARE(wrapper->handle, handle))
 	{
-		LOG_E("Handle %d is not valid", handle.index);
+		LOG_E("Handle %d has already been freed", handle.index);
 		return NULL;
 	}
 
