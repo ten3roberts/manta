@@ -23,7 +23,6 @@ Vulkan:
   - Allow for long term mapping of buffer memory
   - Uniform buffer pool to respect memory limits
   - Wrap globals in struct
-  - Separate sampler and textures
 
 General bugs:
   
@@ -35,8 +34,8 @@ Window:
 
 General Features:
   - (done) Hashtable leak trace
-  - Improve logging
+  - (done) Improve logging
   - Dynamic arrays
   - Better model loadings
   - Libjson to use arrays rather than linked lists
-  - LOG_E to abort
+  - (done) LOG_E to abort
