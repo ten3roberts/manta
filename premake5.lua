@@ -56,7 +56,7 @@ project "manta"
 	kind "StaticLib"
 
 	language "C"
-	targetdir "bin"
+	targetdir "bin/%{cfg.buildcfg}"
 	files {"src/**.h", "src/**.c"}
 	includedirs { "include", "src", "vendor", "vendor/glfw/include", "vendor/headerlibs" }	
 
