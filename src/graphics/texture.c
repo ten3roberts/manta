@@ -329,7 +329,7 @@ Texture texture_get(const char* name)
 
 void texture_destroy(Texture tex)
 {
-	Texture_raw* raw = handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle));
+	Texture_raw* raw = handlepool_get_raw(&texture_pool, tex);
 
 	if (raw->owns_image)
 	{
@@ -337,7 +337,7 @@ void texture_destroy(Texture tex)
 		vkFreeMemory(device, raw->memory, NULL);
 	}
 	vkDestroyImageView(device, raw->view, NULL);
-	handlepool_free(&texture_pool, PUN_HANDLE(tex, GenericHandle));
+	handlepool_free(&texture_pool, tex);
 }
 
 void texture_destroy_all()
@@ -353,5 +353,5 @@ void texture_destroy_all()
 
 void* texture_get_image_view(Texture tex)
 {
-	return ((Texture_raw*)handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle)))->view;
+	return ((Texture_raw*)handlepool_get_raw(&texture_pool, tex))->view;
 }

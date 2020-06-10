@@ -39,3 +39,4 @@ General Features:
   - Better model loadings
   - Libjson to use arrays rather than linked lists
   - (done) LOG_E to abort
+  - Remove handle validity checks in release builds

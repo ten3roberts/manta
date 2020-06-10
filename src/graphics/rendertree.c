@@ -13,11 +13,12 @@
 static uint32_t node_count = 0;
 static mempool_t node_pool = MEMPOOL_INIT(sizeof(RenderTreeNode), 1024);
 static VkDescriptorSetLayout entity_data_layout = VK_NULL_HANDLE;
-static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){.binding = 0,
-																						 .descriptorCount = 1,
-																						 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-																						 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-																						 .pImmutableSamplers = 0};
+static VkDescriptorSetLayoutBinding entity_data_binding = (VkDescriptorSetLayoutBinding){
+	.binding = 0,
+	.descriptorCount = 1,
+	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+	.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+	.pImmutableSamplers = 0};
 
 VkDescriptorSetLayoutBinding* rendertree_get_descriptor_bindings(void)
 {
@@ -46,7 +47,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		// The fence is assigned on render
-		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, i, VK_NULL_HANDLE, renderPass, node->framebuffer->vkFramebuffers[i]);
+		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, INVALID(Commandbuffer), renderPass, node->framebuffer->vkFramebuffers[i]);
 	}
 
 	// Create uniform buffers for entity data
@@ -79,7 +80,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		// The fence is assigned on render
-		node->commandbuffers[i] = NULL;
+		node->commandbuffers[i] = INVALID(Commandbuffer);
 	}
 
 	node->entity_data = NULL;
@@ -88,18 +89,18 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	return node;
 }
 
-void rendertree_set_info(RenderTreeNode* node, VkFence* fences, Framebuffer* framebuffer)
+void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer* framebuffer)
 {
 	node->framebuffer = framebuffer;
 	node->changed = ALL_CHANGED;
 
 	for (int i = 0; i < 3; i++)
 	{
-		commandbuffer_set_info(node->commandbuffers[i], fences[i], renderPass, framebuffer->vkFramebuffers[i]);
+		commandbuffer_set_info(node->commandbuffers[i], primarycommands[i], renderPass, framebuffer->vkFramebuffers[i]);
 	}
 
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
-		rendertree_set_info(node->children[i], fences, framebuffer);
+		rendertree_set_info(node->children[i], primarycommands, framebuffer);
 }
 
 void rendertree_subdivide(RenderTreeNode* node)
@@ -268,7 +269,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame)
 	}
 }
 
-void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* camera, uint32_t frame)
+void rendertree_render(RenderTreeNode* node, Commandbuffer primary, Camera* camera, uint32_t frame)
 {
 	// Render entities if not empty
 	if (node->entity_count != 0)
@@ -293,7 +294,7 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		ub_unmap(node->entity_data, frame);
 
 		// Assign fence from primary for proper destruction
-		node->commandbuffers[frame]->fence = primary->fence;
+		commandbuffer_set_info(node->commandbuffers[frame], primary, renderPass, node->framebuffer->vkFramebuffers[frame]);
 
 		// Needs to rerecord secondary
 		if (node->changed & (1 << frame))
@@ -316,7 +317,8 @@ void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* cam
 		}
 		//renderer_draw_cube_wire(node->center, quat_identity, (vec3){node->halfwidth, node->halfwidth, node->halfwidth}, vec4_hsv(node->depth, 1, 1));
 		// Record into primary
-		vkCmdExecuteCommands(primary->cmd, 1, &node->commandbuffers[frame]->cmd);
+		VkCommandBuffer commands_tmp = commandbuffer_vk(node->commandbuffers[frame]);
+		vkCmdExecuteCommands(commandbuffer_vk(primary), 1, &commands_tmp);
 
 		// Remove changed bit for this frame
 		node->changed = node->changed & ~(1 << frame);

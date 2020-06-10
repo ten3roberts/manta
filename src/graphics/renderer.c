@@ -23,9 +23,9 @@ static int resize_event;
 
 static uint8_t flag_rebuild = 0;
 
-static CommandBuffer* primarybuffers[3];
+static Commandbuffer primarycommands[3];
 
-static CommandBuffer* oneframe_commands[3];
+static Commandbuffer oneframe_commands[3];
 static UniformBuffer* oneframe_buffer = NULL;
 static DescriptorPack* oneframe_descriptors = NULL;
 static int oneframe_draw_index = 0;
@@ -38,7 +38,7 @@ static Framebuffer* framebuffer_main = NULL;
 // Needs to be called after renderer_begin
 static void renderer_rebuild(Scene* scene)
 {
-	CommandBuffer* commandbuffer = primarybuffers[image_index];
+	Commandbuffer commandbuffer = primarycommands[image_index];
 	commandbuffer_begin(commandbuffer);
 
 	// Begin render pass
@@ -51,7 +51,7 @@ static void renderer_rebuild(Scene* scene)
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
 	render_pass_info.clearValueCount = 2;
 	render_pass_info.pClearValues = clear_values;
-	vkCmdBeginRenderPass(commandbuffer->cmd, &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+	vkCmdBeginRenderPass(commandbuffer_vk(commandbuffer), &render_pass_info, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 	// Iterate all entities
 	RenderTreeNode* rendertree = scene_get_rendertree(scene);
@@ -61,8 +61,9 @@ static void renderer_rebuild(Scene* scene)
 	// One frame draws
 	commandbuffer_end(oneframe_commands[image_index]);
 	//oneframe_buffer_mapped = NULL;
-	vkCmdExecuteCommands(commandbuffer->cmd, 1, &oneframe_commands[image_index]->cmd);
-	vkCmdEndRenderPass(commandbuffer->cmd);
+	VkCommandBuffer tmp = commandbuffer_vk(oneframe_commands[image_index]);
+	vkCmdExecuteCommands(commandbuffer_vk(commandbuffer), 1, &tmp);
+	vkCmdEndRenderPass(commandbuffer_vk(commandbuffer));
 	commandbuffer_end(commandbuffer);
 }
 
@@ -116,11 +117,11 @@ int renderer_init()
 
 	renderer_create_framebuffer();
 
-	// Create primary command buffers
+	// Create command buffers
 	for (int i = 0; i < 3; i++)
 	{
-		primarybuffers[i] = commandbuffer_create_primary(0, i);
-		oneframe_commands[i] = commandbuffer_create_secondary(0, i, primarybuffers[i]->fence, renderPass, framebuffer_main->vkFramebuffers[i]);
+		primarycommands[i] = commandbuffer_create_primary(0);
+		oneframe_commands[i] = commandbuffer_create_secondary(0, primarycommands[i], renderPass, framebuffer_main->vkFramebuffers[i]);
 	}
 	return 0;
 }
@@ -138,14 +139,12 @@ static void renderer_resize()
 	framebuffer_destroy(framebuffer_main);
 	renderer_create_framebuffer();
 
-	VkFence fences[3];
 	for (int i = 0; i < 3; i++)
 	{
-		commandbuffer_set_info(oneframe_commands[i], primarybuffers[i]->fence, renderPass, framebuffer_main->vkFramebuffers[i]);
-		fences[i] = primarybuffers[i]->fence;
+		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffer_main->vkFramebuffers[i]);
 	}
 
-	rendertree_set_info(scene_get_rendertree(scene_get_current()), fences, framebuffer_main);
+	rendertree_set_info(scene_get_rendertree(scene_get_current()), primarycommands, framebuffer_main);
 
 	resize_event = 0;
 }
@@ -163,9 +162,10 @@ void renderer_submit(Scene* scene)
 
 	// Submit render queue
 	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
-	if (primarybuffers[image_index]->fence != VK_NULL_HANDLE)
+	if (commandbuffer_fence(primarycommands[image_index]) != VK_NULL_HANDLE)
 	{
-		vkWaitForFences(device, 1, &primarybuffers[image_index]->fence, VK_TRUE, UINT64_MAX);
+		VkFence fence = commandbuffer_fence(primarycommands[image_index]);
+		vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
 	}
 
 	// Submit render queue
@@ -181,7 +181,8 @@ void renderer_submit(Scene* scene)
 
 	// Specify which command buffers to submit for execution
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &primarybuffers[image_index]->cmd;
+	VkCommandBuffer vkcommandbuffer = commandbuffer_vk(primarycommands[image_index]);
+	submit_info.pCommandBuffers = &vkcommandbuffer;
 
 	// Specify which semaphores to signal on completion
 	VkSemaphore signal_semaphores[] = {semaphores_render_finished[current_frame]};
@@ -189,9 +190,10 @@ void renderer_submit(Scene* scene)
 	submit_info.pSignalSemaphores = signal_semaphores;
 
 	// Synchronise CPU-GPU
-	vkResetFences(device, 1, &primarybuffers[current_frame]->fence);
+	VkFence fence = commandbuffer_fence(primarycommands[current_frame]);
+	vkResetFences(device, 1, &fence);
 
-	VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, primarybuffers[current_frame]->fence);
+	VkResult result = vkQueueSubmit(graphics_queue, 1, &submit_info, fence);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to submit draw command buffer - code %d", result);
@@ -254,7 +256,9 @@ void renderer_begin()
 		resize_event = 0;
 	}
 
-	vkWaitForFences(device, 1, &primarybuffers[current_frame]->fence, VK_TRUE, UINT64_MAX);
+	VkFence fence = commandbuffer_fence(primarycommands[current_frame]);
+
+	vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
 
 	vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, semaphores_image_available[current_frame], VK_NULL_HANDLE, &image_index);
 
@@ -324,7 +328,7 @@ void renderer_terminate()
 	for (int i = 0; i < 3; i++)
 	{
 		commandbuffer_destroy(oneframe_commands[i]);
-		commandbuffer_destroy(primarybuffers[i]);
+		commandbuffer_destroy(primarycommands[i]);
 	}
 
 	framebuffer_destroy(framebuffer_main);

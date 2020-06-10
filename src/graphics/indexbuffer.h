@@ -14,5 +14,5 @@ typedef struct
 
 // Creates and allocates an index buffer
 IndexBuffer* ib_create(uint32_t* indices, uint32_t index_count);
-void ib_bind(IndexBuffer* ib, CommandBuffer* commandbuffer);
+void ib_bind(IndexBuffer* ib, Commandbuffer commandbuffer);
 void ib_destroy(IndexBuffer* ib);

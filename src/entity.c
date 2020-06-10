@@ -105,7 +105,7 @@ void entity_update_shaderdata(Entity* entity, void* data_write, uint32_t index)
 }
 
 // Is only called irreguraly when command buffers are rebuilt
-void entity_render(Entity* entity, CommandBuffer* commandbuffer, uint32_t index, VkDescriptorSet data_descriptors)
+void entity_render(Entity* entity, Commandbuffer commandbuffer, uint32_t index, VkDescriptorSet data_descriptors)
 {
 	// Binding is done by renderer
 	material_bind(entity->material, commandbuffer, data_descriptors);

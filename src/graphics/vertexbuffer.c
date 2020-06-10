@@ -64,11 +64,11 @@ void vb_copy_data(VertexBuffer* vb)
 	vkFreeMemory(device, staging_buffer_memory, NULL);
 }
 
-void vb_bind(VertexBuffer* vb, CommandBuffer* commandbuffer)
+void vb_bind(VertexBuffer* vb, Commandbuffer commandbuffer)
 {
 	VkBuffer vertex_buffers[] = {vb->buffer};
 	VkDeviceSize offsets[] = {vb->offset};
-	vkCmdBindVertexBuffers(commandbuffer->cmd, 0, 1, vertex_buffers, offsets);
+	vkCmdBindVertexBuffers(commandbuffer_vk(commandbuffer), 0, 1, vertex_buffers, offsets);
 }
 
 void vb_destroy(VertexBuffer* vb)

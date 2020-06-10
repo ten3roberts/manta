@@ -3,10 +3,28 @@
 #include "mempool.h"
 #include "magpie.h"
 #include "log.h"
+#include "handlepool.h"
 
 static VkCommandPool commandpools[RENDERER_MAX_THREADS] = {0};
-static mempool_t command_ptr_pool[RENDERER_MAX_THREADS] = {MEMPOOL_INIT(sizeof(CommandBuffer), 64), MEMPOOL_INIT(sizeof(CommandBuffer), 64),
-														   MEMPOOL_INIT(sizeof(CommandBuffer), 64), MEMPOOL_INIT(sizeof(CommandBuffer), 64)};
+
+typedef struct
+{
+	// One command buffer for each frame
+	VkCommandBuffer cmd;
+	VkCommandBufferLevel level;
+
+	// The fence that gets signaled when command buffer is complete
+	VkFence fence;
+	// Signifies which pool it was allocated from
+	// Should not be changed
+	uint8_t thread_idx;
+	bool recording;
+	VkCommandBufferInheritanceInfo inheritanceInfo;
+	// If in destroy queue
+	Commandbuffer next;
+} Commandbuffer_raw;
+
+static handlepool_t handlepool = HANDLEPOOL_INIT(sizeof(Commandbuffer_raw));
 
 static int commandpool_create(uint8_t thread_idx)
 {
@@ -26,12 +44,12 @@ static int commandpool_create(uint8_t thread_idx)
 	return 0;
 }
 
-CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame, VkFence fence, VkRenderPass renderPass, VkFramebuffer frameBuffer)
+Commandbuffer commandbuffer_create_secondary(uint8_t thread_idx, Commandbuffer primary, VkRenderPass renderPass, VkFramebuffer frameBuffer)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{
 		LOG_E("Thread index of %d is greater than the maximum number of threads %d", thread_idx, RENDERER_MAX_THREADS);
-		return NULL;
+		return INVALID(Commandbuffer);
 	}
 
 	// Create command pool if it doesn't exist
@@ -49,45 +67,34 @@ CommandBuffer* commandbuffer_create_secondary(uint8_t thread_idx, uint32_t frame
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 	allocInfo.commandBufferCount = 1;
 
-	CommandBuffer* commandbuffer = mempool_alloc(&command_ptr_pool[thread_idx]);
-	commandbuffer->thread_idx = thread_idx;
-	commandbuffer->recording = false;
-	commandbuffer->frame = frame;
-	commandbuffer->fence = fence;
-	commandbuffer->level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-	commandbuffer->destroy_next = NULL;
+	const struct handle_wrapper* wrapper = handlepool_alloc(&handlepool);
+	Commandbuffer_raw* raw = (Commandbuffer_raw*)wrapper->data;
+	Commandbuffer handle = wrapper->handle;
+
+	raw->thread_idx = thread_idx;
+	raw->recording = false;
+	raw->level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+	raw->next = INVALID(Commandbuffer);
 
 	// Fill in inheritance info struct
-	commandbuffer_set_info(commandbuffer, fence, renderPass, frameBuffer);
+	commandbuffer_set_info(handle, primary, renderPass, frameBuffer);
 
-	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &commandbuffer->cmd);
+	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &raw->cmd);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create command buffers - code %d", result);
-		return NULL;
+		return INVALID(Commandbuffer);
 	}
-	return commandbuffer;
+
+	return handle;
 }
 
-void commandbuffer_set_info(CommandBuffer* commandbuffer, VkFence fence, VkRenderPass renderPass, VkFramebuffer frameBuffer)
-{
-	commandbuffer->fence = fence;
-
-	commandbuffer->inheritanceInfo = (VkCommandBufferInheritanceInfo){.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-																	  .pNext = NULL,
-																	  .renderPass = renderPass,
-																	  .subpass = 0,
-																	  .framebuffer = frameBuffer,
-																	  .queryFlags = 0,
-																	  .pipelineStatistics = 0};
-}
-
-CommandBuffer* commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)
+Commandbuffer commandbuffer_create_primary(uint8_t thread_idx)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{
 		LOG_E("Thread index of %d is greater than the maximum number of threads %d", thread_idx, RENDERER_MAX_THREADS);
-		return NULL;
+		return INVALID(Commandbuffer);
 	}
 
 	// Create command pool if it doesn't exist
@@ -105,20 +112,21 @@ CommandBuffer* commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	CommandBuffer* commandbuffer = mempool_alloc(&command_ptr_pool[thread_idx]);
-	commandbuffer->thread_idx = thread_idx;
-	commandbuffer->recording = false;
-	commandbuffer->frame = frame;
-	commandbuffer->level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandbuffer->inheritanceInfo = (VkCommandBufferInheritanceInfo){0};
-	commandbuffer->destroy_next = NULL;
+	const struct handle_wrapper* wrapper = handlepool_alloc(&handlepool);
+	Commandbuffer_raw* raw = (Commandbuffer_raw*)wrapper->data;
+	Commandbuffer handle = wrapper->handle;
+	raw->thread_idx = thread_idx;
+	raw->recording = false;
+	raw->level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	raw->inheritanceInfo = (VkCommandBufferInheritanceInfo){0};
+	raw->next = INVALID(Commandbuffer);
 
-	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &commandbuffer->cmd);
+	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &raw->cmd);
 
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create command buffers - code %d", result);
-		return NULL;
+		return INVALID(Commandbuffer);
 	}
 
 	// Create fence
@@ -126,102 +134,139 @@ CommandBuffer* commandbuffer_create_primary(uint8_t thread_idx, uint32_t frame)
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	result = vkCreateFence(device, &fence_info, NULL, &commandbuffer->fence);
+	result = vkCreateFence(device, &fence_info, NULL, &raw->fence);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create command buffer fence - code %d", result);
-		return NULL;
+		return INVALID(Commandbuffer);
 	}
 
-	return commandbuffer;
+	return handle;
 }
 
-void commandbuffer_begin(CommandBuffer* commandbuffer)
+void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, VkFramebuffer frameBuffer)
 {
-	vkResetCommandBuffer(commandbuffer->cmd, 0);
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+	if (HANDLE_VALID(primary))
+		raw->fence = commandbuffer_fence(primary);
+	else
+		raw->fence = VK_NULL_HANDLE;
+
+	raw->inheritanceInfo = (VkCommandBufferInheritanceInfo){
+		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+		.pNext = NULL,
+		.renderPass = renderPass,
+		.subpass = 0,
+		.framebuffer = frameBuffer,
+		.queryFlags = 0,
+		.pipelineStatistics = 0};
+}
+
+void commandbuffer_begin(Commandbuffer commandbuffer)
+{
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+
+	vkResetCommandBuffer(raw->cmd, 0);
 	VkCommandBufferBeginInfo begin_info = {0};
-	if (commandbuffer->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+	if (raw->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
 	{
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		begin_info.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		begin_info.pInheritanceInfo = &commandbuffer->inheritanceInfo;
+		begin_info.pInheritanceInfo = &raw->inheritanceInfo;
 
 		// Start recording
 	}
-	else if (commandbuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+	else if (raw->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
 	{
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		begin_info.flags = 0;
 		begin_info.pInheritanceInfo = NULL;
 	}
 
-	VkResult result = vkBeginCommandBuffer(commandbuffer->cmd, &begin_info);
+	VkResult result = vkBeginCommandBuffer(raw->cmd, &begin_info);
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to start recording of command buffer");
 	}
-	commandbuffer->recording = true;
+	raw->recording = true;
 }
 // This will end recording of a primary or secondary command buffer
-void commandbuffer_end(CommandBuffer* commandbuffer)
+void commandbuffer_end(Commandbuffer commandbuffer)
 {
-	vkEndCommandBuffer(commandbuffer->cmd);
-	commandbuffer->recording = false;
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+
+	vkEndCommandBuffer(raw->cmd);
+	raw->recording = false;
 }
 
-void commandbuffer_submit(CommandBuffer* commandbuffer)
+void commandbuffer_submit(Commandbuffer commandbuffer)
 {
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+
 	VkSubmitInfo submitInfo = {0};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandbuffer->cmd;
+	submitInfo.pCommandBuffers = &raw->cmd;
 
 	vkQueueSubmit(graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
 }
 
-static CommandBuffer* destroy_queue = NULL;
-
-void commandbuffer_destroy(CommandBuffer* commandbuffer)
+VkCommandBuffer commandbuffer_vk(Commandbuffer commandbuffer)
 {
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+	return raw->cmd;
+}
+VkFence commandbuffer_fence(Commandbuffer commandbuffer)
+{
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+	return raw->fence;
+}
+
+static Commandbuffer destroy_queue = INVALID(Commandbuffer);
+
+void commandbuffer_destroy(Commandbuffer commandbuffer)
+{
+	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
+
 	// Command buffer is in use
-	if (commandbuffer->fence && vkGetFenceStatus(device, commandbuffer->fence) != VK_SUCCESS)
+	if (raw->fence && vkGetFenceStatus(device, raw->fence) != VK_SUCCESS)
 	{
 		// Queue for destruction
 		LOG_W("Command buffer is still in use, queueing");
 		// Insert at head
-		commandbuffer->destroy_next = destroy_queue;
+		raw->next = destroy_queue;
 		destroy_queue = commandbuffer;
 		return;
 	}
-	// Not in use, destroy immediately
 
-	if (commandbuffer->recording)
-		vkEndCommandBuffer(commandbuffer->cmd);
+	// Not in use, destroy immediately
+	if (raw->recording)
+		vkEndCommandBuffer(raw->cmd);
 
 	vkQueueWaitIdle(graphics_queue);
 
-	vkFreeCommandBuffers(device, commandpools[commandbuffer->thread_idx], 1, &commandbuffer->cmd);
-	if (commandbuffer->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
-		vkDestroyFence(device, commandbuffer->fence, NULL);
+	vkFreeCommandBuffers(device, commandpools[raw->thread_idx], 1, &raw->cmd);
+	if (raw->level == VK_COMMAND_BUFFER_LEVEL_PRIMARY)
+		vkDestroyFence(device, raw->fence, NULL);
 
-	uint32_t thread_idx = commandbuffer->thread_idx;
-	mempool_free(&command_ptr_pool[thread_idx], commandbuffer);
+	handlepool_free(&handlepool, commandbuffer);
 }
 
 uint32_t commandbuffer_handle_destructions()
 {
-	CommandBuffer* prev = NULL;
-	CommandBuffer* item = destroy_queue;
-	CommandBuffer* next = NULL;
+	Commandbuffer item = destroy_queue;
+	Commandbuffer prev = INVALID(Commandbuffer);
+	Commandbuffer next = INVALID(Commandbuffer);
 	uint32_t destroyed = 0;
-	while (item)
+	while (HANDLE_VALID(item))
 	{
-		next = item->destroy_next;
-		if (vkGetFenceStatus(device, item->fence) == VK_SUCCESS)
+		Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, item);
+		next = raw->next;
+		if (vkGetFenceStatus(device, raw->fence) == VK_SUCCESS)
 		{
-			if (prev)
+			if (HANDLE_VALID(prev))
 			{
-				prev->destroy_next = next;
+				((Commandbuffer_raw*)handlepool_get_raw(&handlepool, prev))->next = next;
 			}
 			// At head
 			else

@@ -282,28 +282,28 @@ int buffer_create(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyF
 
 void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_offset, uint32_t dst_offset)
 {
-	CommandBuffer* commandbuffer = single_use_commands_begin();
+	Commandbuffer commandbuffer = single_use_commands_begin();
 
 	VkBufferCopy copyRegion = {0};
 	copyRegion.srcOffset = src_offset;
 	copyRegion.dstOffset = dst_offset;
 	copyRegion.size = size;
-	vkCmdCopyBuffer(commandbuffer->cmd, src, dst, 1, &copyRegion);
+	vkCmdCopyBuffer(commandbuffer_vk(commandbuffer), src, dst, 1, &copyRegion);
 
 	single_use_commands_end(commandbuffer);
 }
 
 // Command Buffers
-CommandBuffer* single_use_commands_begin()
+Commandbuffer single_use_commands_begin()
 {
-	CommandBuffer* commandbuffer = commandbuffer_create_primary(0, 0);
+	Commandbuffer commandbuffer = commandbuffer_create_primary(0);
 
 	commandbuffer_begin(commandbuffer);
 
 	return commandbuffer;
 }
 
-void single_use_commands_end(CommandBuffer* commandbuffer)
+void single_use_commands_end(Commandbuffer commandbuffer)
 {
 	commandbuffer_end(commandbuffer);
 	commandbuffer_submit(commandbuffer);
@@ -387,7 +387,7 @@ VkImageView image_view_create(VkImage image, VkFormat format, VkImageAspectFlags
 
 void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout)
 {
-	CommandBuffer* commandbuffer = single_use_commands_begin();
+	Commandbuffer commandbuffer = single_use_commands_begin();
 
 	VkImageMemoryBarrier barrier = {0};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -461,14 +461,14 @@ void transition_image_layout(VkImage image, VkFormat format, VkImageLayout old_l
 		return;
 	}
 
-	vkCmdPipelineBarrier(commandbuffer->cmd, sourceStage, destinationStage, 0, 0, NULL, 0, NULL, 1, &barrier);
+	vkCmdPipelineBarrier(commandbuffer_vk(commandbuffer), sourceStage, destinationStage, 0, 0, NULL, 0, NULL, 1, &barrier);
 
 	single_use_commands_end(commandbuffer);
 }
 
 void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-	CommandBuffer* commandbuffer = single_use_commands_begin();
+	Commandbuffer commandbuffer = single_use_commands_begin();
 
 	VkBufferImageCopy region = {0};
 	region.bufferOffset = 0;
@@ -483,7 +483,7 @@ void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32
 	region.imageOffset = (VkOffset3D){0, 0, 0};
 	region.imageExtent = (VkExtent3D){width, height, 1};
 
-	vkCmdCopyBufferToImage(commandbuffer->cmd, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	vkCmdCopyBufferToImage(commandbuffer_vk(commandbuffer), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 	single_use_commands_end(commandbuffer);
 }

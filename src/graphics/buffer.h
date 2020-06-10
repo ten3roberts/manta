@@ -73,10 +73,10 @@ void buffer_copy(VkBuffer src, VkBuffer dst, VkDeviceSize size, uint32_t src_off
 
 // Command buffers
 // Allocates and starts a single use command buffer
-CommandBuffer* single_use_commands_begin();
+Commandbuffer single_use_commands_begin();
 
 // Ends and frees a single time command buffer
-void single_use_commands_end(CommandBuffer* command_buffer);
+void single_use_commands_end(Commandbuffer command_buffer);
 
 // Creates and allocates a vulkan image
 // Returns the allocated size

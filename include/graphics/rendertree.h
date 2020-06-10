@@ -31,7 +31,7 @@ typedef struct RenderTreeNode
 	Framebuffer* framebuffer;
 
 	// Contains all RENDER_TREE_LIM entities data
-	CommandBuffer* commandbuffers[3];
+	Commandbuffer commandbuffers[3];
 	UniformBuffer* entity_data;
 	// Set 2
 	DescriptorPack* entity_data_descriptors;
@@ -54,9 +54,8 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 // All children inherit the thread index
 RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer* framebuffer);
 
-
 // Change the framebuffer of all nodes from node
-void rendertree_set_info(RenderTreeNode* node, VkFence* fences, Framebuffer* framebuffer);
+void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer* framebuffer);
 
 void rendertree_destroy(RenderTreeNode* node);
 
@@ -67,7 +66,7 @@ void rendertree_update(RenderTreeNode* node, uint32_t frame);
 
 // Records secondary command buffers if necessary for the node and all children recursively if they're in view
 // Records secondary into primary command buffers
-void rendertree_render(RenderTreeNode* node, CommandBuffer* primary, Camera* camera, uint32_t frame);
+void rendertree_render(RenderTreeNode* node, Commandbuffer primary, Camera* camera, uint32_t frame);
 
 // Splits the node into 8 children
 // If the node is root, the children are assigned separate threads

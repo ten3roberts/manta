@@ -38,7 +38,7 @@ VertexBuffer* vb_generate_square();
 
 // Copies the CPU side data in the vertex buffer to the GPU
 void vb_copy_data(VertexBuffer* vb);
-void vb_bind(VertexBuffer* vb, CommandBuffer* commandbuffer);
+void vb_bind(VertexBuffer* vb, Commandbuffer commandbuffer);
 
 void vb_destroy(VertexBuffer* vb);
 

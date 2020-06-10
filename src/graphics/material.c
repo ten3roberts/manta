@@ -88,7 +88,7 @@ Material material_load_internal(JSON* object)
 			lname = sizeof raw->name;
 		// Allocate memory for the name
 		memcpy(raw->name, path_pos + 1, lname - 1);
-		raw->name[lname-1] = '\0';
+		raw->name[lname - 1] = '\0';
 	}
 
 	// Create table if it doesn't exist
@@ -98,7 +98,7 @@ Material material_load_internal(JSON* object)
 	}
 
 	// Insert material into tracking table after name is acquired
-	if (!HANDLE_VALID(handletable_find(material_table, raw->name)))
+	if (HANDLE_VALID(handletable_find(material_table, raw->name)))
 	{
 		LOG_W("Duplicate material %s", raw->name);
 		material_destroy(handle);
@@ -377,30 +377,30 @@ Material material_get_default()
 	return material_default;
 }
 
-void material_bind(Material mat, CommandBuffer* commandbuffer, VkDescriptorSet data_descriptors)
+void material_bind(Material mat, Commandbuffer commandbuffer, VkDescriptorSet data_descriptors)
 {
 	Material_raw* raw = handlepool_get_raw(&material_pool, PUN_HANDLE(mat, GenericHandle));
-	pipeline_bind(raw->pipeline, commandbuffer->cmd);
+	pipeline_bind(raw->pipeline, commandbuffer_vk(commandbuffer));
 
 	// Get the layout from the pipeline
 	VkPipelineLayout pipeline_layout = pipeline_get_layout(raw->pipeline);
 
 	// Bind global set 0
-	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, GLOBAL_DESCRIPTOR_INDEX, 1, &global_descriptors->sets[commandbuffer->frame], 0,
+	vkCmdBindDescriptorSets(commandbuffer_vk(commandbuffer), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, GLOBAL_DESCRIPTOR_INDEX, 1, &global_descriptors->sets[renderer_get_frameindex()], 0,
 							NULL);
 	// Bind material set 1
-	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, MATERIAL_DESCRIPTOR_INDEX, 1,
-							&raw->material_descriptors->sets[commandbuffer->frame], 0, NULL);
+	vkCmdBindDescriptorSets(commandbuffer_vk(commandbuffer), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, MATERIAL_DESCRIPTOR_INDEX, 1,
+							&raw->material_descriptors->sets[renderer_get_frameindex()], 0, NULL);
 
 	// Per entity data set 2
-	vkCmdBindDescriptorSets(commandbuffer->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, ENTITY_DESCRIPTOR_INDEX, 1, &data_descriptors, 0, NULL);
+	vkCmdBindDescriptorSets(commandbuffer_vk(commandbuffer), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, ENTITY_DESCRIPTOR_INDEX, 1, &data_descriptors, 0, NULL);
 }
 
-void material_push_constants(Material mat, CommandBuffer* commandbuffer, uint32_t index, void* data)
+void material_push_constants(Material mat, Commandbuffer commandbuffer, uint32_t index, void* data)
 {
 	Material_raw* raw = handlepool_get_raw(&material_pool, PUN_HANDLE(mat, GenericHandle));
 
-	vkCmdPushConstants(commandbuffer->cmd, pipeline_get_layout(raw->pipeline), raw->push_constants[index].stageFlags, raw->push_constants[index].offset,
+	vkCmdPushConstants(commandbuffer_vk(commandbuffer), pipeline_get_layout(raw->pipeline), raw->push_constants[index].stageFlags, raw->push_constants[index].offset,
 					   raw->push_constants[index].size, data);
 }
 

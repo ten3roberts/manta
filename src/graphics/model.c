@@ -347,15 +347,15 @@ void model_destroy_all()
 	}
 }
 
-void mesh_bind(Mesh* mesh, CommandBuffer* commandbuffer)
+void mesh_bind(Mesh* mesh, Commandbuffer commandbuffer)
 {
 	vb_bind(mesh->vb, commandbuffer);
 	ib_bind(mesh->ib, commandbuffer);
 }
 
-void mesh_draw(Mesh* mesh, CommandBuffer* commandbuffer)
+void mesh_draw(Mesh* mesh, Commandbuffer commandbuffer)
 {
-	vkCmdDrawIndexed(commandbuffer->cmd, mesh->vertex_count, 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandbuffer_vk(commandbuffer), mesh->vertex_count, 1, 0, 0, 0);
 }
 
 float mesh_max_distance(Mesh* mesh)
