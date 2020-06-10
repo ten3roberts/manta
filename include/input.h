@@ -32,6 +32,10 @@ vec2 input_mouse_pos();
 // E.g; top left corner (0,0), bottom right corner (1,1)
 vec2 input_mouse_pos_norm();
 
+// Returns the relative mouse movement between this and the prior frame
+// I.e; a velocity of the cursor in pixels
+vec2 input_mouse_rel();
+
 // Returns the length scrolled since the application started
 // Can be floating point but is often an integer representing the amount of 'notches' scrolled
 // The y component represents the normal vertical scroll wheel or touchpad

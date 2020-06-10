@@ -11,7 +11,7 @@ int keys[KEY_LAST + 1];
 int prev_keys[KEY_LAST + 1];
 
 vec2 mouse_pos;
-
+vec2 prev_mouse_pos;
 vec2 scroll;
 vec2 rel_scroll;
 
@@ -20,8 +20,9 @@ void input_init(Window* window)
 	memset(keys, 0, sizeof(keys));
 	memset(prev_keys, 0, sizeof(prev_keys));
 
-	mouse_pos  = (vec2){0, 0};
-	scroll	   = (vec2){0, 0};
+	mouse_pos = (vec2){0, 0};
+	prev_mouse_pos = (vec2){0, 0};
+	scroll = (vec2){0, 0};
 	rel_scroll = (vec2){0, 0};
 
 	_window = window;
@@ -39,7 +40,7 @@ void input_send_event(Event* event)
 		// If event is handled, only release the key without triggering input_key_release
 		else if (event->idata[1] == 0)
 		{
-			keys[event->idata[0]]	   = 0;
+			keys[event->idata[0]] = 0;
 			prev_keys[event->idata[0]] = 0;
 		}
 	}
@@ -67,6 +68,8 @@ void input_send_event(Event* event)
 void input_update()
 {
 	memcpy(prev_keys, keys, sizeof keys);
+
+	prev_mouse_pos = mouse_pos;
 	rel_scroll = (vec2){0, 0};
 }
 
@@ -93,6 +96,11 @@ vec2 input_mouse_pos()
 vec2 input_mouse_pos_norm()
 {
 	return (vec2){mouse_pos.x / window_get_width(_window), mouse_pos.y / window_get_height(_window)};
+}
+
+vec2 input_mouse_rel()
+{
+	return (vec2){mouse_pos.x - prev_mouse_pos.x, mouse_pos.y - prev_mouse_pos.y};
 }
 
 vec2 input_get_scroll()
