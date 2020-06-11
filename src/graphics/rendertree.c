@@ -96,7 +96,9 @@ void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, F
 
 	for (int i = 0; i < 3; i++)
 	{
-		commandbuffer_set_info(node->commandbuffers[i], primarycommands[i], renderPass, framebuffer->vkFramebuffers[i]);
+		// Commandbuffer may not have been created yet
+		if (HANDLE_VALID(node->commandbuffers[i]))
+			commandbuffer_set_info(node->commandbuffers[i], primarycommands[i], renderPass, framebuffer->vkFramebuffers[i]);
 	}
 
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
