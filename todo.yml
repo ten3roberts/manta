@@ -9,7 +9,7 @@ Renderer:
 
 Entities:
   - Implement entities
-  - Lua scripting
+  - Lua or C# scripting
   - Transform and Rigidbodies
   - Collision detection
   - Quadtree collision pruning
@@ -40,3 +40,6 @@ General Features:
   - Libjson to use arrays rather than linked lists
   - (done) LOG_E to abort
   - Remove handle validity checks in release builds
+  - Ungroup key pressed and released events and use bitmask
+  - Store type along handle
+  - Enable backface culling
