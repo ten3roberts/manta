@@ -13,6 +13,7 @@ struct PipelineInfo
 	uint32_t descriptor_layout_count;
 	VkPushConstantRange* push_constants;
 	uint32_t push_constant_count;
+	VkCullModeFlagBits cullmode;
 
 	VertexInputDescription vertex_description;
 };

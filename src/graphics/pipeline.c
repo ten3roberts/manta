@@ -21,7 +21,7 @@ static uint32_t hash_pipelineinfo(const void* pkey)
 		result += hashtable_hashfunc_string(info->geometryshader);
 	if (info->fragmentshader)
 		result += hashtable_hashfunc_string(info->fragmentshader);
-
+	
 	return result;
 }
 
@@ -37,7 +37,20 @@ static int32_t comp_pipelineinfo(const void* pkey1, const void* pkey2)
 		return 1;
 	if (strcmp_s(info1->geometryshader, info2->geometryshader))
 		return 1;
+	if (info1->cullmode != info2->cullmode)
+		return 1;
+	if (info1->push_constant_count != info2->push_constant_count)
+		return 1;
 
+	for (int i = 0; i < info1->push_constant_count; i++)
+	{
+		if (info1->push_constants[i].size != info2->push_constants[i].size)
+			return 1;
+		if (info1->push_constants[i].offset != info2->push_constants[i].offset)
+			return 1;
+		if (info1->push_constants[i].stageFlags != info2->push_constants[i].stageFlags)
+			return 1;
+	}
 	// Match
 	return 0;
 }
@@ -258,7 +271,7 @@ static int pipeline_create(struct PipelineInfo* info, VkPipeline* pipeline, VkPi
 	rasterizer.lineWidth = 1.0f;
 
 	// Cull mode
-	rasterizer.cullMode = VK_CULL_MODE_NONE;
+	rasterizer.cullMode = info->cullmode;
 	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
 	rasterizer.depthBiasEnable = VK_FALSE;

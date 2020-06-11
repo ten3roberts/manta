@@ -269,9 +269,32 @@ Material material_load_internal(JSON* object)
 		return INVALID(Material);
 	}
 
+	struct PipelineInfo pipeline_info = {0};
+
+	const char* cullmode = json_get_member_string(object, "cullmode");
+	pipeline_info.cullmode = VK_CULL_MODE_NONE;
+	if (cullmode)
+	{
+		if (strcmp(cullmode, "none") == 0)
+		{
+			pipeline_info.cullmode = VK_CULL_MODE_NONE;
+		}
+		else if (strcmp(cullmode, "back") == 0)
+		{
+			pipeline_info.cullmode = VK_CULL_MODE_BACK_BIT;
+		}
+		else if (strcmp(cullmode, "front") == 0)
+		{
+			pipeline_info.cullmode = VK_CULL_MODE_FRONT_BIT;
+		}
+		else
+		{
+			LOG_W("Invalid cullmode %s for material %s", cullmode, raw->name);
+		}
+	}
+
 	// Create the graphics pipeline
 	// Create the pipeline
-	struct PipelineInfo pipeline_info = {0};
 	pipeline_info.descriptor_layout_count = 3;
 	pipeline_info.descriptor_layouts = raw->descriptor_layouts;
 
