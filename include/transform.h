@@ -17,4 +17,13 @@ typedef struct Transform
 } Transform;
 
 void transform_update(Transform* transform);
+
+// Moves a transform relative to its rotation
+// Z is forwards
+void transform_translate(Transform* transform, vec3 translation);
+
+// Moves a transform relative to the global axis
+void transform_translate_global(Transform* transform, vec3 translation);
+
+
 #endif

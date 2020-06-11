@@ -16,3 +16,13 @@ void transform_update(Transform* transform)
 	transform->model_matrix = mat4_mul(&transform->model_matrix, &rotate);
 	transform->model_matrix = mat4_mul(&transform->model_matrix, &translate);
 }
+
+void transform_translate(Transform* transform, vec3 translation)
+{
+	transform->position = vec3_add(transform->position, quat_transform_vec3(transform->rotation, translation));
+}
+
+void transform_translate_global(Transform* transform, vec3 translation)
+{
+	transform->position = vec3_add(transform->position, translation);
+}
