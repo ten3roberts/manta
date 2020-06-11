@@ -22,6 +22,9 @@ float quat_mag(quaternion a);
 // Inverses the quaternion's rotation as if the angular rotation was inverses
 quaternion quat_inverse(quaternion a);
 
+// Returns the quaternion with the xyz part inversed
+quaternion quat_conjugate(quaternion q);
+
 // Calculates the dot product between two quaternions
 float quat_dot(quaternion a, quaternion b);
 // Adds two quaternions together component wise
@@ -49,7 +52,7 @@ quaternion quat_point_to(vec3 a);
 quaternion quat_mul(quaternion a, quaternion b);
 
 // Transforms a vec3 with the quaternion rotation
-vec3 quat_vec3_mul(quaternion a, vec3 b);
+vec3 quat_transform_vec3(quaternion q, vec3 v);
 
 // Scales a quaternion component wise
 quaternion quat_scale(quaternion a, float b);

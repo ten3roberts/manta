@@ -1,13 +1,12 @@
 #include "math/quaternion.h"
 #include <math.h>
 
-
 // Returns the normalized quaternion a
 quaternion quat_norm(quaternion a)
 {
 	float magnitude = sqrtf(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
 
-	return (quaternion) { a.x / magnitude, a.y / magnitude, a.z / magnitude, a.w / magnitude };
+	return (quaternion){a.x / magnitude, a.y / magnitude, a.z / magnitude, a.w / magnitude};
 }
 
 // Returns the quaternions magnitude
@@ -20,7 +19,12 @@ float quat_mag(quaternion a)
 // Inverses the quaternion's rotation as if the angular rotation was inverses
 quaternion quat_inverse(quaternion a)
 {
-	return (quaternion) { a.x, a.y, a.z, -a.w };
+	return (quaternion){a.x, a.y, a.z, -a.w};
+}
+
+quaternion quat_conjugate(quaternion q)
+{
+	return (quaternion){-q.x, -q.y, -q.z, q.w};
 }
 
 // Calculates the dot product between two quaternions
@@ -32,39 +36,60 @@ float quat_dot(quaternion a, quaternion b)
 // Adds two quaternions together component wise
 quaternion quat_add(quaternion a, quaternion b)
 {
-	return (quaternion) { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w };
+	return (quaternion){a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w};
 }
 
 // Subtracts two quaternions component wise
 quaternion quat_sub(quaternion a, quaternion b)
 {
-	return (quaternion) { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w };
+	return (quaternion){a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w};
 }
 
 // Returns a quaternion constructed from an axis angle rotation
 quaternion quat_axis_angle(vec3 axis, float angle)
 {
 	float sinAngle = sinf(angle / 2);
-	quaternion result = { axis.x * sinAngle, axis.y * sinAngle, axis.z * sinAngle, cosf(angle / 2) };
+	quaternion result = {axis.x * sinAngle, axis.y * sinAngle, axis.z * sinAngle, cosf(angle / 2)};
 	float magnitude = sqrtf(result.x * result.x + result.y * result.y + result.z * result.z + result.w * result.w);
 
-	return (quaternion) { result.x / magnitude, result.y / magnitude, result.z / magnitude, result.w / magnitude };
+	return (quaternion){result.x / magnitude, result.y / magnitude, result.z / magnitude, result.w / magnitude};
 }
 
 // Returns a quaternion constructed from euler angles (YXZ)
 quaternion quat_euler(vec3 euler)
 {
-	float Y = sinf(euler.y / 2);
+	// bank: z, roll
+	// attitude: x, pitch
+	// heading: y, yaw
+
+	float cos_bank = cosf(euler.x / 2);
+	float cos_att = cosf(euler.y / 2);
+	float cos_head = cosf(euler.z / 2);
+
+	float sin_bank = sinf(euler.x / 2);
+	float sin_att = sinf(euler.y / 2);
+	float sin_head = sinf(euler.z / 2);
+
+	quaternion out = {0};
+	out.w = cos_bank * cos_att * cos_head + sin_bank * sin_att * sin_head;
+	out.x = sin_bank * cos_att * cos_head - cos_bank * sin_att * sin_head;
+	out.y = cos_bank * sin_att * cos_head + sin_bank * cos_att * sin_head;
+	out.z = cos_bank * cos_att * sin_head + sin_bank * sin_att * cos_head;
+	return out;
+	/* float Y = sinf(euler.y / 2);
 	float X = sinf(euler.x / 2);
 	float Z = sinf(euler.z / 2);
 
 	float ey = cosf(euler.y / 2);
 	float ex = cosf(euler.x / 2);
 	float ez = cosf(euler.z / 2);
-	return (quaternion) {
-		+ey * X * ez + Y * ex * Z, -ey * X * Z + Y * ex * ez, -Y * X * ez + ey * ex * Z,
-			+Y * X * Z + ey * ex * ez
-	};
+
+	quaternion out = {0};
+	out.x = +ey * X * ez + Y * ex * Z;
+	out.y = -ey * X * Z + Y * ex * ez;
+	out.z = -Y * X * ez + ey * ex * Z;
+	out.w = +Y * X * Z + ey * ex * ez;
+	return out; */
 }
 
 // Returns an euler angle representation of the given quaternion
@@ -93,12 +118,11 @@ vec3 quat_to_euler(quaternion a)
 // Converts a quaternion to a rotation matrix
 mat4 quat_to_mat4(quaternion a)
 {
-	return (mat4) {
-		{ {1 - 2 * a.y * a.y - 2 * a.z * a.z, 2 * a.x * a.y - 2 * a.z * a.w, 2 * a.x * a.z + 2 * a.y * a.w, 0},
-		{ 2 * a.x * a.y + 2 * a.z * a.w, 1 - 2 * a.x * a.x - 2 * a.z * a.z, 2 * a.y * a.z - 2 * a.x * a.w, 0 },
-		{ 2 * a.x * a.z - 2 * a.y * a.w, 2 * a.y * a.z + 2 * a.x * a.w, 1 - 2 * a.x * a.x - 2 * a.y * a.y, 0 },
-		{ 0, 0, 0, 1 }}
-	};
+	return (mat4){
+		{{1 - 2 * a.y * a.y - 2 * a.z * a.z, 2 * a.x * a.y - 2 * a.z * a.w, 2 * a.x * a.z + 2 * a.y * a.w, 0},
+		 {2 * a.x * a.y + 2 * a.z * a.w, 1 - 2 * a.x * a.x - 2 * a.z * a.z, 2 * a.y * a.z - 2 * a.x * a.w, 0},
+		 {2 * a.x * a.z - 2 * a.y * a.w, 2 * a.y * a.z + 2 * a.x * a.w, 1 - 2 * a.x * a.x - 2 * a.y * a.y, 0},
+		 {0, 0, 0, 1}}};
 }
 
 // Returns a quaternion that can transform a forward vector to rotate to point
@@ -110,7 +134,7 @@ quaternion quat_point_to(vec3 a)
 
 	if (fabs(dot - (-1.0f)) < 0.000001f)
 	{
-		return (quaternion) { 0, 1, 0, M_PI };
+		return (quaternion){0, 1, 0, M_PI};
 	}
 	if (fabs(dot - (1.0f)) < 0.000001f)
 	{
@@ -127,24 +151,24 @@ quaternion quat_point_to(vec3 a)
 // This is equivalent to the two rotations they represent being carried out after one another
 quaternion quat_mul(quaternion a, quaternion b)
 {
-	return (quaternion) {
-		a.x* b.w + a.y * b.z - a.z * b.y + a.w * b.x, -a.x * b.z + a.y * b.w + a.z * b.x + a.w * b.y,
-			a.x* b.y - a.y * b.x + a.z * b.w + a.w * b.z, -a.x * b.x - a.y * b.y - a.z * b.z + a.w * b.w
-	};
+	return (quaternion){
+		a.x * b.w + a.y * b.z - a.z * b.y + a.w * b.x, -a.x * b.z + a.y * b.w + a.z * b.x + a.w * b.y,
+		a.x * b.y - a.y * b.x + a.z * b.w + a.w * b.z, -a.x * b.x - a.y * b.y - a.z * b.z + a.w * b.w};
 }
 
 // Transforms a vec3 with the quaternion rotation
-vec3 quat_vec3_mul(quaternion a, vec3 b)
+vec3 quat_transform_vec3(quaternion q, vec3 v)
 {
-
-	vec3 t = vec3_scale(vec3_cross((vec3) { a.x, a.y, a.z }, b), 2.0f);
-	return vec3_add(vec3_add(b, vec3_scale(t, a.w)), vec3_cross((vec3) { a.x, a.y, a.z }, t));
+	register vec3 qv = (vec3){-q.x, -q.y, -q.z};
+	register vec3 t = vec3_scale(vec3_cross(qv, v), 2.0f);
+	
+	return vec3_add(vec3_add(v, vec3_scale(t, q.w)), vec3_cross(qv, t));
 }
 
 // Scales a quaternion component wise
 quaternion quat_scale(quaternion a, float b)
 {
-	return (quaternion) { a.x* b, a.y* b, a.z* b, a.w* b };
+	return (quaternion){a.x * b, a.y * b, a.z * b, a.w * b};
 }
 
 // Scales the angle of rotation while preserving the rotation axis
