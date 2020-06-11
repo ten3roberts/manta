@@ -37,21 +37,21 @@ int application_start(int argc, char** argv)
 	material_load("./assets/materials/concrete.json");
 	material_load("./assets/materials/grid.json");
 
-	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, -10, 10}}, window_get_aspect(window), 1.5, 0.1, 100);
+	Camera* camera = camera_create_perspective("main", (Transform){(vec3){0, 0, 10}}, window_get_aspect(window), 1.5, 0.1, 100);
 
 	Entity* entity1 = entity_create("entity1", "grid", "cube", (Transform){(vec3){0, 0, -10}, quat_identity, vec3_one}, rigidbody_stationary);
+
 	(void)entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one}, (Rigidbody){.velocity = (vec3){-5, 0, 0}});
+
 	Entity* entity3 = entity_create("entity2", "concrete", "multiple:Suzanne", (Transform){(vec3){-2, 2, -10}, quat_identity, vec3_one}, rigidbody_stationary);
 
-	/*for (int i = 0; i < 1000; i++) 	
+	for (int i = 0; i < 1000; i++)
 	{
-		entity_create("entity_mult", "grid", "Cube", (Transform){.position = vec3_random_sphere_even(10, 100)});
-	}*/
+		Entity* e = entity_create("multiple", "concrete", "cube", (Transform){vec3_add(vec3_random_sphere_even(10, 200), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
+								  (Rigidbody){.velocity = vec3_random_sphere(0, 1)});
 
-	for (int i = 0; i < 10000; i++)
-	{
-		entity_create("multiple", "grid", "cube", (Transform){vec3_add(vec3_random_sphere_even(10, 200), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
-					  (Rigidbody){.velocity = vec3_random_sphere(0, 2)});
+		// Assign a random color
+		entity_set_color(e, vec4_hsv(rand() / (float)RAND_MAX * 2 * M_PI, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX));
 	}
 
 	while (!window_get_close(window))
@@ -66,26 +66,39 @@ int application_start(int argc, char** argv)
 		//entity_get_transform(entity2)->rotation =
 		//	quat_mul(quat_euler((vec3){0, 0, time_elapsed() * 4}), quat_euler((vec3){0, time_elapsed() * 0.75, 0}));
 		entity_get_transform(entity3)->rotation = quat_euler((vec3){0, time_elapsed() * 0.5, 0});
+		entity_set_color(entity3, (vec4){0, 0, 1, 1});
 		vec3 cam_move = vec3_zero;
+
+		float speed = 15;
+		if (input_key(KEY_LEFT_SHIFT))
+			speed *= 3;
+
 		if (input_key(KEY_W))
 		{
-			cam_move.z = -10;
+			cam_move.z = -speed;
 		}
 		if (input_key(KEY_S))
 		{
-			cam_move.z = 10;
+			cam_move.z = speed;
 		}
 		if (input_key(KEY_A))
 		{
-			cam_move.x = -10;
+			cam_move.x = -speed;
 		}
 		if (input_key(KEY_D))
 		{
-			cam_move.x = 10;
+			cam_move.x = speed;
 		}
 		// Spin camera
-		camera_get_transform(camera)->position = vec3_add(camera_get_transform(camera)->position, vec3_scale(cam_move, time_delta()));
-		//entity_get_transform(entity2)->position = vec3_add(entity_get_transform(entity2)->position, vec3_scale(cam_move, time_delta()));
+
+		static vec3 cam_rot = (vec3){0};
+#define SENSITIVITY 0.001f;
+		cam_rot.x -= input_mouse_rel().y * SENSITIVITY;
+		cam_rot.y += input_mouse_rel().x * SENSITIVITY;
+
+		camera_get_transform(camera)->rotation = quat_euler(cam_rot);
+
+		transform_translate(camera_get_transform(camera), vec3_scale(cam_move, time_delta()));
 		graphics_update_scene_data();
 		input_update();
 
@@ -132,6 +145,18 @@ void application_send_event(Event event)
 		LOG("%d %d", event.idata[0], event.idata[1]);
 		renderer_hint_resize();
 	}
+
+	static enum CursorMode mode = CURSORMODE_NORMAL;
+	if (event.type == EVENT_KEY && event.idata[0] == KEY_ESCAPE && event.idata[1] == 1)
+	{
+		if (mode == CURSORMODE_LOCKED)
+			mode = CURSORMODE_NORMAL;
+		else if (mode == CURSORMODE_NORMAL)
+			mode = CURSORMODE_LOCKED;
+
+		window_set_cursor_mode(window, mode);
+	}
+
 	/*if (event.type == EVENT_KEY)
 		LOG("Key pressed  : %d, %c", event.idata[0], event.idata[0]);*/
 	input_send_event(&event);
