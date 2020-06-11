@@ -24,7 +24,7 @@ static int32_t comp_sampler(const struct SamplerInfo* info1, const struct Sample
 	return (info1->filterMode == info2->filterMode && info1->wrapMode == info2->wrapMode && info1->maxAnisotropy == info2->maxAnisotropy) == 0;
 }
 
-static handlepool_t sampler_pool = HANDLEPOOL_INIT(sizeof(Sampler_raw));
+static handlepool_t sampler_pool = HANDLEPOOL_INIT(sizeof(Sampler_raw), "Sampler");
 
 // Creates a sampler
 Sampler sampler_get(SamplerFilterMode filterMode, SamplerWrapMode wrapMode, int maxAnisotropy)
@@ -166,7 +166,7 @@ typedef struct Texture_raw
 	bool owns_image;
 } Texture_raw;
 
-static handlepool_t texture_pool = HANDLEPOOL_INIT(sizeof(Texture_raw));
+static handlepool_t texture_pool = HANDLEPOOL_INIT(sizeof(Texture_raw), "Texture");
 
 // Loads a texture from a file
 // The textures name is the full file path

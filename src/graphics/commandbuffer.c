@@ -24,7 +24,7 @@ typedef struct
 	Commandbuffer next;
 } Commandbuffer_raw;
 
-static handlepool_t handlepool = HANDLEPOOL_INIT(sizeof(Commandbuffer_raw));
+static handlepool_t handlepool = HANDLEPOOL_INIT(sizeof(Commandbuffer_raw), "Commandbuffer");
 
 static int commandpool_create(uint8_t thread_idx)
 {

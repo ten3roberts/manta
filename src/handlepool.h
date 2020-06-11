@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include "handle.h"
 
-
 DEFINE_HANDLE(GenericHandle)
 
 #define HANDLEPOOL_INDEX(pool, i) ((struct handle_wrapper*)((uint8_t*)(pool)->handles + (pool)->stride * (i)))
@@ -28,6 +27,9 @@ typedef struct handlepool_t
 	// How many elements the pool will grow when out of size
 	uint32_t grow_size;
 
+	// The typename used for debug purposes
+	const char* typename;
+
 	// Contains the handle and data
 	// The handle contains an index and a unique pattern
 	struct handle_wrapper* handles;
@@ -35,10 +37,10 @@ typedef struct handlepool_t
 	struct handle_wrapper* free_handles;
 } handlepool_t;
 
-#define HANDLEPOOL_INIT(elem_size)                                                                           \
-	(handlepool_t)                                                                                                      \
-	{                                                                                                                   \
-		.stride = elem_size + sizeof(struct handle_wrapper), .size = 0, .count = 0, .grow_size = 64, .handles = NULL, .free_handles = NULL \
+#define HANDLEPOOL_INIT(elem_size, name)                                                                                                                     \
+	(handlepool_t)                                                                                                                                           \
+	{                                                                                                                                                        \
+		.stride = elem_size + sizeof(struct handle_wrapper), .size = 0, .count = 0, .grow_size = 64, .typename = name, .handles = NULL, .free_handles = NULL \
 	}
 
 // Returns a wrapper containing both the handle and the raw data

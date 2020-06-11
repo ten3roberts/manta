@@ -45,7 +45,7 @@ typedef struct Material_raw
 	struct Material *prev, *next;
 } Material_raw;
 
-static handlepool_t material_pool = HANDLEPOOL_INIT(sizeof(Material_raw));
+static handlepool_t material_pool = HANDLEPOOL_INIT(sizeof(Material_raw), "Material");
 
 static const void* keyfunc_material(GenericHandle handle)
 {

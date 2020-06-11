@@ -55,13 +55,13 @@ void handlepool_free(handlepool_t* pool, GenericHandle handle)
 {
 	if(HANDLE_COMPARE(handle, INVALID(GenericHandle)))
 	{
-		LOG_E("Handle is invalid");
+		LOG_E("Invalid %s", pool->typename);
 		return;
 	}
 
 	if (handle.index >= pool->size)
 	{
-		LOG_E("Handle %d is not a valid slot index", handle.index);
+		LOG_E("%s %d is not a valid slot index", pool->typename, handle.index);
 		return;
 	}
 
@@ -69,7 +69,7 @@ void handlepool_free(handlepool_t* pool, GenericHandle handle)
 
 	if (wrapper->next != NULL || !HANDLE_COMPARE(wrapper->handle, handle))
 	{
-		LOG_E("Handle %d has already been freed", handle.index);
+		LOG_E("%s %d has already been freed", pool->typename, handle.index);
 		return;
 	}
 
@@ -92,13 +92,13 @@ void* handlepool_get_raw(handlepool_t* pool, GenericHandle handle)
 {
 	if(HANDLE_COMPARE(handle, INVALID(GenericHandle)))
 	{
-		LOG_E("Handle is invalid");
+		LOG_E("Invalid %s", pool->typename);
 		return NULL;
 	}
 
 	if (handle.index >= pool->size)
 	{
-		LOG_E("Handle %d is not a valid slot index", handle.index);
+		LOG_E("%s %d is not a valid slot index", pool->typename, handle.index);
 		return NULL;
 	}
 
@@ -106,7 +106,7 @@ void* handlepool_get_raw(handlepool_t* pool, GenericHandle handle)
 
 	if (wrapper->next != NULL || !HANDLE_COMPARE(wrapper->handle, handle))
 	{
-		LOG_E("Handle %d has already been freed", handle.index);
+		LOG_E("%s %d has already been freed", pool->typename, handle.index);
 		return NULL;
 	}
 
