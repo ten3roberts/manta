@@ -19,7 +19,11 @@ typedef struct
 	// Should not be changed
 	uint8_t thread_idx;
 	bool recording;
-	VkCommandBufferInheritanceInfo inheritanceInfo;
+	struct
+	{
+		Framebuffer framebuffer;
+		VkRenderPass renderPass;
+	} info;
 	// If in destroy queue
 	Commandbuffer next;
 } Commandbuffer_raw;
@@ -118,7 +122,8 @@ Commandbuffer commandbuffer_create_primary(uint8_t thread_idx)
 	raw->thread_idx = thread_idx;
 	raw->recording = false;
 	raw->level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	raw->inheritanceInfo = (VkCommandBufferInheritanceInfo){0};
+	raw->info.framebuffer = INVALID(Framebuffer);
+	raw->info.renderPass = VK_NULL_HANDLE;
 	raw->next = INVALID(Commandbuffer);
 
 	VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &raw->cmd);
@@ -144,7 +149,7 @@ Commandbuffer commandbuffer_create_primary(uint8_t thread_idx)
 	return handle;
 }
 
-void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, Framebuffer frameBuffer)
+void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, Framebuffer framebuffer)
 {
 	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
 	if (HANDLE_VALID(primary))
@@ -152,14 +157,8 @@ void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, 
 	else
 		raw->fence = VK_NULL_HANDLE;
 
-	raw->inheritanceInfo = (VkCommandBufferInheritanceInfo){
-		.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-		.pNext = NULL,
-		.renderPass = renderPass,
-		.subpass = 0,
-		.framebuffer = framebuffer_vk(frameBuffer),
-		.queryFlags = 0,
-		.pipelineStatistics = 0};
+	raw->info.renderPass = renderPass;
+	raw->info.framebuffer = framebuffer;
 }
 
 void commandbuffer_begin(Commandbuffer commandbuffer)
@@ -168,11 +167,21 @@ void commandbuffer_begin(Commandbuffer commandbuffer)
 
 	vkResetCommandBuffer(raw->cmd, 0);
 	VkCommandBufferBeginInfo begin_info = {0};
+	VkCommandBufferInheritanceInfo inheritanceInfo = (VkCommandBufferInheritanceInfo){0};
 	if (raw->level == VK_COMMAND_BUFFER_LEVEL_SECONDARY)
 	{
+		inheritanceInfo = (VkCommandBufferInheritanceInfo){
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+			.pNext = NULL,
+			.renderPass = raw->info.renderPass,
+			.subpass = 0,
+			.framebuffer = framebuffer_vk(raw->info.framebuffer),
+			.queryFlags = 0,
+			.pipelineStatistics = 0};
+
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		begin_info.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-		begin_info.pInheritanceInfo = &raw->inheritanceInfo;
+		begin_info.pInheritanceInfo = &inheritanceInfo;
 
 		// Start recording
 	}

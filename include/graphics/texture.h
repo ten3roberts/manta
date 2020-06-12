@@ -1,6 +1,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 #include "handle.h"
+#include <stdbool.h>
 
 // Textures represent an image on the graphics card
 // Note: textures do not contain their own sampler, unlike OpenGL
@@ -55,6 +56,18 @@ Texture texture_create_existing(const char* name, int width, int height, VkForma
 
 // Updates the texture data from host memory
 void texture_update(Texture tex, uint8_t* pixeldata);
+
+// Resizes a texture
+// This will destroy all data previously in the texture
+// Similar to destroy and recreate except it keeps the same handle
+// If the texture doesn't own its image, then only the view is recreated, the image is expected to be the correct size or resupplied
+void texture_resize(Texture tex, int width, int height);
+
+// Swaps the internal image used in the texture
+// Call this before resize if texture doesn't own image
+void texture_supply_image(Texture tex, VkImage image);
+
+bool texture_owns_image(Texture tex);
 
 // Attempts to find a texture by name
 Texture texture_get(const char* name);

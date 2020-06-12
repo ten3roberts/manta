@@ -136,3 +136,83 @@ VkFramebuffer framebuffer_vk(Framebuffer framebuffer)
 	Framebuffer_raw* raw = (Framebuffer_raw*)handlepool_get_raw(&framebuffer_pool, framebuffer);
 	return raw->vkFramebuffer;
 }
+
+void framebuffer_resize(Framebuffer framebuffer, int width, int height)
+{
+	Framebuffer_raw* raw = (Framebuffer_raw*)handlepool_get_raw(&framebuffer_pool, framebuffer);
+
+	if (raw->info.swapchain_target)
+	{
+		raw->info.width = swapchain_extent.width;
+		raw->info.height = swapchain_extent.height;
+		width = raw->info.width;
+		height = raw->info.height;
+	}
+	else
+	{
+		raw->info.width = width;
+		raw->info.height = height;
+	}
+
+	// Resize textures
+	for (int i = 0; i < FRAMEBUFFER_ATTACHMENT_MAX_COUNT; i++)
+	{
+		if (HANDLE_VALID(raw->attachments[i]))
+		{
+			if (texture_owns_image(raw->attachments[i]) == false)
+			{
+				texture_supply_image(raw->attachments[i], swapchain_images[raw->info.swapchain_target_index]);
+			}
+			texture_resize(raw->attachments[i], width, height);
+		}
+	}
+
+	// Destroy and recreate internal framebuffer
+	vkDestroyFramebuffer(device, raw->vkFramebuffer, NULL);
+
+	VkImageView attachment_views[FRAMEBUFFER_ATTACHMENT_MAX_COUNT];
+
+	raw->attachment_count = 0;
+
+	// Create attachments
+	if (raw->info.attachments & FRAMEBUFFER_COLOR_ATTACHMENT)
+	{
+		attachment_views[raw->attachment_count] = texture_get_image_view(raw->attachments[FRAMEBUFFER_COLOR_INDEX]);
+
+		raw->attachment_count++;
+	}
+
+	if (raw->info.attachments & FRAMEBUFFER_DEPTH_ATTACHMENT)
+	{
+		attachment_views[raw->attachment_count] = texture_get_image_view(raw->attachments[FRAMEBUFFER_DEPTH_INDEX]);
+
+		raw->attachment_count++;
+	}
+
+	if (raw->info.attachments & FRAMEBUFFER_RESOLVE_ATTACHMENT)
+	{
+		if (raw->info.sampler_count != VK_SAMPLE_COUNT_1_BIT)
+		{
+			attachment_views[raw->attachment_count] = texture_get_image_view(raw->attachments[FRAMEBUFFER_RESOLVE_INDEX]);
+
+			raw->attachment_count++;
+		}
+	}
+
+	// Recreate internal framebuffer
+	VkFramebufferCreateInfo framebufferInfo = {0};
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = raw->attachment_count;
+	framebufferInfo.pAttachments = attachment_views;
+	framebufferInfo.width = swapchain_extent.width;
+	framebufferInfo.height = swapchain_extent.height;
+	framebufferInfo.layers = 1;
+	VkResult result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &raw->vkFramebuffer);
+	if (result != VK_SUCCESS)
+	{
+		LOG_E("Failed to resize frambuffer - code %d", result);
+		free(raw);
+		return;
+	}
+}

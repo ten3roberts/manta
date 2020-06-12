@@ -162,6 +162,9 @@ typedef struct Texture_raw
 	VkImage vkimage;
 	VkDeviceMemory memory;
 	VkImageView view;
+	VkSampleCountFlagBits samples;
+	VkImageAspectFlagBits aspect;
+	VkImageUsageFlags usage;
 	// If set to true, the texture owns the vkimage and will free it on destruction
 	bool owns_image;
 } Texture_raw;
@@ -231,6 +234,9 @@ Texture texture_create(const char* name, int width, int height, VkFormat format,
 	raw->height = height;
 	raw->layout = layout;
 	raw->format = format;
+	raw->samples = samples;
+	raw->aspect = imageAspect;
+	raw->usage = usage;
 	raw->owns_image = true;
 
 	raw->size = image_create(raw->width, raw->height, format, VK_IMAGE_TILING_OPTIMAL, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &raw->vkimage, &raw->memory, samples);
@@ -264,6 +270,9 @@ Texture texture_create_existing(const char* name, int width, int height, VkForma
 	raw->height = height;
 	raw->layout = layout;
 	raw->format = format;
+	raw->samples = samples;
+	raw->aspect = imageAspect;
+	raw->usage = 0;
 	raw->owns_image = false;
 
 	// Get image size
@@ -307,6 +316,44 @@ void texture_update(Texture tex, uint8_t* pixeldata)
 	// Clean up staging buffer
 	vkDestroyBuffer(device, staging_buffer, NULL);
 	vkFreeMemory(device, staging_buffer_memory, NULL);
+}
+
+void texture_resize(Texture tex, int width, int height)
+{
+	Texture_raw* raw = (Texture_raw*)handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle));
+	
+	// Destroy old
+	if (raw->owns_image)
+	{
+		vkDestroyImage(device, raw->vkimage, NULL);
+		vkFreeMemory(device, raw->memory, NULL);
+	}
+	vkDestroyImageView(device, raw->view, NULL);
+
+	// Create anew
+	raw->width = width;
+	raw->height = height;
+	if (raw->owns_image)
+		raw->size = image_create(raw->width, raw->height, raw->format, VK_IMAGE_TILING_OPTIMAL, raw->usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &raw->vkimage, &raw->memory, raw->samples);
+
+	// Create image view
+	raw->view = image_view_create(raw->vkimage, raw->format, raw->aspect);
+
+	// Transition image if format is specified
+	if (raw->layout != VK_IMAGE_LAYOUT_UNDEFINED)
+		transition_image_layout(raw->vkimage, raw->format, VK_IMAGE_LAYOUT_UNDEFINED, raw->layout);
+}
+
+void texture_supply_image(Texture tex, VkImage image)
+{
+	Texture_raw* raw = (Texture_raw*)handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle));
+	raw->vkimage = image;
+}
+
+bool texture_owns_image(Texture tex)
+{
+	Texture_raw* raw = (Texture_raw*)handlepool_get_raw(&texture_pool, PUN_HANDLE(tex, GenericHandle));
+	return raw->owns_image;
 }
 
 Texture texture_get(const char* name)

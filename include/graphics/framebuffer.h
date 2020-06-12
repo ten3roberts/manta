@@ -44,4 +44,8 @@ Texture framebuffer_get_attachment(Framebuffer framebuffer, uint32_t attachment)
 
 VkFramebuffer framebuffer_vk(Framebuffer framebuffer);
 
+// Resizes the framebuffer and all attachments
+// If framebuffer is swapchain target, supplied with and height will be ignored and swapchain extent will be used instead
+void framebuffer_resize(Framebuffer framebuffer, int width, int height);
+
 #endif

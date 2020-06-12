@@ -118,10 +118,7 @@ static void renderer_resize()
 	swapchain_recreate();
 
 	for (int i = 0; i < swapchain_image_count; i++)
-		framebuffer_destroy(framebuffers[i]);
-
-	renderer_create_framebuffers();
-
+		framebuffer_resize(framebuffers[i], 0, 0);
 	for (int i = 0; i < 3; i++)
 	{
 		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffers[i]);
