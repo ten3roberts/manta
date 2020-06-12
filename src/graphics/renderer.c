@@ -32,7 +32,7 @@ static int oneframe_draw_index = 0;
 
 // The framebuffer with the swapchain images as attachments
 // The last framebuffer and renderer to the window
-static Framebuffer* framebuffer_main = NULL;
+static Framebuffer* framebuffers[3] = {0};
 
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
@@ -45,7 +45,7 @@ static void renderer_rebuild(Scene* scene)
 	VkRenderPassBeginInfo render_pass_info = {0};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_info.renderPass = renderPass;
-	render_pass_info.framebuffer = framebuffer_main->vkFramebuffers[image_index];
+	render_pass_info.framebuffer = framebuffers[image_index]->vkFramebuffer;
 	render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 	render_pass_info.renderArea.extent = swapchain_extent;
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
@@ -68,40 +68,21 @@ static void renderer_rebuild(Scene* scene)
 }
 
 // Create main framebuffer
-static void renderer_create_framebuffer()
+static void renderer_create_framebuffers()
 {
-	// Color
-	// Depth
-	// Swapchain image
-	static const int attachment_count = 3;
-
-	Texture color_attachment = texture_create("color_attachment", swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_ASPECT_COLOR_BIT);
-
-	Texture depth_attachment = texture_create("depth_attachment", swapchain_extent.width, swapchain_extent.height, find_depth_format(), VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, msaa_samples, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	Texture swapchain_attachments[3] = {0};
-	for (uint32_t i = 0; i < swapchain_image_count; i++)
+	for (int i = 0; i < swapchain_image_count; i++)
 	{
-		char name[512];
-		string_format(name, sizeof name, "swapchain_image_%d", i);
-		swapchain_attachments[i] = texture_create_existing(name, swapchain_extent.width, swapchain_extent.height, swapchain_image_format, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED, swapchain_images[i], VK_IMAGE_ASPECT_COLOR_BIT);
+		struct FramebufferInfo info = {0};
+		info.swapchain_target = true;
+		info.swapchain_target_index = i;
+		info.attachments = FRAMEBUFFER_COLOR_ATTACHMENT | FRAMEBUFFER_DEPTH_ATTACHMENT | FRAMEBUFFER_RESOLVE_ATTACHMENT;
+		info.sampler_count = msaa_samples;
+
+		// Irrelevant since swapchain target
+		info.height = 0;
+		info.width = 0;
+		framebuffers[i] = framebuffer_create(&info);
 	}
-
-	Texture* attachments[3] = {0};
-
-	for (uint32_t i = 0; i < swapchain_image_count; i++)
-	{
-		attachments[i] = malloc(3 * sizeof *attachments);
-
-		attachments[i][0] = color_attachment;
-		attachments[i][1] = depth_attachment;
-		attachments[i][2] = swapchain_attachments[i];
-	}
-
-	framebuffer_main = framebuffer_create(attachments, attachment_count);
-
-	for (uint32_t i = 0; i < swapchain_image_count; i++)
-		free(attachments[i]);
 }
 
 int renderer_init()
@@ -115,13 +96,13 @@ int renderer_init()
 
 	descriptorpack_write(oneframe_descriptors, rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count(), &oneframe_buffer, NULL, NULL);
 
-	renderer_create_framebuffer();
+	renderer_create_framebuffers();
 
 	// Create command buffers
 	for (int i = 0; i < 3; i++)
 	{
 		primarycommands[i] = commandbuffer_create_primary(0);
-		oneframe_commands[i] = commandbuffer_create_secondary(0, primarycommands[i], renderPass, framebuffer_main->vkFramebuffers[i]);
+		oneframe_commands[i] = commandbuffer_create_secondary(0, primarycommands[i], renderPass, framebuffers[i]->vkFramebuffer);
 	}
 	return 0;
 }
@@ -136,15 +117,17 @@ static void renderer_resize()
 	vkDeviceWaitIdle(device);
 	swapchain_recreate();
 
-	framebuffer_destroy(framebuffer_main);
-	renderer_create_framebuffer();
+	for (int i = 0; i < swapchain_image_count; i++)
+		framebuffer_destroy(framebuffers[i]);
+
+	renderer_create_framebuffers();
 
 	for (int i = 0; i < 3; i++)
 	{
-		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffer_main->vkFramebuffers[i]);
+		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffers[i]->vkFramebuffer);
 	}
 
-	rendertree_set_info(scene_get_rendertree(scene_get_current()), primarycommands, framebuffer_main);
+	rendertree_set_info(scene_get_rendertree(scene_get_current()), primarycommands, framebuffers);
 
 	resize_event = 0;
 }
@@ -278,9 +261,9 @@ int renderer_get_frameindex()
 	return image_index;
 }
 
-Framebuffer* renderer_get_framebuffer()
+Framebuffer** renderer_get_framebuffers()
 {
-	return framebuffer_main;
+	return framebuffers;
 }
 
 void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 scale, vec4 color)
@@ -331,7 +314,8 @@ void renderer_terminate()
 		commandbuffer_destroy(primarycommands[i]);
 	}
 
-	framebuffer_destroy(framebuffer_main);
+	for (int i = 0; i < swapchain_image_count; i++)
+		framebuffer_destroy(framebuffers[i]);
 
 	descriptorpack_destroy(oneframe_descriptors);
 }

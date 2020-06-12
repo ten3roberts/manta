@@ -12,7 +12,7 @@ int application_start(int argc, char** argv)
 
 	settings_load();
 
-	window = window_create("sandbox", settings_get_resolution().x, settings_get_resolution().y, settings_get_window_style(), 0);
+	window = window_create("sandbox", settings_get_resolution().x, settings_get_resolution().y, settings_get_window_style(), 1);
 	window_set_icon(window, "./assets/textures/ridge64.png", "./assets/textures/ridge1024.png");
 
 	input_init(window);
@@ -43,9 +43,9 @@ int application_start(int argc, char** argv)
 
 	(void)entity_create("entity2", "concrete", "cube", (Transform){(vec3){4, 0, -10}, quat_identity, vec3_one}, (Rigidbody){.velocity = (vec3){-5, 0, 0}});
 
-	Entity* entity3 = entity_create("entity2", "concrete", "multiple:Suzanne", (Transform){(vec3){-2, 2, -10}, quat_identity, vec3_one}, rigidbody_stationary);
+	Entity* entity3 = entity_create("suzanne", "concrete", "multiple:Suzanne", (Transform){(vec3){0, 0, 3}, quat_identity, vec3_one}, rigidbody_stationary);
 
-	for (int i = 0; i < 1000; i++)
+	for (int i = 0; i < 10000; i++)
 	{
 		Entity* e = entity_create("multiple", "concrete", "cube", (Transform){vec3_add(vec3_random_sphere_even(10, 200), (vec3){0, -0, 0}), quat_identity, (vec3){0.5f, 0.5f, 0.5f}},
 								  (Rigidbody){.velocity = vec3_random_sphere(0, 1)});
@@ -60,7 +60,6 @@ int application_start(int argc, char** argv)
 		window_update(window);
 		renderer_begin();
 
-		scene_update(scene);
 
 		entity_get_transform(entity1)->rotation = quat_euler((vec3){0, time_elapsed(), 0});
 		//entity_get_transform(entity2)->rotation =
@@ -97,8 +96,11 @@ int application_start(int argc, char** argv)
 		cam_rot.y += input_mouse_rel().x * SENSITIVITY;
 
 		camera_get_transform(camera)->rotation = quat_euler(cam_rot);
+		entity_get_transform(entity3)->rotation = quat_euler(cam_rot);
 
 		transform_translate(camera_get_transform(camera), vec3_scale(cam_move, time_delta()));
+		transform_translate(entity_get_transform(entity3), vec3_scale(cam_move, time_delta()));
+		scene_update(scene);
 		graphics_update_scene_data();
 		input_update();
 
