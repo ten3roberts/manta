@@ -28,7 +28,7 @@ typedef struct RenderTreeNode
 	Entity* entities[RENDER_TREE_LIM];
 
 	// The framebuffer it is currently rendering to
-	Framebuffer* framebuffers[3];
+	Framebuffer framebuffers[3];
 
 	// Contains all RENDER_TREE_LIM entities data
 	Commandbuffer commandbuffers[3];
@@ -52,10 +52,10 @@ VkDescriptorSetLayout rendertree_get_descriptor_layout(void);
 // Creates a rendertree root node for a thread
 // Note, only the render thread with the correct index should use this
 // All children inherit the thread index
-RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer** framebuffers);
+RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer* framebuffers);
 
 // Change the framebuffer of all nodes from node
-void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer** framebuffers);
+void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer* framebuffers);
 
 void rendertree_destroy(RenderTreeNode* node);
 

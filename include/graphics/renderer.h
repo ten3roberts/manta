@@ -34,7 +34,7 @@ void renderer_flag_rebuild();
 uint32_t renderer_get_frameindex();
 
 // Returns the main framebuffer outputting to the swapchain
-Framebuffer** renderer_get_framebuffers();
+Framebuffer* renderer_get_framebuffers();
 
 // @Functions to draw shape for one frame@
 void renderer_draw_custom(Mesh* mesh, vec3 position, quaternion rotation, vec3 scale, vec4 color);

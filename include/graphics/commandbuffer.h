@@ -12,9 +12,9 @@ DEFINE_HANDLE(Commandbuffer)
 // Takes in a thread index since recording of command buffers from the same queues can not be done in pararell
 // The passed fence should be an existing fence of the primary command buffer the secondary is intended to execute on
 // thread index need to be less than RENDERER_MAX_THREADS
-Commandbuffer commandbuffer_create_secondary(uint8_t thread_idx, Commandbuffer primary, VkRenderPass renderPass, VkFramebuffer frameBuffer);
+Commandbuffer commandbuffer_create_secondary(uint8_t thread_idx, Commandbuffer primary, VkRenderPass renderPass, Framebuffer frameBuffer);
 
-void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, VkFramebuffer frameBuffer);
+void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, Framebuffer frameBuffer);
 
 // Creates a secondary command buffer for each frame in the swapchain
 // Takes in a thread index since recording of command buffers from the same queues can not be done in pararell

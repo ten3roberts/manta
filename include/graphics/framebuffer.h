@@ -1,6 +1,7 @@
 #include "vulkan/vulkan.h"
 #include "graphics/texture.h"
 #include <stdbool.h>
+#include "handle.h"
 
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
@@ -32,19 +33,15 @@ struct FramebufferInfo
 	uint32_t attachments;
 };
 
-typedef struct Framebuffer
-{
-	VkFramebuffer vkFramebuffer;
-	Texture attachments[FRAMEBUFFER_ATTACHMENT_MAX_COUNT];
-	uint32_t attachment_count;
-	struct FramebufferInfo info;
-} Framebuffer;
+DEFINE_HANDLE(Framebuffer);
 
 // Creates a framebuffer with according to the passed info
 // Info is copied and stored in the framebuffer which allows recreation
-Framebuffer* framebuffer_create(const struct FramebufferInfo* info);
-void framebuffer_destroy(Framebuffer* framebuffer);
+Framebuffer framebuffer_create(const struct FramebufferInfo* info);
+void framebuffer_destroy(Framebuffer framebuffer);
 
-Texture framebuffer_get_attachment(Framebuffer* framebuffer, uint32_t attachment);
+Texture framebuffer_get_attachment(Framebuffer framebuffer, uint32_t attachment);
+
+VkFramebuffer framebuffer_vk(Framebuffer framebuffer);
 
 #endif

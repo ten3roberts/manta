@@ -47,7 +47,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		// The fence is assigned on render
-		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, INVALID(Commandbuffer), renderPass, node->framebuffers[i]->vkFramebuffer);
+		node->commandbuffers[i] = commandbuffer_create_secondary(node->thread_idx, INVALID(Commandbuffer), renderPass, node->framebuffers[i]);
 	}
 
 	// Create uniform buffers for entity data
@@ -58,7 +58,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	descriptorpack_write(node->entity_data_descriptors, &entity_data_binding, 1, &node->entity_data, NULL, NULL);
 }
 
-RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer** framebuffers)
+RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_idx, Framebuffer* framebuffers)
 {
 	RenderTreeNode* node = mempool_alloc(&node_pool);
 
@@ -90,7 +90,7 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	return node;
 }
 
-void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer** framebuffers)
+void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer* framebuffers)
 {
 	for (int i = 0; i < swapchain_image_count; i++)
 		node->framebuffers[i] = framebuffers[i];
@@ -100,7 +100,7 @@ void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, F
 	{
 		// Commandbuffer may not have been created yet
 		if (HANDLE_VALID(node->commandbuffers[i]))
-			commandbuffer_set_info(node->commandbuffers[i], primarycommands[i], renderPass, framebuffers[i]->vkFramebuffer);
+			commandbuffer_set_info(node->commandbuffers[i], primarycommands[i], renderPass, framebuffers[i]);
 	}
 
 	for (uint32_t i = 0; node->children[0] && i < 8; i++)
@@ -298,7 +298,7 @@ void rendertree_render(RenderTreeNode* node, Commandbuffer primary, Camera* came
 		ub_unmap(node->entity_data, frame);
 
 		// Assign fence from primary for proper destruction
-		commandbuffer_set_info(node->commandbuffers[frame], primary, renderPass, node->framebuffers[frame]->vkFramebuffer);
+		commandbuffer_set_info(node->commandbuffers[frame], primary, renderPass, node->framebuffers[frame]);
 
 		// Needs to rerecord secondary
 		if (node->changed & (1 << frame))

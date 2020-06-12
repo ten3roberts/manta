@@ -44,7 +44,7 @@ static int commandpool_create(uint8_t thread_idx)
 	return 0;
 }
 
-Commandbuffer commandbuffer_create_secondary(uint8_t thread_idx, Commandbuffer primary, VkRenderPass renderPass, VkFramebuffer frameBuffer)
+Commandbuffer commandbuffer_create_secondary(uint8_t thread_idx, Commandbuffer primary, VkRenderPass renderPass, Framebuffer frameBuffer)
 {
 	if (thread_idx >= RENDERER_MAX_THREADS)
 	{
@@ -144,7 +144,7 @@ Commandbuffer commandbuffer_create_primary(uint8_t thread_idx)
 	return handle;
 }
 
-void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, VkFramebuffer frameBuffer)
+void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, VkRenderPass renderPass, Framebuffer frameBuffer)
 {
 	Commandbuffer_raw* raw = handlepool_get_raw(&handlepool, commandbuffer);
 	if (HANDLE_VALID(primary))
@@ -157,7 +157,7 @@ void commandbuffer_set_info(Commandbuffer commandbuffer, Commandbuffer primary, 
 		.pNext = NULL,
 		.renderPass = renderPass,
 		.subpass = 0,
-		.framebuffer = frameBuffer,
+		.framebuffer = framebuffer_vk(frameBuffer),
 		.queryFlags = 0,
 		.pipelineStatistics = 0};
 }

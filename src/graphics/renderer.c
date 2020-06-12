@@ -32,7 +32,7 @@ static int oneframe_draw_index = 0;
 
 // The framebuffer with the swapchain images as attachments
 // The last framebuffer and renderer to the window
-static Framebuffer* framebuffers[3] = {0};
+static Framebuffer framebuffers[3] = {0};
 
 // Rebuilds command buffers for the current frame
 // Needs to be called after renderer_begin
@@ -45,7 +45,7 @@ static void renderer_rebuild(Scene* scene)
 	VkRenderPassBeginInfo render_pass_info = {0};
 	render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	render_pass_info.renderPass = renderPass;
-	render_pass_info.framebuffer = framebuffers[image_index]->vkFramebuffer;
+	render_pass_info.framebuffer = framebuffer_vk(framebuffers[image_index]);
 	render_pass_info.renderArea.offset = (VkOffset2D){0, 0};
 	render_pass_info.renderArea.extent = swapchain_extent;
 	VkClearValue clear_values[2] = {{.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}}, {.depthStencil = {1.0f, 0.0f}}};
@@ -102,7 +102,7 @@ int renderer_init()
 	for (int i = 0; i < 3; i++)
 	{
 		primarycommands[i] = commandbuffer_create_primary(0);
-		oneframe_commands[i] = commandbuffer_create_secondary(0, primarycommands[i], renderPass, framebuffers[i]->vkFramebuffer);
+		oneframe_commands[i] = commandbuffer_create_secondary(0, primarycommands[i], renderPass, framebuffers[i]);
 	}
 	return 0;
 }
@@ -124,7 +124,7 @@ static void renderer_resize()
 
 	for (int i = 0; i < 3; i++)
 	{
-		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffers[i]->vkFramebuffer);
+		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffers[i]);
 	}
 
 	rendertree_set_info(scene_get_rendertree(scene_get_current()), primarycommands, framebuffers);
@@ -261,7 +261,7 @@ int renderer_get_frameindex()
 	return image_index;
 }
 
-Framebuffer** renderer_get_framebuffers()
+Framebuffer* renderer_get_framebuffers()
 {
 	return framebuffers;
 }
