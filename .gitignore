@@ -17,6 +17,10 @@ obj
 *.vcxproj.user
 *.vs
 
+# CMake
+CMakeFiles/
+CMakeCache.txt
+*.cmake
 
 *.log
 logs/

@@ -7,6 +7,7 @@ struct Camera
 	mat4 proj;
 };
 
+
 struct Entity
 {
 	mat4 model;
