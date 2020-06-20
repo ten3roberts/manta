@@ -50,7 +50,7 @@ void window_close_callback(GLFWwindow* raw_window)
 	application_send_event((Event){EVENT_WINDOW_CLOSE, .idata = {1, 0}, 0});
 }
 
-void key_callback(GLFWwindow* raw_window, int key, int scancode, int action, int mods)
+void key_callback(__attribute__((unused)) GLFWwindow* raw_window, int key, __attribute__((unused)) int scancode, int action, __attribute__((unused)) int mods)
 {
 	switch (action)
 	{
@@ -71,7 +71,7 @@ void key_callback(GLFWwindow* raw_window, int key, int scancode, int action, int
 	}
 }
 
-void mouse_button_callback(GLFWwindow* raw_window, int key, int action, int mods)
+void mouse_button_callback(__attribute__((unused)) GLFWwindow* raw_window, int key, int action, __attribute__((unused)) int mods)
 {
 	switch (action)
 	{
@@ -88,12 +88,12 @@ void mouse_button_callback(GLFWwindow* raw_window, int key, int action, int mods
 	}
 }
 
-void scroll_callback(GLFWwindow* raw_window, double xScroll, double yScroll)
+void scroll_callback(__attribute__((unused)) GLFWwindow* raw_window, double xScroll, double yScroll)
 {
 	application_send_event((Event){EVENT_MOUSE_SCROLLED, .fdata = {xScroll, yScroll}, 0});
 }
 
-void mouse_moved_callback(GLFWwindow* raw_window, double x, double y)
+void mouse_moved_callback(__attribute__((unused)) GLFWwindow* raw_window, double x, double y)
 {
 	application_send_event((Event){EVENT_MOUSE_MOVED, .fdata = {x, y}, 0});
 }
@@ -242,7 +242,7 @@ void window_destroy(Window* window)
 	free(window);
 }
 
-void window_update(Window* window)
+void window_update()
 {
 	glfwPollEvents();
 }

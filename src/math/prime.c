@@ -37,13 +37,13 @@ bool prime_test(uint64_t n, int iteration) {
 	if (n != 2 && n % 2 == 0) {
 		return false;
 	}
-	long long s = n - 1;
+	uint64_t s = n - 1;
 	while (s % 2 == 0) {
 		s /= 2;
 	}
 	for (int i = 0; i < iteration; i++) {
-		long long a = rand() % (n - 1) + 1, temp = s;
-		long long mod = modulo(a, temp, n);
+		uint64_t a = rand() % (n - 1) + 1, temp = s;
+		uint64_t mod = modulo(a, temp, n);
 		while (temp != n - 1 && mod != 1 && mod != n - 1) {
 			mod = mulmod(mod, mod, n);
 			temp *= 2;

@@ -51,7 +51,7 @@ static void rendertree_create_shader_data(RenderTreeNode* node)
 	}
 
 	// Create uniform buffers for entity data
-	node->entity_data = ub_create(LENOF(node->entities) * sizeof(struct EntityData), 0, node->thread_idx);
+	node->entity_data = ub_create(LENOF(node->entities) * sizeof(struct EntityData), node->thread_idx);
 
 	// Create and write set=2 for entity data
 	node->entity_data_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), &entity_data_binding, 1);
@@ -68,9 +68,9 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 	node->halfwidth = halfwidth;
 	node->changed = ALL_CHANGED;
 	node->depth = 0;
-	node->thread_idx = 0;
+	node->thread_idx = thread_idx;
 	node->id = node_count++;
-	for (int i = 0; i < swapchain_image_count; i++)
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 		node->framebuffers[i] = framebuffers[i];
 
 	for (uint8_t i = 0; i < 8; i++)
@@ -92,11 +92,11 @@ RenderTreeNode* rendertree_create(float halfwidth, vec3 center, uint32_t thread_
 
 void rendertree_set_info(RenderTreeNode* node, Commandbuffer* primarycommands, Framebuffer* framebuffers)
 {
-	for (int i = 0; i < swapchain_image_count; i++)
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 		node->framebuffers[i] = framebuffers[i];
 	node->changed = ALL_CHANGED;
 
-	for (int i = 0; i < 3; i++)
+	for (uint8_t i = 0; i < 3; i++)
 	{
 		// Commandbuffer may not have been created yet
 		if (HANDLE_VALID(node->commandbuffers[i]))

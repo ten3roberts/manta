@@ -178,35 +178,35 @@ Material material_load_internal(JSON* object)
 			const char* j_filterMode = json_get_member_string(bindcur, "filterMode");
 			const char* j_wrapMode = json_get_member_string(bindcur, "wrapMode");
 
-			VkFilter filterMode = VK_FILTER_LINEAR;
-			VkSamplerAddressMode wrapMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			SamplerFilterMode filterMode = SAMPLER_FILTER_LINEAR;
+			SamplerWrapMode wrapMode = SAMPLER_WRAP_REPEAT;
 
 			if (j_filterMode == NULL)
 			{
 			}
 			else if (strcmp(j_filterMode, "linear") == 0)
 			{
-				filterMode = VK_FILTER_LINEAR;
+				filterMode = SAMPLER_FILTER_LINEAR;
 			}
 			else if (strcmp(j_filterMode, "point") == 0 || strcmp(j_filterMode, "nearest") == 0)
 			{
-				filterMode = VK_FILTER_NEAREST;
+				filterMode = SAMPLER_FILTER_NEAREST;
 			}
 			if (j_wrapMode == NULL)
 			{
 			}
 			else if (strcmp(j_wrapMode, "repeat") == 0)
 			{
-				wrapMode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+				wrapMode = SAMPLER_WRAP_REPEAT;
 			}
 			else if (strcmp(j_wrapMode, "clamp_edge") == 0)
 			{
-				wrapMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+				wrapMode = SAMPLER_WRAP_CLAMP_EDGE;
 			}
 
 			else if (strcmp(j_wrapMode, "clamp_border") == 0)
 			{
-				wrapMode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+				wrapMode = SAMPLER_WRAP_CLAMP_BORDER;
 			}
 
 			JSON* j_aniso = json_get_member(bindcur, "anisotropy");

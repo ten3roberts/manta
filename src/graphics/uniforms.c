@@ -117,7 +117,7 @@ uint32_t descriptorpool_get(uint32_t uniform_count, uint32_t sampler_count)
 	if (result != VK_SUCCESS)
 	{
 		LOG_E("Failed to create descriptor pool - code %d", result);
-		return -1;
+		return (uint32_t)-1;
 	}
 
 	// 'allocate'
@@ -203,7 +203,7 @@ DescriptorPack* descriptorpack_create(VkDescriptorSetLayout layout, VkDescriptor
 	DescriptorPack* pack = malloc(sizeof(DescriptorPack));
 
 	pack->pool_index = descriptorpool_get(uniform_count, sampler_count);
-	if (pack->pool_index == -1)
+	if (pack->pool_index == (uint32_t)-1)
 	{
 		LOG_E("Failed to get descriptor pool");
 		return NULL;
@@ -337,7 +337,7 @@ void descriptorpack_destroy(DescriptorPack* pack)
 }
 static mempool_t ub_ptr_pool = MEMPOOL_INIT(sizeof(UniformBuffer), 128);
 
-UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
+UniformBuffer* ub_create(uint32_t size, uint8_t thread_idx)
 {
 	//LOG_S("Creating uniform buffer");
 	UniformBuffer* ub = mempool_alloc(&ub_ptr_pool);
@@ -349,7 +349,7 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 	ub->thread_idx = thread_idx;
 
 	// Find a free pool
-	for (int i = 0; i < swapchain_image_count; i++)
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
 		// Sets buffer pool usage if not set
 		if (ub_pool[thread_idx].usage == 0)
@@ -363,7 +363,7 @@ UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx)
 // Maps the uniform buffer data for specified frame and returns a pointer to it
 void* ub_map(UniformBuffer* ub, uint32_t offset, uint32_t size, uint32_t frame)
 {
-	if (frame == -1)
+	if (frame == (uint32_t)-1)
 		frame = renderer_get_frameindex();
 
 	if (size == CS_WHOLE_SIZE)
@@ -394,7 +394,7 @@ void ub_unmap(UniformBuffer* ub, uint32_t frame)
 
 void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, uint32_t frame)
 {
-	if (frame == -1)
+	if (frame == UB_CURRENT_FRAME)
 		frame = renderer_get_frameindex();
 
 	if (size == CS_WHOLE_SIZE)

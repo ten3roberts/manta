@@ -42,7 +42,7 @@ static int32_t comp_pipelineinfo(const void* pkey1, const void* pkey2)
 	if (info1->push_constant_count != info2->push_constant_count)
 		return 1;
 
-	for (int i = 0; i < info1->push_constant_count; i++)
+	for (uint32_t i = 0; i < info1->push_constant_count; i++)
 	{
 		if (info1->push_constants[i].size != info2->push_constants[i].size)
 			return 1;

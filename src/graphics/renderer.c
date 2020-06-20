@@ -70,7 +70,7 @@ static void renderer_rebuild(Scene* scene)
 // Create main framebuffer
 static void renderer_create_framebuffers()
 {
-	for (int i = 0; i < swapchain_image_count; i++)
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 	{
 		struct FramebufferInfo info = {0};
 		info.swapchain_target = true;
@@ -90,7 +90,7 @@ int renderer_init()
 	// Load primitive models
 	model_load_collada("./assets/models/primitive.dae");
 
-	oneframe_buffer = ub_create(sizeof(struct EntityData) * ONE_FRAME_LIMIT, 0, 0);
+	oneframe_buffer = ub_create(sizeof(struct EntityData) * ONE_FRAME_LIMIT, 0);
 
 	oneframe_descriptors = descriptorpack_create(rendertree_get_descriptor_layout(), rendertree_get_descriptor_bindings(), rendertree_get_descriptor_binding_count());
 
@@ -117,9 +117,9 @@ static void renderer_resize()
 	vkDeviceWaitIdle(device);
 	swapchain_recreate();
 
-	for (int i = 0; i < swapchain_image_count; i++)
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 		framebuffer_resize(framebuffers[i], 0, 0);
-	for (int i = 0; i < 3; i++)
+	for (uint32_t i = 0; i < 3; i++)
 	{
 		commandbuffer_set_info(oneframe_commands[i], primarycommands[i], renderPass, framebuffers[i]);
 	}
@@ -305,13 +305,13 @@ void renderer_terminate()
 	// Free all remaining command buffers in destroy queue
 	commandbuffer_handle_destructions();
 	ub_destroy(oneframe_buffer);
-	for (int i = 0; i < 3; i++)
+	for (uint32_t i = 0; i < 3; i++)
 	{
 		commandbuffer_destroy(oneframe_commands[i]);
 		commandbuffer_destroy(primarycommands[i]);
 	}
 
-	for (int i = 0; i < swapchain_image_count; i++)
+	for (uint32_t i = 0; i < swapchain_image_count; i++)
 		framebuffer_destroy(framebuffers[i]);
 
 	descriptorpack_destroy(oneframe_descriptors);

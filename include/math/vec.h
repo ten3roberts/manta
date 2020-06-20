@@ -14,8 +14,8 @@ typedef struct
 	int x, y;
 } ivec2;
 
-const static vec2 vec2_one = {1, 1};
-const static vec2 vec2_zero = {0, 0};
+static const vec2 vec2_one = {1, 1};
+static const vec2 vec2_zero = {0, 0};
 
 typedef struct
 {
@@ -26,18 +26,18 @@ typedef struct
 	int x, y, z;
 } ivec3;
 
-const static vec3 vec3_one = {1, 1, 1};
-const static vec3 vec3_zero = {0, 0, 0};
+static const vec3 vec3_one = {1, 1, 1};
+static const vec3 vec3_zero = {0, 0, 0};
 
-const static vec3 vec3_forward = {0, 0, 1};
-const static vec3 vec3_right = {1, 0, 0};
-const static vec3 vec3_up = {0, 1, 0};
+static const vec3 vec3_forward = {0, 0, 1};
+static const vec3 vec3_right = {1, 0, 0};
+static const vec3 vec3_up = {0, 1, 0};
 
-const static vec3 vec3_white = {1, 1, 1};
-const static vec3 vec3_black = {0, 0, 0};
-const static vec3 vec3_red = {1, 0, 0};
-const static vec3 vec3_green = {0, 1, 0};
-const static vec3 vec3_blue = {0, 0, 1};
+static const vec3 vec3_white = {1, 1, 1};
+static const vec3 vec3_black = {0, 0, 0};
+static const vec3 vec3_red = {1, 0, 0};
+static const vec3 vec3_green = {0, 1, 0};
+static const vec3 vec3_blue = {0, 0, 1};
 
 typedef struct
 {
@@ -48,14 +48,14 @@ typedef struct
 	int x, y, z, w;
 } ivec4;
 
-const static vec4 vec4_one = {1, 1, 1};
-const static vec4 vec4_zero = {0, 0, 0};
+static const vec4 vec4_one = {1, 1, 1, 1};
+static const vec4 vec4_zero = {0, 0, 0, 0};
 
-const static vec4 vec4_white = {1, 1, 1};
-const static vec4 vec4_black = {0, 0, 0};
-const static vec4 vec4_red = {1, 0, 0, 1};
-const static vec4 vec4_green = {0, 1, 0, 1};
-const static vec4 vec4_blue = {0, 0, 1, 1};
+static const vec4 vec4_white = {1, 1, 1, 1};
+static const vec4 vec4_black = {0, 0, 0, 0};
+static const vec4 vec4_red = {1, 0, 0, 1};
+static const vec4 vec4_green = {0, 1, 0, 1};
+static const vec4 vec4_blue = {0, 0, 1, 1};
 
 /*vec2*/
 

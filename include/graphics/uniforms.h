@@ -6,7 +6,7 @@
 #include "graphics/texture.h"
 #include <stdint.h>
 
-#define CS_WHOLE_SIZE -1
+#define CS_WHOLE_SIZE  (uint32_t)-1
 
 typedef struct DescriptorPool DescriptorPool;
 
@@ -52,7 +52,7 @@ void descriptorpack_destroy(DescriptorPack* pack);
 // Uniform buffer is completely agnostic to the shader layout and binding
 // To bind a uniform buffer you need to create a descriptor layout and set
 // As the buffer memory is pooled, you cannot map two buffers simultaneously as they might share the same memory, just at different offsets. thread_idx fixes making sure two buffers with a different thread index don't share the same memory
-UniformBuffer* ub_create(uint32_t size, uint32_t binding, uint8_t thread_idx);
+UniformBuffer* ub_create(uint32_t size, uint8_t thread_idx);
 
 // Maps the uniform buffer data for specified frame and returns a pointer to it
 // Note: you can not map the same frame simulataneously
@@ -60,12 +60,14 @@ void* ub_map(UniformBuffer* ub, uint32_t offset, uint32_t size, uint32_t frame);
 // Unmaps a uniform buffer
 void ub_unmap(UniformBuffer* ub, uint32_t frame);
 
+#define UB_CURRENT_FRAME (uint32_t)-1
+
 // Updates a uniform buffer
 // Maps memory from the GPU to the CPU
 // If size is -1 or CS_WHOLE_SIZE, the rest of the buffer will be written after offset
 // Writes size amount of bytes from data after offset
 // The frame specifies which of the internal buffers to map
-// If frame is -1, the current frame to render will be used (result of renderer_get_frame)
+// If frame is UB_CURRENT_FRAME, the current frame to render will be used (result of renderer_get_frame)
 // NOTE: offset + size should be less than or equal to size of the uniform buffer
 void ub_update(UniformBuffer* ub, void* data, uint32_t offset, uint32_t size, uint32_t frame);
 void ub_destroy(UniformBuffer* ub);

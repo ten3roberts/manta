@@ -378,7 +378,7 @@ Mesh* mesh_find(const char* name)
 	char modelname[256];
 	char meshname[256];
 	size_t len = sizeof modelname;
-	len = delimiter ? (delimiter - name + 1) : sizeof modelname;
+	len = delimiter ? (size_t)(delimiter - name + 1) : sizeof modelname;
 	len = len > sizeof modelname ? sizeof modelname : len;
 
 	snprintf(modelname, len, "%s", name);

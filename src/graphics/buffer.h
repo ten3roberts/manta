@@ -44,6 +44,11 @@ typedef struct
 	struct BufferPoolBlock* blocks;
 } BufferPool;
 
+#define BUFFERPOOL_INIT(_usage)                                           \
+	(BufferPool)                                                         \
+	{                                                                    \
+		.usage = _usage, .alignment = 0, .block_count = 0, .blocks = NULL \
+	}
 // Adds another buffer pool to a BufferPoolArray
 // If it is empty, a buffer is created
 // Creates the buffer according to type

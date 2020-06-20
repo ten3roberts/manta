@@ -9,7 +9,7 @@ typedef struct Rigidbody
 	/* data */
 } Rigidbody;
 
-const static Rigidbody rigidbody_stationary = {.velocity = (vec3){0, 0, 0}};
+static const Rigidbody rigidbody_stationary = {.velocity = (vec3){0, 0, 0}};
 
 void rigidbody_update(Rigidbody* rigidbody, Transform* transform);
 #endif

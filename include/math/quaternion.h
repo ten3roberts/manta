@@ -10,7 +10,7 @@ typedef struct
 	float x, y, z, w;
 } quaternion;
 
-const static quaternion quat_identity = {0, 0, 0, 1};
+static const quaternion quat_identity = {0, 0, 0, 1};
 
 // Returns the normalized quaternion a
 quaternion quat_norm(quaternion a);

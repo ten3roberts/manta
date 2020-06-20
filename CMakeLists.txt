@@ -42,7 +42,7 @@ if(MSVC)
 	target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC PL_WINDOWS=1)
 else()
-	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wno-unused-function -Werror)
+	target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-unused-function -Werror)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC PL_LINUX=1)
 endif()
 

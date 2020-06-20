@@ -28,7 +28,7 @@ void window_set_cursor_mode(Window* window, enum CursorMode mode);
 void window_destroy(Window* window);
 
 
-void window_update(Window* window);
+void window_update();
 
 int window_get_width(Window* window);
 int window_get_height(Window* window);

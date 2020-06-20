@@ -203,7 +203,7 @@ void buffer_pool_free(BufferPool* pool, uint32_t size, VkBuffer buffer, VkDevice
 void buffer_pool_array_destroy(BufferPool* pool)
 {
 	//LOG_S("Destroying buffer pool array");
-	for (int i = 0; i < pool->block_count; i++)
+	for (uint32_t i = 0; i < pool->block_count; i++)
 	{
 		// Remove all freed spaces
 		struct BufferPoolFree* cur = pool->blocks[i].free_blocks;

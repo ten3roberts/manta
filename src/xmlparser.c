@@ -20,7 +20,7 @@ struct XMLNode
 	char* tag;
 	char* content;
 	// The attributes for the tag
-	uint16_t attribute_count;
+	uint32_t attribute_count;
 	struct attribute_t* attributes;
 	// Linked list to children
 	XMLNode* children;

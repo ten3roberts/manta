@@ -29,7 +29,7 @@ static float logn(float base, float x)
 }
 
 // A faster but less accurate sqrt
-static int32_t sqrti(int32_t n)
+static unsigned int sqrti(unsigned int n)
 {
 	unsigned int c = 0x8000;
 	unsigned int g = 0x8000;

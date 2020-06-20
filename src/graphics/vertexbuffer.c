@@ -4,7 +4,7 @@
 #include "buffer.h"
 #include "log.h"
 
-static BufferPool vb_pool = {VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT};
+static BufferPool vb_pool = BUFFERPOOL_INIT(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 VertexBuffer* vb_generate_triangle()
 {

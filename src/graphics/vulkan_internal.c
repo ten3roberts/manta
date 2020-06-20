@@ -96,7 +96,7 @@ VkExtent2D pick_swap_extent(VkSurfaceCapabilitiesKHR* capabilities)
 // Function shared across different compilation units
 QueueFamilies get_queue_families(VkPhysicalDevice device)
 {
-	QueueFamilies indices = {0, 0};
+	QueueFamilies indices = {0, 0, 0};
 
 	uint32_t queue_family_count = 0;
 	VkQueueFamilyProperties* queue_families = NULL;

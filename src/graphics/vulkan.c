@@ -32,8 +32,9 @@ static void** global_resource_map = NULL;
 static Window* surface_window = NULL;
 // src/graphics/vulkan.c
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
-													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+// Some arguments are unused but are require for the callback to work
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, __attribute__((unused)) VkDebugUtilsMessageTypeFlagsEXT messageType,
+													 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, __attribute__((unused)) void* pUserData)
 {
 	if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 		log_call(LOG_SEVERITY_ERROR, "Vulkan debug", "(%d)%s", messageSeverity, pCallbackData->pMessage);
@@ -627,7 +628,7 @@ int create_global_resources(struct LayoutInfo* layout_info)
 		// Add to map
 		if (layout_info->bindings[i].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
 		{
-			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], layout_info->bindings[i].binding, 0);
+			global_uniform_buffers[buffer_it] = ub_create(layout_info->buffer_sizes[i], 0);
 			global_resource_map[layout_info->bindings[i].binding] = global_uniform_buffers[buffer_it];
 			++buffer_it;
 		}

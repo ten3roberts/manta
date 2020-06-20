@@ -502,7 +502,7 @@ size_t string_format(char* str, size_t size, const char* fmt, ...)
 // Writes a string into another string
 // Returns written characters even if size is too small
 // Does not NULL terminate
-size_t string_vformat_write(char* buf, int64_t size, const char* str, size_t len, int flags, int width)
+size_t string_vformat_write(char* buf, size_t size, const char* str, size_t len, int flags, size_t width)
 {
 	// Make sure to not overwrite
 	width = min(width, size);
@@ -552,7 +552,7 @@ size_t string_vformat_write(char* buf, int64_t size, const char* str, size_t len
 
 size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 {
-	int64_t remaining = size;
+	size_t remaining = size;
 
 	char ch;
 	long long int_tmp;
@@ -728,6 +728,7 @@ size_t string_vformat(char* str, size_t size, const char* fmt, va_list args)
 					flags |= FORMAT_FLAG_PAD_ZERO;
 					break;
 				}
+				__attribute__((fallthrough));
 			default: {
 				// Length modifier
 				if (ch >= '0' && ch <= '9')
